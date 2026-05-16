@@ -5,6 +5,7 @@ import {
   updatePostApi,
   deletePostApi,
 } from '../api/postsApi';
+import { getFileUrl } from '../api/fileUrl';
 
 function PostCard({
   post,
@@ -122,7 +123,7 @@ function PostCard({
 
         {post.image && (
           <img
-            src={`http://localhost:5000${post.image}`}
+            src={getFileUrl(post.image)}
             alt=""
           />
         )}
