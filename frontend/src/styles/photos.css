@@ -1,0 +1,27 @@
+.photos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.photo-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.photo-img {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.photo-info {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  color: #fff;
+  background: rgba(0,0,0,0.5);
+  padding: 5px 10px;
+  border-radius: 10px;
+}
