@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fi';
 import EmojiPicker from 'emoji-picker-react';
 import { FiImage, FiSmile } from 'react-icons/fi';
+import { getFileUrl } from '../api/fileUrl';
 
 function Chat({ onUnreadCountChange, selectedUserId }) {
   const [conversations, setConversations] = useState([]);
@@ -397,7 +398,7 @@ useEffect(() => {
   {c.avatar ? (
     <img
       className="chat-avatar"
-      src={`http://localhost:5000${c.avatar}`}
+      src={getFileUrl(c.avatar)}
       alt=""
     />
   ) : (
@@ -489,10 +490,10 @@ useEffect(() => {
                                   {m.image && (
                                     <img
                                       className="message-image"
-                                      src={`http://localhost:5000${m.image}`}
+                                      src={getFileUrl(m.image)}
                                       alt=""
                                       onClick={() =>
-                                        setOpenedImage(`http://localhost:5000${m.image}`)
+                                        setOpenedImage(getFileUrl(m.image))
                                       }
                                     />
                                   )}
@@ -530,7 +531,7 @@ useEffect(() => {
                               >
                                 {conversation.avatar ? (
                                   <img
-                                    src={`http://localhost:5000${conversation.avatar}`}
+                                    src={getFileUrl(conversation.avatar)}
                                     alt=""
                                   />
                                 ) : (

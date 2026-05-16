@@ -7,6 +7,7 @@ import {
   updatePostApi,
   deletePostApi,
 } from '../api/postsApi';
+import { getFileUrl } from '../api/fileUrl';
 
 export default function PostDetails({
   post,
@@ -154,7 +155,7 @@ export default function PostDetails({
       {post.image && (
         <img
           className="post-big-image"
-          src={`http://localhost:5000${post.image}`}
+          src={getFileUrl(post.image)}
           alt=""
           onClick={() => setFullscreen(true)}
         />
@@ -186,7 +187,7 @@ export default function PostDetails({
           <div className="photo-comment" key={comment.id}>
             {comment.avatar ? (
               <img
-                src={`http://localhost:5000${comment.avatar}`}
+                src={getFileUrl(comment.avatar)}
                 alt=""
               />
             ) : (
@@ -259,7 +260,7 @@ export default function PostDetails({
           onClick={() => setFullscreen(false)}
         >
           <img
-            src={`http://localhost:5000${post.image}`}
+            src={getFileUrl(post.image)}
             alt=""
           />
         </div>
@@ -278,7 +279,7 @@ export default function PostDetails({
               <div className="likes-user" key={user.id}>
                 {user.avatar ? (
                   <img
-                    src={`http://localhost:5000${user.avatar}`}
+                    src={getFileUrl(user.avatar)}
                     alt=""
                   />
                 ) : (

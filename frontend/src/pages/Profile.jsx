@@ -9,6 +9,7 @@ import {
 import { getFriendsApi } from '../api/followApi';
 import PostCard from '../components/PostCard';
 import PhotoModal from '../components/PhotoModal';
+import { getFileUrl } from '../api/fileUrl';
 
 function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
   const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -128,7 +129,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
         {user.headerImage ? (
           <img
             className="profile-cover"
-            src={`http://localhost:5000${user.headerImage}`}
+            src={getFileUrl(user.headerImage)}
             alt=""
           />
         ) : (
@@ -150,7 +151,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
           {user.avatar ? (
             <img
               className="profile-avatar"
-              src={`http://localhost:5000${user.avatar}`}
+              src={getFileUrl(user.avatar)}
               alt=""
               onClick={() => setAvatarPreviewOpen(true)}
             />
@@ -219,7 +220,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
             >
               {friend.avatar ? (
                 <img
-                  src={`http://localhost:5000${friend.avatar}`}
+                  src={getFileUrl(friend.avatar)}
                   alt=""
                 />
               ) : (
@@ -254,7 +255,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
           {photos.map((photo) => (
             <img
               key={photo.id}
-              src={`http://localhost:5000${photo.image}`}
+              src={getFileUrl(photo.image)}
               alt=""
               onClick={() => setSelectedPhoto(photo)}
             />
@@ -334,7 +335,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
           className="avatar-preview-modal"
           onClick={() => setAvatarPreviewOpen(false)}
         >
-          <img src={`http://localhost:5000${user.avatar}`} alt="" />
+          <img src={getFileUrl(user.avatar)} alt="" />
         </div>
       )}
     </div>

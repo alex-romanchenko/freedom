@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/api';
 import EmojiPicker from 'emoji-picker-react';
+import { getFileUrl } from '../api/fileUrl';
 
 export default function PhotoModal({ photo, onClose, onPhotoChanged }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -161,7 +162,7 @@ const deletePhoto = async () => {
       <div className="photo-modal">
         <div className="photo-modal-image-wrap">
           <img
-            src={`http://localhost:5000${modalPhoto.image}`}
+            src={getFileUrl(modalPhoto.image)}
             alt=""
           />
         </div>
@@ -170,7 +171,7 @@ const deletePhoto = async () => {
           <div className="photo-modal-user">
             {modalPhoto.avatar ? (
               <img
-                src={`http://localhost:5000${modalPhoto.avatar}`}
+                src={getFileUrl(modalPhoto.avatar)}
                 alt=""
               />
             ) : (
@@ -239,7 +240,7 @@ const deletePhoto = async () => {
               <div className="photo-comment" key={comment.id}>
                 {comment.avatar ? (
                   <img
-                    src={`http://localhost:5000${comment.avatar}`}
+                    src={getFileUrl(comment.avatar)}
                     alt=""
                   />
                 ) : (
@@ -336,7 +337,7 @@ const deletePhoto = async () => {
               <div className="likes-user" key={user.id}>
                 {user.avatar ? (
                   <img
-                    src={`http://localhost:5000${user.avatar}`}
+                    src={getFileUrl(user.avatar)}
                     alt=""
                   />
                 ) : (

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FiSearch, FiX } from 'react-icons/fi';
 import { searchUsersApi } from '../api/usersApi';
+import { getFileUrl } from '../api/fileUrl';
 
 function UserSearch({ onOpenUser }) {
   const [query, setQuery] = useState('');
@@ -96,7 +97,7 @@ function UserSearch({ onOpenUser }) {
             >
               {user.avatar ? (
                 <img
-                  src={`http://localhost:5000${user.avatar}`}
+                  src={getFileUrl(user.avatar)}
                   alt=""
                 />
               ) : (

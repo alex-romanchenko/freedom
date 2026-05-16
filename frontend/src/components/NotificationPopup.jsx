@@ -1,3 +1,4 @@
+import { getFileUrl } from '../api/fileUrl';
 function NotificationPopup({ user, text, onClick, onClose }) {
   if (!user) return null;
 
@@ -19,7 +20,7 @@ function NotificationPopup({ user, text, onClick, onClose }) {
       <div className="popup-user">
         {user.avatar ? (
           <img
-            src={`http://localhost:5000${user.avatar}`}
+            src={getFileUrl(user.avatar)}
             alt=""
           />
         ) : (

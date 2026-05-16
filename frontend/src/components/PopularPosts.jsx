@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getPopularPostsApi } from '../api/postsApi';
+import { getFileUrl } from '../api/fileUrl';
 
 function PopularPosts({ onOpenUser }) {
   const [posts, setPosts] = useState([]);
@@ -28,7 +29,7 @@ function PopularPosts({ onOpenUser }) {
             onClick={() => onOpenUser(post.username)}
           >
             {post.avatar ? (
-              <img src={`http://localhost:5000${post.avatar}`} alt="" />
+              <img src={getFileUrl(post.avatar)} alt="" />
             ) : (
               <div className="popular-post-avatar">
                 {post.display_name?.[0] || '?'}
@@ -43,7 +44,7 @@ function PopularPosts({ onOpenUser }) {
           {post.image && (
             <img
               className="popular-post-image"
-              src={`http://localhost:5000${post.image}`}
+              src={getFileUrl(post.image)}
               alt=""
             />
           )}

@@ -5,6 +5,7 @@ import { unfollowUserApi, getUserFriendsApi } from '../api/followApi';
 import { createConversationApi } from '../api/messagesApi';
 import PostCard from '../components/PostCard';
 import PhotoModal from '../components/PhotoModal';
+import { getFileUrl } from '../api/fileUrl';
 
 function UserProfile({
   username,
@@ -65,7 +66,7 @@ function UserProfile({
         {user.headerImage || user.header_image ? (
           <img
             className="profile-cover"
-            src={`http://localhost:5000${user.headerImage || user.header_image}`}
+            src={getFileUrl(user.headerImage || user.header_image)}
             alt=""
           />
         ) : (
@@ -78,7 +79,7 @@ function UserProfile({
           {user.avatar ? (
             <img
                 className="profile-avatar"
-                src={`http://localhost:5000${user.avatar}`}
+                src={getFileUrl(user.avatar)}
                 alt=""
                 onClick={() =>
                   setSelectedAvatar({
@@ -145,7 +146,7 @@ function UserProfile({
             >
               {friend.avatar ? (
                 <img
-                  src={`http://localhost:5000${friend.avatar}`}
+                  src={getFileUrl(friend.avatar)}
                   alt=""
                 />
               ) : (
@@ -180,7 +181,7 @@ function UserProfile({
           {photos.map((photo) => (
             <img
               key={photo.id}
-              src={`http://localhost:5000${photo.image}`}
+              src={getFileUrl(photo.image)}
               alt=""
               onClick={() => setSelectedPhoto(photo)}
             />

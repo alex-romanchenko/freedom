@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api/api';
 import PhotoModal from '../components/PhotoModal';
+import { getFileUrl } from '../api/fileUrl';
 
 export default function Photos({ userId }) {
   const [photos, setPhotos] = useState([]);
@@ -110,7 +111,7 @@ export default function Photos({ userId }) {
             onClick={() => setSelectedPhoto(photo)}
           >
             <img
-              src={`http://localhost:5000${photo.image}`}
+              src={getFileUrl(photo.image)}
               alt=""
             />
 
@@ -163,7 +164,7 @@ export default function Photos({ userId }) {
             {likesUsers.map((user) => (
               <div className="likes-user" key={user.id}>
                 {user.avatar ? (
-                  <img src={`http://localhost:5000${user.avatar}`} alt="" />
+                  <img src={getFileUrl(user.avatar)} alt="" />
                 ) : (
                   <div className="likes-avatar">
                     {user.display_name?.[0] || '?'}

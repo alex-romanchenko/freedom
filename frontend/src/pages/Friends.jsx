@@ -8,6 +8,7 @@ import {
   markRequestsSeenApi,
 } from '../api/followApi';
 import { createConversationApi } from '../api/messagesApi';
+import { getFileUrl } from '../api/fileUrl';
 
 function Friends({ onOpenChat, onOpenUser, onRequestsSeen, requestSignal }) {
   const [activeTab, setActiveTab] = useState('friends');
@@ -105,7 +106,7 @@ function Friends({ onOpenChat, onOpenUser, onRequestsSeen, requestSignal }) {
       return (
         <img
           className="friend-avatar"
-          src={`http://localhost:5000${user.avatar}`}
+          src={getFileUrl(user.avatar)}
           alt=""
           onClick={() => onOpenUser(user.username)}
           style={{ cursor: 'pointer' }}

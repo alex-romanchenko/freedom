@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getWhoToFollowApi } from '../api/usersApi';
 import FollowButton from './FollowButton';
+import { getFileUrl } from '../api/fileUrl';
 
 function WhoToFollow({ onOpenUser }) {
   const [users, setUsers] = useState([]);
@@ -30,7 +31,7 @@ function WhoToFollow({ onOpenUser }) {
           >
             {user.avatar ? (
               <img
-                src={`http://localhost:5000${user.avatar}`}
+                src={getFileUrl(user.avatar)}
                 alt=""
               />
             ) : (

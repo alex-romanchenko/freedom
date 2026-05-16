@@ -5,6 +5,7 @@ import {
   markNotificationsReadApi,
   deleteNotificationApi,
 } from '../api/notificationsApi';
+import { getFileUrl } from '../api/fileUrl';
 
 const LIMIT = 20;
 
@@ -148,7 +149,7 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto }) {
               {item.avatar ? (
                 <img
                   className="notification-avatar"
-                  src={`http://localhost:5000${item.avatar}`}
+                  src={getFileUrl(item.avatar)}
                   alt=""
                   onClick={(e) => {
                     e.stopPropagation();
