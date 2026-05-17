@@ -20,6 +20,7 @@ import NotificationPopup from './components/NotificationPopup';
 import PhotoModal from './components/PhotoModal';
 import { getPostByIdApi } from './api/postsApi';
 import { getPhotoByIdApi } from './api/photosApi';
+import VerifyEmail from "./pages/VerifyEmail";
 
 import {
   IoHome,
@@ -63,7 +64,10 @@ function App() {
   const [activePost, setActivePost] = useState(null);
   const [photosUserId, setPhotosUserId] = useState(null);
 
-  const isResetPasswordPage = window.location.pathname === '/reset-password';
+ const path = window.location.pathname;
+
+const isResetPasswordPage = path === '/reset-password';
+const isVerifyEmailPage = path === '/verify-email';
 
   const playNotificationSound = () => {
     const audio = new Audio('/sounds/message.mp3');
@@ -222,7 +226,9 @@ function App() {
   if (isResetPasswordPage) {
     return <ResetPassword />;
   }
-
+if (isVerifyEmailPage) {
+  return <VerifyEmail />;
+}
   if (!isAuth) {
     return (
       <Auth
@@ -236,6 +242,7 @@ function App() {
   }
 
   return (
+    
     <div className={`desktop-layout ${page === 'chat' ? 'chat-mode' : ''}`}>
       <aside className="left-sidebar">
         <h1 className="logo">Freedom</h1>
@@ -325,7 +332,7 @@ function App() {
           <span>Logout</span>
         </button>
       </aside>
-
+          
       <main className="main-content">
         {activePost && (
           <PostDetails
@@ -381,7 +388,7 @@ function App() {
               }}
           />
         )}
-
+        
         {!activePost && page === 'favorites' && (
           <Favorites
             onOpenUser={(username) => {

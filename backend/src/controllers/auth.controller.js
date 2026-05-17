@@ -32,12 +32,11 @@ async function forgotPassword(req, res) {
         message: 'Please confirm your email first',
       });
     }
-
     const token = crypto.randomBytes(32).toString('hex');
 
     await createPasswordToken(user.id, token);
 
-    const resetLink = `http://localhost:5173/reset-password?token=${token}`;
+    const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${token}`;
 
     await sendEmail(
       user.email,
@@ -132,7 +131,7 @@ async function register(req, res) {
 
     await createEmailToken(user.id, token);
 
-    const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${token}`;
+    const verifyLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
     await sendEmail(
       user.email,
@@ -262,7 +261,7 @@ async function resendVerificationEmail(req, res) {
 
     await createEmailToken(user.id, token);
 
-    const verifyLink = `http://localhost:5000/api/auth/verify-email?token=${token}`;
+    const verifyLink = `${process.env.CLIENT_URL}/verify-email?token=${token}`;
 
     await sendEmail(
       user.email,
