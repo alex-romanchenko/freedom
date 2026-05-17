@@ -332,22 +332,26 @@ useEffect(() => {
 }, [showChatEmoji]);
 
   useEffect(() => {
-    function handleNewMessage(data) {
-          if (data.message.sender_id !== currentUser?.id) {
-          playMessageSound();
-        }
-      if (data.conversationId === selectedConv?.id) {
+function handleNewMessage(data) {
+  const isMyMessage = data.message.sender_id === currentUser?.id;
 
-        shouldScrollToBottomRef.current = true;
-        setMessages((prev) => [...prev, data.message]);
+  if (!isMyMessage) {
+    playMessageSound();
+  }
 
-        api.post(`/messages/${data.conversationId}/read`).then(() => {
-          refreshConversations();
-        });
-      } else {
-        refreshConversations();
-      }
-    }
+  if (data.conversationId === selectedConv?.id) {
+  
+    shouldScrollToBottomRef.current = true;
+
+    setMessages((prev) => [...prev, data.message]);
+
+    api.post(`/messages/${data.conversationId}/read`).then(() => {
+      refreshConversations();
+    });
+  } else {
+    refreshConversations();
+  }
+}
 
     socket.on('newMessage', handleNewMessage);
 
