@@ -2665,3 +2665,25 @@ button {
   background: #fee2e2;
   color: #dc2626;
 }
+
+.chat-textarea {
+  color: #111827;
+  caret-color: #111827;
+  -webkit-text-fill-color: #111827;
+  opacity: 1;
+}
+
+.chat-textarea::placeholder {
+  color: #94a3b8;
+  -webkit-text-fill-color: #94a3b8;
+}
+.chat-input-box {
+  background: #ffffff;
+}
+
+.chat-send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}

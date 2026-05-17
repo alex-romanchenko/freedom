@@ -136,9 +136,12 @@ const sendMessage = async () => {
 
   let finalText = text;
 
-  if (replyTo) {
-    finalText = `Reply to ${replyTo.display_name}: ${replyTo.text.slice(0, 80)}\n${text}`;
-  }
+if (replyTo) {
+  const parsedReply = parseReplyMessage(replyTo.text);
+  const cleanPreview = parsedReply ? parsedReply.text : replyTo.text;
+
+  finalText = `Reply to ${replyTo.display_name}: ${cleanPreview.slice(0, 80)}\n${text}`;
+}
 
   const formData = new FormData();
   formData.append('text', finalText);
@@ -154,6 +157,9 @@ const sendMessage = async () => {
   setText('');
   setReplyTo(null);
   setChatImage(null);
+  if (chatImageInputRef.current) {
+  chatImageInputRef.current.value = '';
+}
 
   if (textareaRef.current) {
     textareaRef.current.style.height = 'auto';
@@ -214,8 +220,11 @@ const startEditMessage = () => {
   setEditingMessage(messageMenu.message);
   setText(messageMenu.message.text);
   closeMessageMenu();
-};
 
+  setTimeout(() => {
+    textareaRef.current?.focus();
+  }, 0);
+};
 const saveEditedMessage = async () => {
   if (!editingMessage || !text.trim()) return;
 
@@ -247,6 +256,10 @@ const saveEditedMessage = async () => {
 const startReply = () => {
   setReplyTo(messageMenu.message);
   closeMessageMenu();
+
+  setTimeout(() => {
+    textareaRef.current?.focus();
+  }, 0);
 };
 
 const forwardMessage = () => {
@@ -606,7 +619,11 @@ useEffect(() => {
             {replyTo && (
   <div className="reply-preview">
     <strong>Reply to {replyTo.display_name}</strong>
-    <p>{replyTo.text}</p>
+    <p>
+      {parseReplyMessage(replyTo.text)
+        ? parseReplyMessage(replyTo.text).text
+        : replyTo.text}
+</p>
     <button onClick={() => setReplyTo(null)}>×</button>
   </div>
 )}
@@ -653,8 +670,15 @@ useEffect(() => {
       ref={chatImageInputRef}
       type="file"
       accept="image/*"
-      hidden
-      onChange={(e) => setChatImage(e.target.files[0])}
+      style={{ display: 'none' }}
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+
+        if (!file) return;
+
+        setChatImage(file);
+        e.target.value = '';
+      }}
     />
 
     <textarea
@@ -690,12 +714,14 @@ useEffect(() => {
     </button>
   </div>
 
-  <button
-    className="chat-send-btn"
-    onClick={editingMessage ? saveEditedMessage : sendMessage}
-  >
-    <FiSend />
-  </button>
+<button
+  type="button"
+  className="chat-send-btn"
+  disabled={!text.trim() && !chatImage}
+  onClick={editingMessage ? saveEditedMessage : sendMessage}
+>
+  <FiSend />
+</button>
 </div>
 {openedImage && (
   <div
