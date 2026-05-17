@@ -337,6 +337,8 @@ useEffect(() => {
           playMessageSound();
         }
       if (data.conversationId === selectedConv?.id) {
+
+        shouldScrollToBottomRef.current = true;
         setMessages((prev) => [...prev, data.message]);
 
         api.post(`/messages/${data.conversationId}/read`).then(() => {

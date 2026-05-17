@@ -54,7 +54,19 @@ const payload = {
 
 io.to(`conversation_${conversation.id}`).emit('newMessage', payload);
 
-io.to(`user_${userId}`).emit('newMessage', payload);
+const conversationRoom = io.sockets.adapter.rooms.get(
+  `conversation_${conversation.id}`
+);
+
+const userRoom = io.sockets.adapter.rooms.get(`user_${userId}`);
+
+if (userRoom) {
+  userRoom.forEach((socketId) => {
+    if (!conversationRoom || !conversationRoom.has(socketId)) {
+      io.to(socketId).emit('newMessage', payload);
+    }
+  });
+}
 
     res.status(201).json({
       message: 'Message sent successfully',
