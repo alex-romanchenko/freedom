@@ -103,6 +103,19 @@ async function markIncomingRequestsSeen(userId) {
   );
 }
 
+async function getFollowersIds(userId) {
+  const result = await pool.query(
+    `
+    SELECT follower_id
+    FROM follows
+    WHERE following_id = $1
+    `,
+    [userId]
+  );
+
+  return result.rows.map((row) => row.follower_id);
+}
+
 module.exports = {
   followUser,
   unfollowUser,
@@ -111,4 +124,5 @@ module.exports = {
   getUserFriendsByUsername,
   getIncomingRequests,
   markIncomingRequestsSeen,
+  getFollowersIds,
 };

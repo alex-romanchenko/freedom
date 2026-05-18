@@ -6,15 +6,36 @@ const storage = multer.diskStorage({
     cb(null, 'public/uploads/posts');
   },
   filename: function (req, file, cb) {
-    const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const uniqueName =
+      Date.now() + '-' + Math.round(Math.random() * 1e9);
+
     cb(null, uniqueName + path.extname(file.originalname));
   },
 });
 
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'image/heic',
+    'image/heif',
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed'), false);
+  }
+};
+
 const uploadPostImage = multer({
   storage,
+  fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize: 10 * 1024 * 1024, // 10MB (з запасом під iPhone)
   },
 });
 

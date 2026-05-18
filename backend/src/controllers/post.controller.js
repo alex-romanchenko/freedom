@@ -14,7 +14,9 @@ const {
   
 } = require('../models/post.model');
 const { createNotification } = require('../models/notification.model');
+const { getFollowersIds } = require('../models/follow.model');
 const db = require('../db');
+
 
 async function createNewPost(req, res) {
   try {
@@ -40,15 +42,43 @@ async function createNewPost(req, res) {
     }
 
     const post = await createPost({
-      userId,
-      text,
-      image: imagePath,
-    });
+  userId,
+  text,
+  image: imagePath,
+});
 
-    res.status(201).json({
-      message: 'Post created successfully',
-      post,
+const fullPost = await getPostById(post.id);
+
+try {
+  const followersIds = await getFollowersIds(userId);
+
+  for (const followerId of followersIds) {
+    await createNotification({
+      userId: followerId,
+      senderId: userId,
+      type: 'new_post',
+      entityId: fullPost.id,
+      entityType: 'post',
+      text: fullPost.text,
     });
+  }
+
+  const io = req.app.get('io');
+
+  followersIds.forEach((followerId) => {
+    io.to(`user_${followerId}`).emit('newPost', {
+      ownerId: followerId,
+      post: fullPost,
+    });
+  });
+} catch (notifyError) {
+  console.error('New post notification error:', notifyError);
+}
+
+res.status(201).json({
+  message: 'Post created successfully',
+  post: fullPost,
+});
   } catch (error) {
     res.status(500).json({
       message: 'Error creating post',
