@@ -57,11 +57,13 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto }) {
     socket.on('newLike', handleNewNotification);
     socket.on('newComment', handleNewNotification);
     socket.on('newFriendRequest', handleNewNotification);
+    socket.on('newPost', handleNewNotification);
 
     return () => {
       socket.off('newLike', handleNewNotification);
       socket.off('newComment', handleNewNotification);
       socket.off('newFriendRequest', handleNewNotification);
+      socket.off('newPost', handleNewNotification);
     };
   }, [offset, loading]);
 
@@ -99,6 +101,7 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto }) {
 
   const getText = (item) => {
     if (item.type === 'friend_request') return 'sent you a friend request';
+    if (item.type === 'new_post') return `added a new post: ${item.text}`;
     if (item.type === 'like_post') return 'liked your post';
     if (item.type === 'like_photo') return 'liked your photo';
     if (item.type === 'comment_post') return `commented on your post: ${item.text}`;

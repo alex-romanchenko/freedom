@@ -32,11 +32,8 @@ function Auth({ onLoginSuccess }) {
           rememberMe,
         });
 
-        if (rememberMe) {
-          localStorage.setItem('token', res.data.token);
-        } else {
-          sessionStorage.setItem('token', res.data.token);
-        }
+        localStorage.setItem('token', res.data.token);
+        sessionStorage.removeItem('token');
 
         localStorage.setItem('user', JSON.stringify(res.data.user));
 
@@ -177,7 +174,7 @@ function Auth({ onLoginSuccess }) {
             </div>
           )}
 
-          <button type="button" type="submit" className="primary-btn auth-main-btn">
+          <button type="submit" className="primary-btn auth-main-btn">
             {isLogin ? 'Login' : 'Create account'}
           </button>
             </form>

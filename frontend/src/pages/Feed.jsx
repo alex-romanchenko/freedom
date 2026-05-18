@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import socket from '../socket';
 import { getFollowingPostsApi, getMyPostsApi } from '../api/postsApi';
 import CreatePostForm from '../components/CreatePostForm';
 import PostCard from '../components/PostCard';
@@ -22,6 +23,26 @@ function Feed({ onOpenUser, onPostClick }) {
 
   useEffect(() => {
     fetchPosts();
+  }, [activeTab]);
+
+  useEffect(() => {
+    const handleNewPost = (data) => {
+      if (activeTab !== 'following') return;
+
+      setPosts((prev) => {
+        const exists = prev.some((post) => post.id === data.post.id);
+
+        if (exists) return prev;
+
+        return [data.post, ...prev];
+      });
+    };
+
+    socket.on('newPost', handleNewPost);
+
+    return () => {
+      socket.off('newPost', handleNewPost);
+    };
   }, [activeTab]);
 
   return (

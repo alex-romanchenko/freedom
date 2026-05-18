@@ -2687,3 +2687,54 @@ button {
   box-shadow: none;
   transform: none;
 }
+
+.selected-image-preview {
+  margin: 12px 0 14px;
+}
+
+.selected-image-preview img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+  margin-top: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.selected-image-preview {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 12px 0 14px;
+}
+
+.selected-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+  border: 1px solid #e5e7eb;
+}
+
+.remove-selected-image-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.9);
+  color: white;
+  font-size: 22px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-selected-image-btn:hover {
+  background: #dc2626;
+}

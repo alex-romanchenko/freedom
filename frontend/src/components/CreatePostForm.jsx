@@ -5,6 +5,7 @@ import EmojiPicker from 'emoji-picker-react';
 function CreatePostForm({ onPostCreated }) {
   const [text, setText] = useState('');
   const [image, setImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const fileInputRef = useRef(null);
@@ -28,12 +29,33 @@ function CreatePostForm({ onPostCreated }) {
     };
   }, [showEmojiPicker]);
 
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const handleSubmit = async () => {
     if (!text.trim() && !image) return;
 
     try {
       const formData = new FormData();
-      formData.append('text', text);
+      formData.append('text', text.trim());
 
       if (image) {
         formData.append('image', image);
@@ -43,13 +65,14 @@ function CreatePostForm({ onPostCreated }) {
 
       setText('');
       setImage(null);
+      setImagePreview(null);
       setShowEmojiPicker(false);
 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
-      onPostCreated();
+      onPostCreated && onPostCreated();
     } catch (err) {
       console.error(err);
       alert('Error creating post');
@@ -65,10 +88,25 @@ function CreatePostForm({ onPostCreated }) {
         onChange={(e) => setText(e.target.value)}
       />
 
-      {image && (
-        <div className="selected-image-name">
-          Selected: {image.name}
-        </div>
+      {imagePreview && (
+      <div className="selected-image-preview">
+        <img src={imagePreview} alt="Preview" />
+
+        <button
+          type="button"
+          className="remove-selected-image-btn"
+          onClick={() => {
+            setImage(null);
+            setImagePreview(null);
+
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          }}
+        >
+          ×
+        </button>
+      </div>
       )}
 
       <div className="composer-actions">
@@ -96,7 +134,7 @@ function CreatePostForm({ onPostCreated }) {
           type="file"
           accept="image/*"
           hidden
-          onChange={(e) => setImage(e.target.files[0])}
+          onChange={handleImageChange}
         />
 
         <button

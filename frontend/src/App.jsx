@@ -187,11 +187,13 @@ const isVerifyEmailPage = path === '/verify-email';
     socket.on('newLike', handleNewLike);
     socket.on('newComment', handleNewComment);
     socket.on('newFriendRequest', handleNewFriendRequest);
+    socket.on('newFriendRequest', handleNewFriendRequest);
 
     return () => {
       socket.off('newMessage', handleNewMessage);
       socket.off('newLike', handleNewLike);
       socket.off('newComment', handleNewComment);
+      socket.off('newFriendRequest', handleNewFriendRequest);
       socket.off('newFriendRequest', handleNewFriendRequest);
     };
   }, [isAuth, page]);
