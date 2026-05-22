@@ -91,7 +91,10 @@ async function getFeed(req, res) {
   try {
     const userId = req.user.id;
 
-    const posts = await getFeedByFollowing(userId);
+    const limit = Number(req.query.limit) || 20;
+    const offset = Number(req.query.offset) || 0;
+
+    const posts = await getFeedByFollowing(userId, limit, offset);
 
     res.json(posts);
   } catch (error) {
@@ -224,7 +227,10 @@ async function getMyFeed(req, res) {
   try {
     const userId = req.user.id;
 
-    const posts = await getMyPosts(userId);
+    const limit = Number(req.query.limit) || 20;
+    const offset = Number(req.query.offset) || 0;
+
+    const posts = await getMyPosts(userId, limit, offset);
 
     res.json(posts);
   } catch (error) {

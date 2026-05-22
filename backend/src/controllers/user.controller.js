@@ -93,7 +93,7 @@ async function getUserProfile(req, res) {
         country: user.country,
         gender: user.gender,
 
-        isFollowing,
+        is_following: isFollowing,
       },
       posts,
     });

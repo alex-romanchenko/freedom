@@ -6,6 +6,7 @@ import {
   deletePostApi,
 } from '../api/postsApi';
 import { getFileUrl } from '../api/fileUrl';
+import { IoHeartOutline, IoHeart } from 'react-icons/io5';
 
 function PostCard({
   post,
@@ -139,7 +140,7 @@ function PostCard({
             className={`like-btn ${liked ? 'liked' : ''}`}
             onClick={handleLike}
           >
-            {liked ? '♥' : '♡'}
+            {liked ? <IoHeart /> : <IoHeartOutline />}
           </button>
 
           <span className="username">{likesCount}</span>

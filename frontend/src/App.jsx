@@ -241,6 +241,20 @@ useEffect(() => {
     setPage('photos');
   };
 
+  const openUserProfile = (username) => {
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+
+  setActivePost(null);
+
+  if (currentUser?.username === username) {
+    setPage('profile');
+    return;
+  }
+
+  setViewUsername(username);
+  setPage('userProfile');
+};
+
   if (isResetPasswordPage) {
     return <ResetPassword />;
   }
@@ -428,10 +442,7 @@ if (isVerifyEmailPage) {
               setSelectedUserId(userId);
               setPage('chat');
             }}
-            onOpenUser={(username) => {
-              setViewUsername(username);
-              setPage('userProfile');
-            }}
+            onOpenUser={openUserProfile}
             onOpenPhotos={openPhotos}
             onPostClick={setActivePost}
           />

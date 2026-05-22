@@ -84,12 +84,17 @@ function Auth({ onLoginSuccess }) {
             {isLogin ? 'Login to Freedom' : 'Create your Freedom account'}
           </h2>
 
-          {authError && (
-            <div className="error-message">
-              {authError}
-            </div>
-            
-          )}
+            {authError && (
+              <div
+                className={
+                  authError.includes('mailbox')
+                    ? 'success-message'
+                    : 'error-message'
+                }
+              >
+                {authError}
+              </div>
+            )}
             {authError.includes('mailbox') && (
             <button
                 className="link-btn"

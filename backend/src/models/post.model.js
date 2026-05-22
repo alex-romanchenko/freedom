@@ -73,7 +73,7 @@ async function getLikedPosts(userId) {
   return result.rows;
 }
 
-async function getFeedByFollowing(userId) {
+async function getFeedByFollowing(userId, limit = 20, offset = 0) {
   const result = await pool.query(`
     SELECT 
       posts.id,
@@ -98,7 +98,8 @@ async function getFeedByFollowing(userId) {
     WHERE follows.follower_id = $1
     GROUP BY posts.id, users.id, my_likes.user_id
     ORDER BY posts.created_at DESC
-  `, [userId]);
+    LIMIT $2 OFFSET $3
+  `, [userId, limit, offset]);
 
   return result.rows;
 }
@@ -152,7 +153,7 @@ async function deletePostById(postId, userId) {
   );
 }
 
-async function getMyPosts(userId) {
+async function getMyPosts(userId, limit = 20, offset = 0) {
   const result = await pool.query(`
     SELECT 
       posts.id,
@@ -176,7 +177,8 @@ async function getMyPosts(userId) {
     WHERE posts.user_id = $1
     GROUP BY posts.id, users.id, my_likes.user_id
     ORDER BY posts.created_at DESC
-  `, [userId]);
+    LIMIT $2 OFFSET $3
+  `, [userId, limit, offset]);
 
   return result.rows;
 }

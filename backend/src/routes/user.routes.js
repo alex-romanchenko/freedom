@@ -8,10 +8,10 @@ const uploadHeader = require('../middleware/uploadHeader');
 
 
 const router = express.Router();
+router.get('/me', authMiddleware, getMyProfile);
 router.get('/who-to-follow', authMiddleware, getWhoToFollow);
 router.get('/search', authMiddleware, searchUsersController);
 router.get('/:username', authMiddleware, getUserProfile);
-router.get('/me', authMiddleware, getMyProfile);
 router.put('/me', authMiddleware, updateMyProfile);
 router.put('/me/avatar', authMiddleware, uploadAvatar.single('avatar'), updateMyAvatar);
 router.put('/me/header', authMiddleware, uploadHeader.single('headerImage'), updateMyHeaderImage);

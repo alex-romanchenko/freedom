@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../api/api';
 import { getUserProfileApi } from '../api/usersApi';
-import { unfollowUserApi, getUserFriendsApi } from '../api/followApi';
+import { getUserFriendsApi } from '../api/followApi';
+import FollowButton from '../components/FollowButton';
 import { createConversationApi } from '../api/messagesApi';
 import PostCard from '../components/PostCard';
 import PhotoModal from '../components/PhotoModal';
@@ -42,10 +43,7 @@ function UserProfile({
     }
   }, [username]);
 
-  const handleUnfollow = async () => {
-    await unfollowUserApi(profile.user.id);
-    loadProfile();
-  };
+
 
   const handleMessage = async () => {
     await createConversationApi(profile.user.id);
@@ -101,9 +99,10 @@ function UserProfile({
           </div>
 
           <div className="profile-actions">
-            <button className="secondary-btn" onClick={handleUnfollow}>
-              Unfollow
-            </button>
+            <FollowButton
+              userId={user.id}
+              initialIsFollowing={user.is_following}
+            />
 
             <button className="primary-btn" onClick={handleMessage}>
               Message

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/api';
 import EmojiPicker from 'emoji-picker-react';
 import { getFileUrl } from '../api/fileUrl';
+import { IoHeartOutline, IoHeart } from 'react-icons/io5';
 
 export default function PhotoModal({ photo, onClose, onPhotoChanged }) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -268,10 +269,10 @@ const deletePhoto = async () => {
 
           <div className="photo-modal-actions">
             <button
-              className={`like-btn ${modalPhoto.is_liked ? 'liked' : ''}`}
+              className="like-btn"
               onClick={toggleLike}
             >
-              ♥
+              {modalPhoto.is_liked ? <IoHeart /> : <IoHeartOutline />}
             </button>
 
             <button className="likes-count" onClick={loadLikes}>

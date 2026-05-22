@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import api from '../api/api';
 import PhotoModal from '../components/PhotoModal';
 import { getFileUrl } from '../api/fileUrl';
+import { IoHeartOutline, IoHeart } from 'react-icons/io5';
 
 export default function Photos({ userId }) {
   const [photos, setPhotos] = useState([]);
@@ -122,12 +123,12 @@ export default function Photos({ userId }) {
             )}
 
             <div className="photo-card-actions">
-              <button
-                className={`like-btn ${photo.is_liked ? 'liked' : ''}`}
-                onClick={(e) => toggleLike(photo, e)}
-              >
-                ♥
-              </button>
+            <button
+              className="like-btn"
+              onClick={toggleLike}
+            >
+              {photo.is_liked ? <IoHeart /> : <IoHeartOutline />}
+            </button>
 
               <button
                 className="photo-count-btn"

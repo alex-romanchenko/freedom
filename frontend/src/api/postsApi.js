@@ -33,13 +33,13 @@ export async function deletePostApi(postId) {
   return res.data;
 }
 
-export async function getMyPostsApi() {
-  const res = await api.get('/posts/my');
+export async function getMyPostsApi(limit = 20, offset = 0) {
+  const res = await api.get(`/posts/my?limit=${limit}&offset=${offset}`);
   return res.data;
 }
 
-export async function getFollowingPostsApi() {
-  const res = await api.get('/posts');
+export async function getFollowingPostsApi(limit = 20, offset = 0) {
+  const res = await api.get(`/posts?limit=${limit}&offset=${offset}`);
   return res.data;
 }
 
