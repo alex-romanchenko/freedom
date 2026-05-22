@@ -101,6 +101,7 @@ const isVerifyEmailPage = path === '/verify-email';
   };
 
   const refreshNotificationsCount = async () => {
+
     try {
       const data = await getNotificationsApi();
 
@@ -113,17 +114,21 @@ const isVerifyEmailPage = path === '/verify-email';
   };
 
   useEffect(() => {
-    if (!isAuth) return;
+  if (!isAuth) return;
 
-    const currentUser = JSON.parse(localStorage.getItem('user'));
+  const currentUser = JSON.parse(localStorage.getItem('user'));
 
-    if (currentUser?.id) {
-      if (!socket.connected) {
-        socket.connect();
-      }
+  if (!currentUser?.id) return;
 
-      socket.emit('joinUser', String(currentUser.id));
-    }
+  if (!socket.connected) {
+    socket.connect();
+  }
+
+  socket.emit('joinUser', String(currentUser.id));
+}, [isAuth]);
+
+useEffect(() => {
+  if (!isAuth) return;
 
     refreshUnreadCount();
     refreshFriendRequestsCount();
