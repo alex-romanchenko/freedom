@@ -96,9 +96,34 @@ async function register(req, res) {
   try {
     const { username, email, password, displayName } = req.body;
 
-    if (!username || !email || !password) {
+    const usernameRegex = /^[A-Za-z]{2,10}$/;
+    const displayNameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!usernameRegex.test(username)) {
       return res.status(400).json({
-        message: 'Username, email and password are required',
+        message:
+          'Username must contain only letters and be 2-10 characters long',
+      });
+    }
+
+    if (displayName && !displayNameRegex.test(displayName)) {
+      return res.status(400).json({
+        message:
+          'Display name must contain only letters and be 2-10 characters long',
+      });
+    }
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: 'Enter a valid email address',
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        message:
+          'Password must be at least 6 characters long',
       });
     }
 

@@ -9,6 +9,7 @@ function Auth({ onLoginSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [errors, setErrors] = useState({});
 
   const [form, setForm] = useState({
     username: '',
@@ -17,13 +18,101 @@ function Auth({ onLoginSuccess }) {
     displayName: '',
   });
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  setForm((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+
+  validateField(name, value);
+};
+
+  const validateField = (name, value) => {
+  let error = '';
+
+  if (name === 'username') {
+    if (value.length < 2) {
+      error = 'Minimum 2 characters';
+    } else if (value.length > 12) {
+      error = 'Maximum 12 characters';
+    } else if (!/^[A-Za-z]+$/.test(value)) {
+      error = 'Only English letters allowed';
+    }
+  }
+
+  if (name === 'displayName') {
+    if (value.length > 0 && value.length < 2) {
+      error = 'Minimum 2 characters';
+    } else if (value.length > 12) {
+      error = 'Maximum 12 characters';
+    } else if (
+      value &&
+      !/^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]+$/.test(value)
+    ) {
+      error = 'Only letters allowed';
+    }
+  }
+
+  if (name === 'email') {
+    if (value.includes(' ')) {
+      error = 'Email cannot contain spaces';
+    } else if (
+      value &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+    ) {
+      error = 'Invalid email address';
+    }
+  }
+
+  if (name === 'password') {
+    if (value.includes(' ')) {
+      error = 'Password cannot contain spaces';
+    } else if (value.length < 6) {
+      error = 'Minimum 6 characters';
+    }
+  }
+
+  setErrors((prev) => ({
+    ...prev,
+    [name]: error,
+  }));
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const usernameRegex = /^[A-Za-z]{2,10}$/;
+    const displayNameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    if (!isLogin) {
+  if (!usernameRegex.test(form.username)) {
+    setAuthError(
+      'Username must contain only letters and be 2-10 characters long'
+    );
+    return;
+  }
+
+  if (!displayNameRegex.test(form.displayName)) {
+    setAuthError(
+      'Display name must contain only letters and be 2-10 characters long'
+    );
+    return;
+  }
+
+  if (!emailRegex.test(form.email)) {
+    setAuthError('Enter a valid email address');
+    return;
+  }
+
+  if (form.password.length < 6) {
+    setAuthError(
+      'Password must be at least 6 characters long'
+    );
+    return;
+  }
+}
     try {
       if (isLogin) {
         const res = await api.post('/auth/login', {
@@ -114,7 +203,13 @@ function Auth({ onLoginSuccess }) {
                 value={form.username}
                 onChange={handleChange}
               />
+
             </div>
+                          {errors.username && (
+              <p className="input-error">
+                {errors.username}
+              </p>
+            )}
 
               <div className="input-with-icon">
                 <FiUsers className="input-icon" />
@@ -124,7 +219,13 @@ function Auth({ onLoginSuccess }) {
                   value={form.displayName}
                   onChange={handleChange}
                 />
+
               </div>
+               {errors.displayName && (
+                <p className="input-error">
+                  {errors.displayName}
+                </p>
+              )}
             </>
           )}
 
@@ -136,7 +237,13 @@ function Auth({ onLoginSuccess }) {
               value={form.email}
               onChange={handleChange}
             />
+
           </div>
+            {errors.email && (
+              <p className="input-error">
+                {errors.email}
+              </p>
+            )}
 
           <div className="input-with-icon">
             <FiLock className="input-icon" />
@@ -149,6 +256,7 @@ function Auth({ onLoginSuccess }) {
               onChange={handleChange}
             />
 
+
             <button
               type="button"
               className="eye-btn"
@@ -157,6 +265,11 @@ function Auth({ onLoginSuccess }) {
               {showPassword ? <FiEyeOff /> : <FiEye />}
             </button>
           </div>
+                      {errors.password && (
+              <p className="input-error">
+                {errors.password}
+              </p>
+            )}
           
           {isLogin && (
             <div className="auth-row">
