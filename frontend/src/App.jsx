@@ -118,7 +118,11 @@ const isVerifyEmailPage = path === '/verify-email';
     const currentUser = JSON.parse(localStorage.getItem('user'));
 
     if (currentUser?.id) {
-      socket.emit('joinUser', currentUser.id);
+      if (!socket.connected) {
+        socket.connect();
+      }
+
+      socket.emit('joinUser', String(currentUser.id));
     }
 
     refreshUnreadCount();
@@ -203,8 +207,15 @@ const isVerifyEmailPage = path === '/verify-email';
       setShowLogoutConfirm(false);
     }
   }, [isAuth]);
+  
 
   const handleLogout = () => {
+    const currentUser = JSON.parse(localStorage.getItem('user'));
+
+      if (currentUser?.id) {
+        socket.emit('logoutUser', String(currentUser.id));
+        socket.disconnect();
+      }
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -437,10 +448,15 @@ if (isVerifyEmailPage) {
         )}
 
         {!activePost && page === 'chat' && (
-          <Chat
-            onUnreadCountChange={setUnreadMessagesCount}
-            selectedUserId={selectedUserId}
-          />
+        <Chat
+          onUnreadCountChange={setUnreadMessagesCount}
+          selectedUserId={selectedUserId}
+          setSelectedUserId={setSelectedUserId}
+          onOpenUser={(username) => {
+            setViewUsername(username);
+            setPage('userProfile');
+          }}
+        />
         )}
       </main>
 

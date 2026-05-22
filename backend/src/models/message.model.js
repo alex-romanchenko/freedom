@@ -39,10 +39,12 @@ async function getUserConversations(userId) {
     SELECT 
       conversations.id,
       conversations.updated_at,
+
       users.id AS user_id,
       users.username,
       users.display_name,
       users.avatar,
+      users.last_seen,
 
       last_message.text AS last_message_text,
       last_message.created_at AS last_message_created_at,
@@ -87,6 +89,10 @@ async function getUserConversations(userId) {
     GROUP BY 
       conversations.id,
       users.id,
+      users.username,
+      users.display_name,
+      users.avatar,
+      users.last_seen,
       last_message.text,
       last_message.created_at,
       last_message.sender_id
@@ -128,6 +134,7 @@ async function getMessagesByConversation(conversationId, before = null, limit = 
         messages.text,
         messages.created_at,
         messages.sender_id,
+        messages.status,
         users.username,
         users.display_name,
         users.avatar,
@@ -153,6 +160,7 @@ async function getMessageById(messageId) {
       messages.text,
       messages.created_at,
       messages.sender_id,
+      messages.status,
       users.username,
       users.display_name,
       users.avatar,
@@ -195,6 +203,64 @@ async function deleteMessageById(messageId) {
   );
 }
 
+async function markMessagesAsRead(conversationId, userId) {
+  const result = await pool.query(
+    `
+    UPDATE messages
+    SET status = 'read'
+    WHERE conversation_id = $1
+      AND sender_id <> $2
+      AND is_deleted = false
+      AND status <> 'read'
+    RETURNING id, conversation_id, sender_id, status
+    `,
+    [conversationId, userId]
+  );
+
+  return result.rows;
+}
+
+async function markMessageAsDelivered(messageId) {
+  const result = await pool.query(
+    `
+    UPDATE messages
+    SET status = 'delivered'
+    WHERE id = $1
+      AND status = 'sent'
+    RETURNING id, conversation_id, sender_id, status
+    `,
+    [messageId]
+  );
+
+  return result.rows[0];
+}
+
+async function markIncomingMessagesAsDelivered(userId) {
+  const result = await pool.query(
+    `
+    UPDATE messages
+    SET status = 'delivered'
+    FROM conversations
+    WHERE messages.conversation_id = conversations.id
+      AND messages.status = 'sent'
+      AND messages.is_deleted = false
+      AND messages.sender_id <> $1
+      AND (
+        conversations.user_one_id = $1
+        OR conversations.user_two_id = $1
+      )
+    RETURNING 
+      messages.id,
+      messages.conversation_id,
+      messages.sender_id,
+      messages.status
+    `,
+    [userId]
+  );
+
+  return result.rows;
+}
+
 module.exports = {
   findOrCreateConversation,
   createMessage,
@@ -205,4 +271,7 @@ module.exports = {
   deleteConversationById,
   updateMessageById,
   deleteMessageById,
+  markMessagesAsRead,
+  markMessageAsDelivered,
+  markIncomingMessagesAsDelivered,
 };

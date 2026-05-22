@@ -5,9 +5,11 @@ const {
   getMessagesByConversation,
   getMessageById,
   markConversationAsRead,
+  markMessagesAsRead,
   deleteConversationById,
   updateMessageById,
   deleteMessageById,
+  markMessageAsDelivered,
 } = require('../models/message.model');
 
 async function sendMessage(req, res) {
@@ -44,21 +46,33 @@ async function sendMessage(req, res) {
     });
 
     const fullMessage = await getMessageById(message.id);
+let finalMessage = fullMessage;
 
-    const io = req.app.get('io');
-
-const payload = {
-  conversationId: conversation.id,
-  message: fullMessage,
-};
-
-io.to(`conversation_${conversation.id}`).emit('newMessage', payload);
+const io = req.app.get('io');
 
 const conversationRoom = io.sockets.adapter.rooms.get(
   `conversation_${conversation.id}`
 );
 
 const userRoom = io.sockets.adapter.rooms.get(`user_${userId}`);
+
+if (userRoom) {
+  const deliveredMessage = await markMessageAsDelivered(message.id);
+
+  if (deliveredMessage) {
+    finalMessage = {
+      ...fullMessage,
+      status: 'delivered',
+    };
+  }
+}
+
+const payload = {
+  conversationId: conversation.id,
+  message: finalMessage,
+};
+
+io.to(`conversation_${conversation.id}`).emit('newMessage', payload);
 
 if (userRoom) {
   userRoom.forEach((socketId) => {
@@ -88,7 +102,19 @@ async function markAsRead(req, res) {
 
     await markConversationAsRead(conversationId, userId);
 
-    res.json({ message: 'Marked as read' });
+    const updatedMessages = await markMessagesAsRead(conversationId, userId);
+
+    const io = req.app.get('io');
+
+    io.to(`conversation_${conversationId}`).emit('messagesRead', {
+      conversationId: Number(conversationId),
+      messageIds: updatedMessages.map((m) => m.id),
+    });
+
+    res.json({
+      message: 'Marked as read',
+      updatedMessages,
+    });
   } catch (error) {
     res.status(500).json({
       message: 'Error marking as read',
@@ -197,6 +223,7 @@ async function deleteConversation(req, res) {
   }
 }
 
+
 module.exports = {
   sendMessage,
   getConversations,
@@ -206,4 +233,5 @@ module.exports = {
   deleteConversation,
   updateMessage,
   deleteMessage,
+  markMessagesAsRead,
 };
