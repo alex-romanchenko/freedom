@@ -30,6 +30,7 @@ export function useAudioCall(currentUserId) {
   const localVideoRef = useRef(null);
 const remoteVideoRef = useRef(null);
   const timerRef = useRef(null);
+  const pendingCandidatesRef = useRef([]);
 
   const createPeer = (targetUserId) => {
     const peer = new RTCPeerConnection(peerConfig);
@@ -112,7 +113,7 @@ const remoteVideoRef = useRef(null);
     await peer.setRemoteDescription(
       new RTCSessionDescription(incomingCall.offer)
     );
-
+    await flushPendingCandidates();
     const answer = await peer.createAnswer();
     await peer.setLocalDescription(answer);
 
@@ -196,13 +197,29 @@ const remoteVideoRef = useRef(null);
     }, 2000);
 
     setCallDuration(0);
-
+    pendingCandidatesRef.current = [];
     setIncomingCall(null);
     setCallUserId(null);
     setIsCalling(false);
     setIsInCall(false);
     setIsMuted(false);
   };
+
+  const flushPendingCandidates = async () => {
+  if (!peerRef.current) return;
+
+  for (const candidate of pendingCandidatesRef.current) {
+    try {
+      await peerRef.current.addIceCandidate(
+        new RTCIceCandidate(candidate)
+      );
+    } catch (err) {
+      console.error('Flush ICE candidate error:', err);
+    }
+  }
+
+  pendingCandidatesRef.current = [];
+};
 
   useEffect(() => {
     const handleIncomingCall = ({
@@ -224,6 +241,7 @@ const remoteVideoRef = useRef(null);
       await peerRef.current.setRemoteDescription(
         new RTCSessionDescription(answer)
       );
+      await flushPendingCandidates();
 
       setIsCalling(false);
       setIsInCall(true);
@@ -234,13 +252,22 @@ const remoteVideoRef = useRef(null);
         }, 1000);
     };
 
-    const handleIceCandidate = async ({ candidate }) => {
-      if (!peerRef.current || !candidate) return;
+const handleIceCandidate = async ({ candidate }) => {
+  if (!candidate) return;
 
-      await peerRef.current.addIceCandidate(
-        new RTCIceCandidate(candidate)
-      );
-    };
+  if (!peerRef.current || !peerRef.current.remoteDescription) {
+    pendingCandidatesRef.current.push(candidate);
+    return;
+  }
+
+  try {
+    await peerRef.current.addIceCandidate(
+      new RTCIceCandidate(candidate)
+    );
+  } catch (err) {
+    console.error('Add ICE candidate error:', err);
+  }
+};
 
     const handleCallEnded = () => {
       cleanupCall();
