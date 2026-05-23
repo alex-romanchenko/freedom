@@ -3,7 +3,14 @@ import socket from '../socket';
 
 const peerConfig = {
   iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
+    {
+      urls: 'stun:stun.l.google.com:19302',
+    },
+    {
+      urls: 'turn:freedom.viktorromanchenko.netxi.in:3478',
+      username: 'freedom',
+      credential: 'FreedomSecret123',
+    },
   ],
 };
 
@@ -50,22 +57,18 @@ const remoteVideoRef = useRef(null);
     return peer;
   };
 
-const getLocalMedia = async (withVideo = false) => {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: true,
-    video: withVideo,
-  });
+  const getLocalMedia = async (withVideo = false) => {
+    const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: withVideo,
+    });
 
-  localStreamRef.current = stream;
-
-  setTimeout(() => {
+    localStreamRef.current = stream;
     if (localVideoRef.current) {
-      localVideoRef.current.srcObject = stream;
-    }
-  }, 0);
-
-  return stream;
-};
+            localVideoRef.current.srcObject = stream;
+        }
+    return stream;
+  };
 
     const startCall = async (
     targetUserId,
@@ -95,38 +98,40 @@ const getLocalMedia = async (withVideo = false) => {
   };
 
   const acceptCall = async () => {
-  if (!incomingCall) return;
+    if (!incomingCall) return;
 
-  setIsVideoCall(Boolean(incomingCall.withVideo));
-  setIsInCall(true);
-  setCallUserId(incomingCall.from);
-  setCallStatus('In call');
+    const stream = await getLocalMedia(
+         incomingCall.withVideo
+    );
+    const peer = createPeer(incomingCall.from);
 
-  const stream = await getLocalMedia(incomingCall.withVideo);
-  const peer = createPeer(incomingCall.from);
+    stream.getTracks().forEach((track) => {
+      peer.addTrack(track, stream);
+    });
 
-  stream.getTracks().forEach((track) => {
-    peer.addTrack(track, stream);
-  });
+    await peer.setRemoteDescription(
+      new RTCSessionDescription(incomingCall.offer)
+    );
 
-  await peer.setRemoteDescription(
-    new RTCSessionDescription(incomingCall.offer)
-  );
+    const answer = await peer.createAnswer();
+    await peer.setLocalDescription(answer);
 
-  const answer = await peer.createAnswer();
-  await peer.setLocalDescription(answer);
+    socket.emit('answerCall', {
+      to: incomingCall.from,
+      answer,
+    });
 
-  socket.emit('answerCall', {
-    to: incomingCall.from,
-    answer,
-  });
+    setCallUserId(incomingCall.from);
+    setIncomingCall(null);
+    setIsInCall(true);
+    setIsVideoCall(Boolean(incomingCall.withVideo));
 
-  setIncomingCall(null);
+    setCallStatus('In call');
 
-  timerRef.current = setInterval(() => {
+    timerRef.current = setInterval(() => {
     setCallDuration((prev) => prev + 1);
-  }, 1000);
-};
+    }, 1000);
+  };
 
   const rejectCall = () => {
     if (incomingCall) {
