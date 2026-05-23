@@ -721,6 +721,12 @@ useEffect(() => {
         {selectedConv ? (
           <>
             <div className="chat-header">
+              <button
+                className="mobile-back-btn"
+                onClick={() => setSelectedConv(null)}
+              >
+                ←
+              </button>
                 <div
                   onClick={() => onOpenUser(selectedConv.username)}
                   style={{ cursor: 'pointer' }}
