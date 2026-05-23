@@ -119,6 +119,32 @@ try {
     });
   });
 
+socket.on('callUser', ({ to, offer, from, withVideo }) => {
+  console.log('CALL USER:', { from, to, withVideo });
+
+  io.to(`user_${to}`).emit('incomingCall', {
+    from,
+    offer,
+    withVideo,
+  });
+});
+
+socket.on('answerCall', ({ to, answer }) => {
+  io.to(`user_${to}`).emit('callAnswered', {
+    answer,
+  });
+});
+
+socket.on('iceCandidate', ({ to, candidate }) => {
+  io.to(`user_${to}`).emit('iceCandidate', {
+    candidate,
+  });
+});
+
+socket.on('endCall', ({ to }) => {
+  io.to(`user_${to}`).emit('callEnded');
+});
+
   socket.on('disconnect', async () => {
     let disconnectedUserId = null;
 

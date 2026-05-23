@@ -12,12 +12,14 @@ import {
 import EmojiPicker from 'emoji-picker-react';
 import { FiImage, FiSmile } from 'react-icons/fi';
 import { getFileUrl } from '../api/fileUrl';
+import {   IoCallOutline, IoCall, IoVideocamOutline, IoVideocam, } from 'react-icons/io5';
 
 function Chat({
   onUnreadCountChange,
   selectedUserId,
   setSelectedUserId,
   onOpenUser,
+  audioCall,
 }) {
   const [conversations, setConversations] = useState([]);
   const [selectedConv, setSelectedConv] = useState(null);
@@ -49,6 +51,21 @@ function Chat({
   const chatEmojiRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
+
+const {
+  isCalling,
+  isInCall,
+  isMuted,
+  toggleMute,
+  callStatus,
+  callDuration,
+  startCall,
+  endCall,
+  localVideoRef,
+  remoteVideoRef,
+  attachVideoStreams,
+  isVideoCall,
+} = audioCall;
 
   const playMessageSound = () => {
     const audio = new Audio('/sounds/message.mp3');
@@ -396,6 +413,14 @@ function Chat({
   };
 
   useEffect(() => {
+  if (isInCall) {
+    setTimeout(() => {
+      attachVideoStreams();
+    }, 100);
+  }
+}, [isInCall, attachVideoStreams]);
+
+  useEffect(() => {
     if (!currentUser?.id) return;
 
     socket.emit('joinUser', String(currentUser.id));
@@ -707,6 +732,7 @@ useEffect(() => {
                   )}
                 </div>
 
+
                 <div className="chat-header-info">
                   <div
                     className="chat-header-name"
@@ -724,8 +750,68 @@ useEffect(() => {
                     {getChatStatus()}
                   </span>
                 </div>
-              </div>
+                {isInCall || isCalling ? (
+                  <button className="call-btn active" onClick={endCall}>
+                    ×
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      className="call-btn"
+                      onClick={() => startCall(selectedConv.user_id, false)}
+                    >
+                      <IoCallOutline />
+                    </button>
 
+                    <button
+                      className="call-btn"
+                      onClick={() => startCall(selectedConv.user_id, true)}
+                    >
+                      <IoVideocamOutline />
+                    </button>
+                  </>
+                )}
+                {callStatus && (
+                <div className="call-status">
+                  <span>{callStatus}</span>
+
+                  {isInCall && (
+                    <span className="call-timer">
+                      {String(Math.floor(callDuration / 60)).padStart(2, '0')}
+                      :
+                      {String(callDuration % 60).padStart(2, '0')}
+                    </span>
+                  )}
+                </div>
+                
+              )}
+              {isInCall && (
+              <button
+                className={`mute-btn ${isMuted ? 'muted' : ''}`}
+                onClick={toggleMute}
+              >
+                {isMuted ? 'Mic off' : 'Mic on'}
+              </button>
+            )}
+              </div>
+                      {isInCall && isVideoCall && (
+            <div className="video-call-box">
+              <video
+                ref={remoteVideoRef}
+                autoPlay
+                playsInline
+                className="remote-video"
+              />
+
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="local-video"
+              />
+            </div>
+          )}
             <div
               className="messages-list"
               ref={messagesContainerRef}
@@ -1041,6 +1127,7 @@ useEffect(() => {
           </div>
         </div>
       )}
+
     </div>
   );
 }

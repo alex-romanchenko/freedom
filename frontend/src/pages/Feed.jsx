@@ -26,13 +26,19 @@ function Feed({ onOpenUser, onPostClick }) {
           ? await getMyPostsApi(LIMIT, currentOffset)
           : await getFollowingPostsApi(LIMIT, currentOffset);
 
-      if (reset) {
-        setPosts(data);
-      } else {
-        setPosts((prev) => [...prev, ...data]);
-      }
+          if (reset) {
+            setPosts(data);
+          } else {
+            setPosts((prev) => {
+              const newPosts = data.filter(
+                (post) => !prev.some((item) => item.id === post.id)
+              );
 
-      setOffset(currentOffset + data.length);
+              return [...prev, ...newPosts];
+            });
+          }
+
+      setOffset((prev) => reset ? data.length : prev + data.length);
       setHasMore(data.length === LIMIT);
     } catch (err) {
       console.error(err);

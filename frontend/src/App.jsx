@@ -21,6 +21,8 @@ import PhotoModal from './components/PhotoModal';
 import { getPostByIdApi } from './api/postsApi';
 import { getPhotoByIdApi } from './api/photosApi';
 import VerifyEmail from "./pages/VerifyEmail";
+import { useAudioCall } from './hooks/useAudioCall';
+
 
 import {
   IoHome,
@@ -44,6 +46,7 @@ import { getNotificationsApi } from './api/notificationsApi';
 import './App.css';
 
 function App() {
+  
   const [isAuth, setIsAuth] = useState(() =>
     Boolean(localStorage.getItem('token') || sessionStorage.getItem('token'))
   );
@@ -63,6 +66,17 @@ function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [activePost, setActivePost] = useState(null);
   const [photosUserId, setPhotosUserId] = useState(null);
+
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+
+const audioCall = useAudioCall(currentUser?.id);
+const {
+  incomingCall,
+  remoteAudioRef,
+  acceptCall,
+  rejectCall,
+} = audioCall;
+
 
  const path = window.location.pathname;
 
@@ -468,6 +482,7 @@ if (isVerifyEmailPage) {
           onUnreadCountChange={setUnreadMessagesCount}
           selectedUserId={selectedUserId}
           setSelectedUserId={setSelectedUserId}
+          audioCall={audioCall}
           onOpenUser={(username) => {
             setViewUsername(username);
             setPage('userProfile');
@@ -596,6 +611,39 @@ if (isVerifyEmailPage) {
           onPhotoChanged={() => {}}
         />
       )}
+
+      {incomingCall && (
+  <div className="call-popup">
+    <h3>
+      {incomingCall.withVideo ? 'Incoming video call' : 'Incoming audio call'}
+    </h3>
+
+    <p>
+      User {incomingCall.from} is calling you
+    </p>
+
+    <div className="call-popup-actions">
+      <button
+        className="accept-call-btn"
+        onClick={acceptCall}
+      >
+        Accept
+      </button>
+
+      <button
+        className="reject-call-btn"
+        onClick={rejectCall}
+      >
+        Reject
+      </button>
+    </div>
+  </div>
+)}
+
+<audio
+  ref={remoteAudioRef}
+  autoPlay
+/>
     </div>
   );
 }
