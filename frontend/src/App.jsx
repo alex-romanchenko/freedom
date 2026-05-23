@@ -73,6 +73,7 @@ const audioCall = useAudioCall(currentUser?.id);
 const {
   incomingCall,
   remoteAudioRef,
+  ringtoneRef,
   acceptCall,
   rejectCall,
 } = audioCall;
@@ -643,6 +644,10 @@ if (isVerifyEmailPage) {
 <audio
   ref={remoteAudioRef}
   autoPlay
+/>
+<audio
+  ref={ringtoneRef}
+  src="/sounds/call.mp3"
 />
     </div>
   );

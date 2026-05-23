@@ -670,13 +670,19 @@ useEffect(() => {
             }}
             className={`chat-item ${selectedConv?.id === c.id ? 'active' : ''}`}
           >
-            {c.avatar ? (
-              <img className="chat-avatar" src={getFileUrl(c.avatar)} alt="" />
-            ) : (
-              <div className="chat-avatar-placeholder">
-                {c.display_name?.[0] || '?'}
-              </div>
-            )}
+            <div
+              className={`chat-avatar-wrap ${
+                onlineUsers.includes(String(c.user_id)) ? 'online' : ''
+              }`}
+            >
+              {c.avatar ? (
+                <img className="chat-avatar" src={getFileUrl(c.avatar)} alt="" />
+              ) : (
+                <div className="chat-avatar-placeholder">
+                  {c.display_name?.[0] || '?'}
+                </div>
+              )}
+            </div>
 
             <div className="chat-item-content">
               <div className="chat-item-top">

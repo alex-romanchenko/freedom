@@ -30,6 +30,7 @@ export function useAudioCall(currentUserId) {
   const localVideoRef = useRef(null);
 const remoteVideoRef = useRef(null);
   const timerRef = useRef(null);
+  const ringtoneRef = useRef(null);
   const pendingCandidatesRef = useRef([]);
 
   const createPeer = (targetUserId) => {
@@ -101,6 +102,11 @@ const remoteVideoRef = useRef(null);
   const acceptCall = async () => {
     if (!incomingCall) return;
 
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
+
     const stream = await getLocalMedia(
          incomingCall.withVideo
     );
@@ -140,6 +146,10 @@ const remoteVideoRef = useRef(null);
         to: incomingCall.from,
       });
     }
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
 
     setIncomingCall(null);
   };
@@ -171,6 +181,11 @@ const remoteVideoRef = useRef(null);
   const cleanupCall = () => {
     peerRef.current?.close();
     peerRef.current = null;
+
+    if (ringtoneRef.current) {
+      ringtoneRef.current.pause();
+      ringtoneRef.current.currentTime = 0;
+    }
 
     localStreamRef.current?.getTracks().forEach((track) => {
       track.stop();
@@ -228,6 +243,11 @@ const remoteVideoRef = useRef(null);
         withVideo,
         }) => {
       setCallStatus('Ringing...');
+
+if (ringtoneRef.current) {
+  ringtoneRef.current.loop = true;
+  ringtoneRef.current.play().catch(() => {});
+}
     setIncomingCall({
         from,
         offer,
@@ -316,5 +336,6 @@ const attachVideoStreams = useCallback(() => {
     toggleMute,
     attachVideoStreams,
     isVideoCall,
+    ringtoneRef,
   };
 }
