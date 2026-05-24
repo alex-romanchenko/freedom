@@ -6,6 +6,7 @@ const {
   getIncomingRequests,
   markIncomingRequestsSeen,
   isFollowingUser,
+  hasReverseFollowRequest,
 } = require('../models/follow.model');
 
 const { createNotification } = require('../models/notification.model');
@@ -24,37 +25,58 @@ async function follow(req, res) {
 
     const alreadyFollowing = await isFollowingUser(followerId, userId);
 
+    if (alreadyFollowing) {
+      return res.json({ message: 'User already followed' });
+    }
+
+    const reverseRequestExists = await hasReverseFollowRequest(
+      followerId,
+      userId
+    );
+
     await followUser(followerId, userId);
 
-    if (!alreadyFollowing) {
-      const senderResult = await db.query(
-        `
-        SELECT id, username, display_name, avatar
-        FROM users
-        WHERE id = $1
-        `,
-        [followerId]
-      );
+    const senderResult = await db.query(
+      `
+      SELECT id, username, display_name, avatar
+      FROM users
+      WHERE id = $1
+      `,
+      [followerId]
+    );
 
-      const sender = {
-        ...senderResult.rows[0],
-        seen_by_following: false,
-      };
+    const sender = {
+      ...senderResult.rows[0],
+      seen_by_following: false,
+    };
 
-      // 👉 запис в notifications
+    const io = req.app.get('io');
+
+    if (reverseRequestExists) {
       await createNotification({
         userId: Number(userId),
         senderId: followerId,
-        type: 'friend_request',
+        type: 'friend_request_accepted',
       });
 
-      const io = req.app.get('io');
-
-      io.emit('newFriendRequest', {
+      io.emit('newFriendRequestAccepted', {
         ownerId: Number(userId),
         sender,
       });
+
+      return res.json({ message: 'Friend request accepted' });
     }
+
+    await createNotification({
+      userId: Number(userId),
+      senderId: followerId,
+      type: 'friend_request',
+    });
+
+    io.emit('newFriendRequest', {
+      ownerId: Number(userId),
+      sender,
+    });
 
     res.json({ message: 'User followed' });
   } catch (error) {

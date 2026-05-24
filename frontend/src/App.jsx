@@ -54,6 +54,7 @@ function App() {
   const [page, setPage] = useState('feed');
   const [friendRequestSignal, setFriendRequestSignal] = useState(0);
   const [friendPopup, setFriendPopup] = useState(null);
+  const [friendAcceptedPopup, setFriendAcceptedPopup] = useState(null);
   const [commentPopup, setCommentPopup] = useState(null);
   const [likePopup, setLikePopup] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
@@ -193,6 +194,21 @@ useEffect(() => {
       }, 6000);
     }
 
+    function handleFriendRequestAccepted(data) {
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+
+      if (!currentUser || Number(currentUser.id) !== Number(data.ownerId)) return;
+
+      setNotificationsCount((prev) => prev + 1);
+
+      playNotificationSound();
+      setFriendAcceptedPopup(data.sender);
+
+      setTimeout(() => {
+        setFriendAcceptedPopup(null);
+      }, 6000);
+    }
+
     function handleNewLike(data) {
       const currentUser = JSON.parse(localStorage.getItem('user'));
 
@@ -211,14 +227,16 @@ useEffect(() => {
     socket.on('newLike', handleNewLike);
     socket.on('newComment', handleNewComment);
     socket.on('newFriendRequest', handleNewFriendRequest);
-    socket.on('newFriendRequest', handleNewFriendRequest);
+    socket.on('newFriendRequestAccepted', handleFriendRequestAccepted);
+ 
 
     return () => {
       socket.off('newMessage', handleNewMessage);
       socket.off('newLike', handleNewLike);
       socket.off('newComment', handleNewComment);
       socket.off('newFriendRequest', handleNewFriendRequest);
-      socket.off('newFriendRequest', handleNewFriendRequest);
+      socket.off('newFriendRequestAccepted', handleFriendRequestAccepted);
+
     };
   }, [isAuth, page]);
 
@@ -591,6 +609,18 @@ if (isVerifyEmailPage) {
           }}
         />
       )}
+      {friendAcceptedPopup && (
+          <NotificationPopup
+            user={friendAcceptedPopup}
+            text="accepted your friend request"
+            onClose={() => setFriendAcceptedPopup(null)}
+            onClick={() => {
+              setFriendAcceptedPopup(null);
+              setViewUsername(friendAcceptedPopup.username);
+              setPage('userProfile');
+            }}
+          />
+        )}
 
       {friendPopup && (
         <NotificationPopup

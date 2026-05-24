@@ -115,7 +115,19 @@ async function getFollowersIds(userId) {
 
   return result.rows.map((row) => row.follower_id);
 }
+async function hasReverseFollowRequest(followerId, followingId) {
+  const result = await pool.query(
+    `
+    SELECT id
+    FROM follows
+    WHERE follower_id = $1
+      AND following_id = $2
+    `,
+    [followingId, followerId]
+  );
 
+  return result.rows.length > 0;
+}
 module.exports = {
   followUser,
   unfollowUser,
@@ -125,4 +137,5 @@ module.exports = {
   getIncomingRequests,
   markIncomingRequestsSeen,
   getFollowersIds,
+  hasReverseFollowRequest,
 };
