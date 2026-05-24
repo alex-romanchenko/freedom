@@ -3182,5 +3182,151 @@ button {
     font-size: 14px;
     line-height: 1.4;
   }
+
+  /* MOBILE POPUPS / NOTIFICATIONS */
+
+.message-popup,
+.call-popup {
+  left: 12px;
+  right: 12px;
+  bottom: 84px;
+  top: auto;
+
+  width: auto;
+  max-width: none;
+
+  border-radius: 18px;
+  padding: 14px;
+
+  z-index: 1200;
+}
+
+.popup-header strong {
+  font-size: 16px;
+}
+
+.popup-user img,
+.popup-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.popup-text {
+  font-size: 14px;
+}
+
+
+/* MOBILE MODALS */
+
+.modal-overlay {
+  padding: 16px;
+  align-items: center;
+}
+
+.logout-popup,
+.delete-chat-popup,
+.delete-post-popup,
+.forward-popup,
+.likes-popup,
+.profile-edit-modal {
+  width: 100%;
+  max-width: 360px;
+
+  max-height: 85vh;
+  overflow-y: auto;
+
+  padding: 22px 18px;
+  border-radius: 22px;
+}
+
+.logout-popup h3,
+.delete-chat-popup h3,
+.delete-post-popup h3 {
+  font-size: 22px;
+}
+
+.logout-popup p,
+.delete-chat-popup p,
+.delete-post-popup p {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+
+/* MOBILE CHAT DELETE CONFIRM */
+
+.delete-dialog-btn {
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+
+/* MOBILE FORWARD LIST */
+
+.forward-list {
+  max-height: 55vh;
+}
+
+.forward-user {
+  padding: 12px;
+}
+
+.forward-user img,
+.forward-avatar-placeholder {
+  width: 46px;
+  height: 46px;
+}
+
+
+/* MOBILE NOTIFICATIONS PAGE */
+
+.notifications-list {
+  padding: 10px;
+}
+
+.notification-card {
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.notification-main {
+  gap: 10px;
+}
+
+.notification-avatar,
+.notification-placeholder {
+  width: 44px;
+  height: 44px;
+}
+
+.notification-content p {
+  font-size: 14px;
+}
+
+.notification-remove {
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+}
   
+.left-sidebar .sidebar-link {
+  position: relative;
+}
+
+.nav-badge {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+
+  font-size: 10px;
+  line-height: 18px;
+}
 }
