@@ -38,6 +38,7 @@ import {
   IoLogOutOutline,
   IoNotifications,
   IoNotificationsOutline,
+  IoArrowBack,
 } from 'react-icons/io5';
 
 import { getIncomingRequestsApi } from './api/followApi';
@@ -58,6 +59,7 @@ function App() {
   const [commentPopup, setCommentPopup] = useState(null);
   const [likePopup, setLikePopup] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [friendsUsername, setFriendsUsername] = useState(null);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [friendRequestsCount, setFriendRequestsCount] = useState(0);
   const [notificationsCount, setNotificationsCount] = useState(0);
@@ -312,6 +314,15 @@ if (isVerifyEmailPage) {
       <aside className="left-sidebar">
         <h1 className="logo">Freedom</h1>
 
+        {page === 'chat' && (
+          <button
+            className="chat-back-sidebar-btn"
+            onClick={() => setPage('feed')}
+          >
+            <IoArrowBack />
+          </button>
+        )}
+
         <button
           className={page === 'feed' ? 'sidebar-link active' : 'sidebar-link'}
           onClick={() => {
@@ -326,6 +337,7 @@ if (isVerifyEmailPage) {
         <button
           className={page === 'friends' ? 'sidebar-link active' : 'sidebar-link'}
           onClick={() => {
+            setFriendsUsername(null);
             setFriendRequestsCount(0);
             setActivePost(null);
             setPage('friends');
@@ -423,18 +435,19 @@ if (isVerifyEmailPage) {
         )}
 
         {!activePost && page === 'friends' && (
-          <Friends
-            onOpenChat={(userId) => {
-              setSelectedUserId(userId);
-              setPage('chat');
-            }}
-            onOpenUser={(username) => {
-              setViewUsername(username);
-              setPage('userProfile');
-            }}
-            onRequestsSeen={() => setFriendRequestsCount(0)}
-            requestSignal={friendRequestSignal}
-          />
+        <Friends
+          username={friendsUsername}
+          onOpenChat={(userId) => {
+            setSelectedUserId(userId);
+            setPage('chat');
+          }}
+          onOpenUser={(username) => {
+            setViewUsername(username);
+            setPage('userProfile');
+          }}
+          onRequestsSeen={() => setFriendRequestsCount(0)}
+          requestSignal={friendRequestSignal}
+        />
         )}
 
         {!activePost && page === 'notifications' && (
@@ -475,6 +488,11 @@ if (isVerifyEmailPage) {
               setSelectedUserId(userId);
               setPage('chat');
             }}
+            onOpenFriends={(username) => {
+              setFriendsUsername(username);
+              setActivePost(null);
+              setPage('friends');
+            }}
             onOpenUser={openUserProfile}
             onOpenPhotos={openPhotos}
             onPostClick={setActivePost}
@@ -484,6 +502,7 @@ if (isVerifyEmailPage) {
         {!activePost && page === 'profile' && (
           <Profile
             onOpenFriends={() => {
+              setFriendsUsername(null);
               setActivePost(null);
               setPage('friends');
             }}

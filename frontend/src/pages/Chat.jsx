@@ -12,7 +12,7 @@ import {
 import EmojiPicker from 'emoji-picker-react';
 import { FiImage, FiSmile } from 'react-icons/fi';
 import { getFileUrl } from '../api/fileUrl';
-import {   IoCallOutline, IoCall, IoVideocamOutline, IoVideocam, } from 'react-icons/io5';
+import {   IoCallOutline, IoVideocamOutline, IoArrowBack  } from 'react-icons/io5';
 
 function Chat({
   onUnreadCountChange,
@@ -725,7 +725,7 @@ useEffect(() => {
                 className="mobile-back-btn"
                 onClick={() => setSelectedConv(null)}
               >
-                ←
+                <IoArrowBack />
               </button>
                 <div
                   onClick={() => onOpenUser(selectedConv.username)}

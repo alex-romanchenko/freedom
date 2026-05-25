@@ -23,13 +23,13 @@ async function createNewPost(req, res) {
     const userId = req.user.id;
     const { text } = req.body;
 
-    if (!text) {
+    if (!text && !req.file) {
       return res.status(400).json({
-        message: 'Post text is required',
+        message: 'Post text or image is required',
       });
     }
 
-    if (text.length > 280) {
+    if (text && text.length > 280) {
       return res.status(400).json({
         message: 'Post text must be 280 characters or less',
       });

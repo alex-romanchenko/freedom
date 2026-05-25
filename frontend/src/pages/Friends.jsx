@@ -4,13 +4,14 @@ import {
   followUserApi,
   unfollowUserApi,
   getFriendsApi,
+  getUserFriendsApi,
   getIncomingRequestsApi,
   markRequestsSeenApi,
 } from '../api/followApi';
 import { createConversationApi } from '../api/messagesApi';
 import { getFileUrl } from '../api/fileUrl';
 
-function Friends({ onOpenChat, onOpenUser, onRequestsSeen, requestSignal }) {
+function Friends({ username, onOpenChat, onOpenUser, onRequestsSeen, requestSignal }) {
   const [activeTab, setActiveTab] = useState('friends');
   const [query, setQuery] = useState('');
   const [friends, setFriends] = useState([]);
@@ -18,7 +19,10 @@ function Friends({ onOpenChat, onOpenUser, onRequestsSeen, requestSignal }) {
   const [incomingRequests, setIncomingRequests] = useState([]);
 
   const loadFriends = async () => {
-    const data = await getFriendsApi();
+    const data = username
+      ? await getUserFriendsApi(username)
+      : await getFriendsApi();
+
     setFriends(data);
   };
 
@@ -27,10 +31,11 @@ function Friends({ onOpenChat, onOpenUser, onRequestsSeen, requestSignal }) {
     setIncomingRequests(data);
   };
 
-  useEffect(() => {
-    loadFriends();
-    loadIncomingRequests();
-  }, []);
+  
+
+useEffect(() => {
+  loadFriends();
+}, [username]);
   
   useEffect(() => {
   if (requestSignal > 0) {

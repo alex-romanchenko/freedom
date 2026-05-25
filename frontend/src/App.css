@@ -381,13 +381,13 @@ button {
 
 .chat-layout {
   display: grid;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 300px 1fr;
   min-height: 100vh;
 }
 
 .chat-sidebar {
   border-right: 1px solid #e5e7eb;
-  padding: 32px 12px;
+   padding: 32px 4px 32px 0px;
   position: sticky;
   top: 0;
   height: fit-content;
@@ -2838,7 +2838,7 @@ button {
 
 .video-call-box {
   position: relative;
-  height: 280px;
+  height: 380px;
   background: #111827;
   border-radius: 18px;
   overflow: hidden;
@@ -2890,6 +2890,71 @@ button {
   display: block;
   width: 22px;
   height: 22px;
+}
+
+.chat-back-sidebar-btn {
+  display: none;
+}
+.desktop-layout.chat-mode {
+  grid-template-columns: 82px minmax(0, 1fr);
+}
+
+.desktop-layout.chat-mode .left-sidebar {
+  padding: 28px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.desktop-layout.chat-mode .logo {
+  display: none;
+}
+
+.desktop-layout.chat-mode .sidebar-link {
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  margin-bottom: 10px;
+}
+
+.desktop-layout.chat-mode .sidebar-link span:not(.nav-badge) {
+  display: none;
+}
+
+.desktop-layout.chat-mode .sidebar-link svg {
+  font-size: 28px;
+}
+
+
+.desktop-layout.chat-mode .chat-back-sidebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 48px;
+  height: 48px;
+
+  margin-bottom: 18px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #f3f4f6;
+  color: #111827;
+
+  flex-shrink: 0;
+}
+
+.desktop-layout.chat-mode .chat-back-sidebar-btn svg {
+  width: 28px;
+  height: 28px;
+
+  display: block;
+}
+
+.desktop-layout.chat-mode .chat-back-sidebar-btn:hover {
+  background: #e5e7eb;
 }
 @media (max-width: 768px) {
   .desktop-layout,
@@ -3280,4 +3345,46 @@ button {
     height: 28px;
     font-size: 18px;
   }
+
+  .desktop-layout.chat-mode .left-sidebar {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  top: auto;
+
+  width: 100%;
+  height: 66px;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 4px;
+}
+
+.desktop-layout.chat-mode .sidebar-link {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  height: auto;
+
+  padding: 7px 2px;
+  margin: 0;
+
+  flex-direction: column;
+  gap: 3px;
+}
+
+.desktop-layout.chat-mode .sidebar-link span:not(.nav-badge) {
+  display: inline;
+}
+
+.desktop-layout.chat-mode .sidebar-link svg {
+  font-size: 20px;
+}
+
+.desktop-layout.chat-mode .chat-back-sidebar-btn {
+  display: none !important;
+}
 }

@@ -127,7 +127,10 @@ function UserProfile({
         <div className="profile-section-header">
           <h3>Friends</h3>
 
-          <button className="link-btn" onClick={onOpenFriends}>
+          <button
+            className="link-btn"
+            onClick={() => onOpenFriends(user.username)}
+          >
             Show all friends
           </button>
         </div>
