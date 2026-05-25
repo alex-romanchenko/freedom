@@ -2911,11 +2911,14 @@ button {
 }
 
 .desktop-layout.chat-mode .sidebar-link {
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  margin-bottom: 10px;
+  position: relative;
+}
+
+.desktop-layout.chat-mode .nav-badge {
+  position: absolute;
+  top: 10px;
+  right: 4px;
+  margin-left: 0;
 }
 
 .desktop-layout.chat-mode .sidebar-link span:not(.nav-badge) {
