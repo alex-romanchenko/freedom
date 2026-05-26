@@ -2959,6 +2959,10 @@ button {
 .desktop-layout.chat-mode .chat-back-sidebar-btn:hover {
   background: #e5e7eb;
 }
+.chat-layout.dragging-image {
+  outline: 2px dashed #4f46e5;
+  outline-offset: -8px;
+}
 @media (max-width: 768px) {
   .desktop-layout,
   .desktop-layout.chat-mode {

@@ -38,6 +38,7 @@ function Chat({
   const [lastSeenMap, setLastSeenMap] = useState({});
 
   const [chatImage, setChatImage] = useState(null);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
@@ -358,6 +359,43 @@ const {
     closeMessageMenu();
   };
 
+  const handleDragOver = (e) => {
+  e.preventDefault();
+  setIsDraggingImage(true);
+};
+
+const handleDragLeave = (e) => {
+  e.preventDefault();
+  setIsDraggingImage(false);
+};
+
+const handleDropImage = (e) => {
+  e.preventDefault();
+  setIsDraggingImage(false);
+
+  const file = e.dataTransfer.files?.[0];
+
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) return;
+
+  setChatImage(file);
+};
+
+  const handlePasteImage = (e) => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile();
+      if (file) {
+        setChatImage(file);
+      }
+    }
+  }
+};
+
   const handleTextChange = (e) => {
     setText(e.target.value);
 
@@ -493,6 +531,8 @@ const {
     const handleOnlineUsers = ({ users }) => {
       setOnlineUsers(users.map(String));
     };
+
+    
 
     const handleUserOnline = ({ userId }) => {
       const id = String(userId);
@@ -647,10 +687,15 @@ useEffect(() => {
 };
 
   return (
-    <div
-      className={`chat-layout ${selectedConv ? 'chat-open' : ''}`}
-      onClick={closeMessageMenu}
-    >
+      <div
+        className={`chat-layout ${selectedConv ? 'chat-open' : ''} ${
+          isDraggingImage ? 'dragging-image' : ''
+        }`}
+        onClick={closeMessageMenu}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDropImage}
+      >
       <div className="chat-sidebar">
         <h3>Chats</h3>
 
@@ -1052,6 +1097,7 @@ useEffect(() => {
                   ref={textareaRef}
                   value={text}
                   onChange={handleTextChange}
+                  onPaste={handlePasteImage}
                   placeholder="Write a message..."
                   rows={1}
                   className="chat-textarea"
