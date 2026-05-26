@@ -49,56 +49,82 @@
 
   app.set('io', io);
   const onlineUsers = new Map();
+  function getOnlineUserIds() {
+      return Array.from(onlineUsers.keys());
+  }
   io.on('connection', (socket) => {
 
-  socket.on('logoutUser', async (userId) => {
-    onlineUsers.delete(String(userId));
-
-    try {
-      await pool.query(
-        'UPDATE users SET last_seen = NOW() WHERE id = $1',
-        [userId]
-      );
-    } catch (error) {
-      console.error('Update last_seen on logout error:', error.message);
-    }
-
-    io.emit('userOffline', {
-      userId: String(userId),
-      lastSeen: new Date().toISOString(),
-    });
+    socket.on('getOnlineUsers', () => {
+  socket.emit('onlineUsers', {
+    users: getOnlineUserIds(),
   });
+});
+
+  socket.on('logoutUser', async (userId) => {
+  const id = String(userId);
+
+  onlineUsers.delete(id);
+
+  try {
+    await pool.query(
+      'UPDATE users SET last_seen = NOW() WHERE id = $1',
+      [id]
+    );
+  } catch (error) {
+    console.error('Update last_seen on logout error:', error.message);
+  }
+
+  io.emit('userOffline', {
+    userId: id,
+    lastSeen: new Date().toISOString(),
+  });
+
+  io.emit('onlineUsers', {
+    users: getOnlineUserIds(),
+  });
+});
 
     console.log('Socket connected:', socket.id);
 
   socket.on('joinUser', async (userId) => {
-    socket.join(`user_${userId}`);
+  const id = String(userId);
 
-    onlineUsers.set(String(userId), socket.id);
+  socket.join(`user_${id}`);
 
-    io.emit('userOnline', {
-      userId: String(userId),
-    });
+  if (!onlineUsers.has(id)) {
+    onlineUsers.set(id, new Set());
+  }
 
-    socket.emit('onlineUsers', {
-      users: Array.from(onlineUsers.keys()),
-    });
+  onlineUsers.get(id).add(socket.id);
+  socket.userId = id;
 
-try {
-  const deliveredMessages = await markIncomingMessagesAsDelivered(userId);
+  socket.emit('onlineUsers', {
+  users: getOnlineUserIds(),
+});
 
-  deliveredMessages.forEach((message) => {
-    io.to(`conversation_${message.conversation_id}`).emit('messagesDelivered', {
-      conversationId: message.conversation_id,
-      messageIds: [message.id],
-    });
+  io.emit('onlineUsers', {
+    users: getOnlineUserIds(),
   });
-    } catch (error) {
-      console.error('Mark incoming delivered error:', error.message);
-    }
 
-    console.log(`Socket ${socket.id} joined user_${userId}`);
+  io.emit('userOnline', {
+    userId: id,
   });
+
+  try {
+    const deliveredMessages = await markIncomingMessagesAsDelivered(id);
+
+    deliveredMessages.forEach((message) => {
+      io.to(`conversation_${message.conversation_id}`).emit('messagesDelivered', {
+        conversationId: message.conversation_id,
+        messageIds: [message.id],
+      });
+    });
+  } catch (error) {
+    console.error('Mark incoming delivered error:', error.message);
+  }
+
+  console.log(`Socket ${socket.id} joined user_${id}`);
+});
 
     socket.on('joinConversation', (conversationId) => {
       socket.join(`conversation_${conversationId}`);
@@ -145,37 +171,49 @@ socket.on('endCall', ({ to }) => {
   io.to(`user_${to}`).emit('callEnded');
 });
 
-  socket.on('disconnect', async () => {
-    let disconnectedUserId = null;
+socket.on('disconnect', async () => {
+  const userId = socket.userId;
 
-    for (const [userId, socketId] of onlineUsers.entries()) {
-      if (socketId === socket.id) {
-        disconnectedUserId = userId;
+  if (userId && onlineUsers.has(userId)) {
+    onlineUsers.get(userId).delete(socket.id);
+
+    if (onlineUsers.get(userId).size === 0) {
+      setTimeout(async () => {
+        if (onlineUsers.has(userId) && onlineUsers.get(userId).size > 0) {
+          return;
+        }
+
         onlineUsers.delete(userId);
-        break;
-      }
-    }
 
-    if (disconnectedUserId) {
-      const lastSeen = new Date().toISOString();
+        const lastSeen = new Date().toISOString();
 
-      try {
-        await pool.query(
-          'UPDATE users SET last_seen = NOW() WHERE id = $1',
-          [disconnectedUserId]
-        );
-      } catch (error) {
-        console.error('Update last_seen error:', error.message);
-      }
+        try {
+          await pool.query(
+            'UPDATE users SET last_seen = NOW() WHERE id = $1',
+            [userId]
+          );
+        } catch (error) {
+          console.error('Update last_seen error:', error.message);
+        }
 
-      io.emit('userOffline', {
-        userId: String(disconnectedUserId),
-        lastSeen,
+        io.emit('userOffline', {
+          userId,
+          lastSeen,
+        });
+
+        io.emit('onlineUsers', {
+          users: getOnlineUserIds(),
+        });
+      }, 2000);
+    } else {
+      io.emit('onlineUsers', {
+        users: getOnlineUserIds(),
       });
     }
+  }
 
-    console.log('Socket disconnected:', socket.id);
-  });
+  console.log('Socket disconnected:', socket.id);
+});
   });
 
   app.get('/db-test', async (req, res) => {

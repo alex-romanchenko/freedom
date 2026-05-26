@@ -49,6 +49,7 @@ function Chat({
   const chatImageInputRef = useRef(null);
   const textareaRef = useRef(null);
   const chatEmojiRef = useRef(null);
+  const joinedConversationRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
 
@@ -91,7 +92,10 @@ const {
 
     onUnreadCountChange(totalUnread);
 
-    socket.emit('joinConversation', id);
+    if (String(joinedConversationRef.current) !== String(id)) {
+      socket.emit('joinConversation', id);
+      joinedConversationRef.current = id;
+    }
   };
 
   const loadOlderMessages = async () => {
@@ -421,12 +425,6 @@ const {
 }, [isInCall, attachVideoStreams]);
 
   useEffect(() => {
-    if (!currentUser?.id) return;
-
-    socket.emit('joinUser', String(currentUser.id));
-  }, [currentUser?.id]);
-
-  useEffect(() => {
     refreshConversations();
   }, []);
 
@@ -519,6 +517,8 @@ const {
     socket.on('onlineUsers', handleOnlineUsers);
     socket.on('userOnline', handleUserOnline);
     socket.on('userOffline', handleUserOffline);
+
+    socket.emit('getOnlineUsers');
 
     return () => {
       socket.off('onlineUsers', handleOnlineUsers);

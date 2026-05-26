@@ -72,11 +72,16 @@ const remoteVideoRef = useRef(null);
     return stream;
   };
 
-    const startCall = async (
-    targetUserId,
-    withVideo = false
-    ) => {
-  const stream = await getLocalMedia(withVideo);
+    const startCall = async (targetUserId, withVideo = false) => {
+  if (!targetUserId || !currentUserId) return;
+
+  if (isCalling || isInCall || peerRef.current) {
+    console.warn('Call already active');
+    return;
+  }
+
+  try {
+    const stream = await getLocalMedia(withVideo);
     const peer = createPeer(targetUserId);
 
     stream.getTracks().forEach((track) => {
@@ -97,19 +102,25 @@ const remoteVideoRef = useRef(null);
       offer,
       withVideo,
     });
-  };
+  } catch (err) {
+    console.error('Start call error:', err);
+    cleanupCall();
+  }
+};
 
   const acceptCall = async () => {
-    if (!incomingCall) return;
+  if (!incomingCall) return;
 
+  try {
     if (ringtoneRef.current) {
       ringtoneRef.current.pause();
       ringtoneRef.current.currentTime = 0;
     }
 
     const stream = await getLocalMedia(
-         incomingCall.withVideo
+      incomingCall.withVideo
     );
+
     const peer = createPeer(incomingCall.from);
 
     stream.getTracks().forEach((track) => {
@@ -119,8 +130,11 @@ const remoteVideoRef = useRef(null);
     await peer.setRemoteDescription(
       new RTCSessionDescription(incomingCall.offer)
     );
+
     await flushPendingCandidates();
+
     const answer = await peer.createAnswer();
+
     await peer.setLocalDescription(answer);
 
     socket.emit('answerCall', {
@@ -135,10 +149,16 @@ const remoteVideoRef = useRef(null);
 
     setCallStatus('In call');
 
-    timerRef.current = setInterval(() => {
-    setCallDuration((prev) => prev + 1);
-    }, 1000);
-  };
+    if (!timerRef.current) {
+      timerRef.current = setInterval(() => {
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
+    }
+  } catch (err) {
+    console.error('Accept call error:', err);
+    cleanupCall();
+  }
+};
 
   const rejectCall = () => {
     if (incomingCall) {
@@ -179,8 +199,12 @@ const remoteVideoRef = useRef(null);
 };
 
   const cleanupCall = () => {
-    peerRef.current?.close();
-    peerRef.current = null;
+    if (peerRef.current) {
+      peerRef.current.onicecandidate = null;
+      peerRef.current.ontrack = null;
+      peerRef.current.close();
+      peerRef.current = null;
+    }
 
     if (ringtoneRef.current) {
       ringtoneRef.current.pause();
@@ -204,6 +228,8 @@ const remoteVideoRef = useRef(null);
         remoteVideoRef.current.srcObject = null;
         }
     clearInterval(timerRef.current);
+
+    timerRef.current = null;
 
     setCallStatus('Call ended');
 
@@ -242,7 +268,12 @@ const remoteVideoRef = useRef(null);
         offer,
         withVideo,
         }) => {
+
+          if (isCalling || isInCall || peerRef.current) {
+            return;
+          }
       setCallStatus('Ringing...');
+      
 
 if (ringtoneRef.current) {
   ringtoneRef.current.loop = true;
@@ -267,9 +298,11 @@ if (ringtoneRef.current) {
       setIsInCall(true);
       setCallStatus('In call');
 
+      if (!timerRef.current) {
         timerRef.current = setInterval(() => {
-        setCallDuration((prev) => prev + 1);
+          setCallDuration((prev) => prev + 1);
         }, 1000);
+      }
     };
 
 const handleIceCandidate = async ({ candidate }) => {

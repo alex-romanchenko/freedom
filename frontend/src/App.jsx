@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import api from './api/api';
 import socket from './socket';
 
@@ -69,6 +69,7 @@ function App() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [activePost, setActivePost] = useState(null);
   const [photosUserId, setPhotosUserId] = useState(null);
+  const joinedSocketRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
 
@@ -135,14 +136,30 @@ const isVerifyEmailPage = path === '/verify-email';
   if (!isAuth) return;
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
-
   if (!currentUser?.id) return;
+
+  const userId = String(currentUser.id);
+
+  const join = () => {
+    const key = `${userId}:${socket.id}`;
+
+    if (joinedSocketRef.current === key) return;
+
+    socket.emit('joinUser', userId);
+    joinedSocketRef.current = key;
+  };
 
   if (!socket.connected) {
     socket.connect();
+  } else {
+    join();
   }
 
-  socket.emit('joinUser', String(currentUser.id));
+  socket.on('connect', join);
+
+  return () => {
+    socket.off('connect', join);
+  };
 }, [isAuth]);
 
 useEffect(() => {
