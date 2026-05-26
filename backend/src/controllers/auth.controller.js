@@ -100,6 +100,13 @@ async function register(req, res) {
     const displayNameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+    if (!username || !email || !password) {
+
+      return res.status(400).json({
+        message: 'Username, email and password are required',
+      });
+    }
+
     if (!usernameRegex.test(username)) {
       return res.status(400).json({
         message:

@@ -18,12 +18,14 @@ export default function PhotoModal({ photo, onClose, onPhotoChanged }) {
   const [editDescription, setEditDescription] = useState(photo.description || '');
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  const isOwner = Number(currentUser?.id) === Number(modalPhoto.user_id);
+  const isOwner = Number(currentUser?.id) === Number(modalPhoto?.user_id);
 
 const handleEmojiSelect = (emojiData) => {
   setCommentText((prev) => prev + emojiData.emoji);
 };
   const loadComments = async () => {
+    if (!modalPhoto?.id) return;
+
     try {
       const res = await api.get(`/photos/${modalPhoto.id}/comments`);
       setComments(res.data);
@@ -32,60 +34,65 @@ const handleEmojiSelect = (emojiData) => {
     }
   };
 
-  const loadLikes = async () => {
-    try {
-      const res = await api.get(`/photos/${modalPhoto.id}/likes`);
-      setLikesUsers(res.data);
-      setLikesOpen(true);
-    } catch (err) {
-      console.error('Load likes error:', err);
-    }
-  };
+const loadLikes = async () => {
+  if (!modalPhoto?.id) return;
+
+  try {
+    const res = await api.get(`/photos/${modalPhoto.id}/likes`);
+    setLikesUsers(res.data);
+    setLikesOpen(true);
+  } catch (err) {
+    console.error('Load likes error:', err);
+  }
+};
 
   const toggleLike = async () => {
-    try {
-      const wasLiked = modalPhoto.is_liked;
-      const currentLikes = Number(modalPhoto.likes_count || 0);
+  if (!modalPhoto?.id) return;
 
-      if (wasLiked) {
-        await api.delete(`/photos/${modalPhoto.id}/like`);
-      } else {
-        await api.post(`/photos/${modalPhoto.id}/like`);
-      }
+  try {
+    const wasLiked = modalPhoto.is_liked;
+    const currentLikes = Number(modalPhoto.likes_count || 0);
 
-      setModalPhoto((prev) => ({
-        ...prev,
-        is_liked: !wasLiked,
-        likes_count: wasLiked ? currentLikes - 1 : currentLikes + 1,
-      }));
-
-      onPhotoChanged();
-    } catch (err) {
-      console.error('Toggle like error:', err);
+    if (wasLiked) {
+      await api.delete(`/photos/${modalPhoto.id}/like`);
+    } else {
+      await api.post(`/photos/${modalPhoto.id}/like`);
     }
-  };
+
+    setModalPhoto((prev) => ({
+      ...prev,
+      is_liked: !wasLiked,
+      likes_count: wasLiked ? currentLikes - 1 : currentLikes + 1,
+    }));
+
+    onPhotoChanged && onPhotoChanged();
+  } catch (err) {
+    console.error('Toggle like error:', err);
+  }
+};
 
   const addComment = async () => {
-    if (!commentText.trim()) return;
+  if (!modalPhoto?.id) return;
+  if (!commentText.trim()) return;
 
-    try {
-      await api.post(`/photos/${modalPhoto.id}/comments`, {
-        text: commentText.trim(),
-      });
+  try {
+    await api.post(`/photos/${modalPhoto.id}/comments`, {
+      text: commentText.trim(),
+    });
 
-      setCommentText('');
+    setCommentText('');
 
-      setModalPhoto((prev) => ({
-        ...prev,
-        comments_count: Number(prev.comments_count || 0) + 1,
-      }));
+    setModalPhoto((prev) => ({
+      ...prev,
+      comments_count: Number(prev.comments_count || 0) + 1,
+    }));
 
-      loadComments();
-      onPhotoChanged();
-    } catch (err) {
-      console.error('Add comment error:', err);
-    }
-  };
+    loadComments();
+    onPhotoChanged && onPhotoChanged();
+  } catch (err) {
+    console.error('Add comment error:', err);
+  }
+};
 
   const deleteComment = async (commentId) => {
     try {
@@ -97,13 +104,14 @@ const handleEmojiSelect = (emojiData) => {
       }));
 
       loadComments();
-      onPhotoChanged();
+      onPhotoChanged && onPhotoChanged();
     } catch (err) {
       console.error('Delete comment error:', err);
     }
   };
 
   const saveDescription = async () => {
+    if (!modalPhoto?.id) return;
     try {
       await api.put(`/photos/${modalPhoto.id}`, {
         description: editDescription,
@@ -115,16 +123,17 @@ const handleEmojiSelect = (emojiData) => {
       }));
 
       setIsEditing(false);
-      onPhotoChanged();
+      onPhotoChanged && onPhotoChanged();
     } catch (err) {
       console.error('Update photo description error:', err);
     }
   };
 
 const deletePhoto = async () => {
+  if (!modalPhoto?.id) return;
   try {
     await api.delete(`/photos/${modalPhoto.id}`);
-    onPhotoChanged();
+    onPhotoChanged && onPhotoChanged();
     onClose();
   } catch (err) {
     console.error('Delete photo error:', err);
@@ -150,9 +159,11 @@ const deletePhoto = async () => {
   };
 }, [showEmojiPicker]);
 
-  useEffect(() => {
+useEffect(() => {
+  if (modalPhoto?.id) {
     loadComments();
-  }, [modalPhoto.id]);
+  }
+}, [modalPhoto?.id]);
 
   return (
     <div className="photo-modal-overlay">

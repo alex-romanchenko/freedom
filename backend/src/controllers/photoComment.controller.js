@@ -2,10 +2,24 @@ const PhotoComment = require('../models/photoComment.model');
 const { createNotification } = require('../models/notification.model');
 const db = require('../db');
 
+function getValidId(value) {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return null;
+  }
+
+  return id;
+}
+
 async function createComment(req, res) {
   try {
     const userId = req.user.id;
-    const photoId = req.params.id;
+    const photoId = getValidId(req.params.id);
+
+      if (!photoId) {
+        return res.status(400).json({ message: 'Invalid photo id' });
+      }
     const { text } = req.body;
 
     if (!text || !text.trim()) {
@@ -90,7 +104,11 @@ async function createComment(req, res) {
 
 async function getComments(req, res) {
   try {
-    const photoId = req.params.id;
+    const photoId = getValidId(req.params.id);
+
+      if (!photoId) {
+        return res.status(400).json({ message: 'Invalid photo id' });
+      }
 
     const comments = await PhotoComment.getComments(photoId);
 
@@ -104,7 +122,11 @@ async function getComments(req, res) {
 async function deleteComment(req, res) {
   try {
     const userId = req.user.id;
-    const commentId = req.params.commentId;
+    const commentId = getValidId(req.params.commentId);
+
+      if (!commentId) {
+        return res.status(400).json({ message: 'Invalid comment id' });
+      }
 
     const deletedComment = await PhotoComment.deleteComment(commentId, userId);
 
@@ -122,7 +144,11 @@ async function deleteComment(req, res) {
 async function updateComment(req, res) {
   try {
     const userId = req.user.id;
-    const commentId = req.params.commentId;
+    const commentId = getValidId(req.params.commentId);
+
+      if (!commentId) {
+        return res.status(400).json({ message: 'Invalid comment id' });
+      }
     const { text } = req.body;
 
     if (!text || !text.trim()) {

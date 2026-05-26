@@ -125,7 +125,7 @@ export default function Photos({ userId }) {
             <div className="photo-card-actions">
             <button
               className="like-btn"
-              onClick={toggleLike}
+              onClick={(e) => toggleLike(photo, e)}
             >
               {photo.is_liked ? <IoHeart /> : <IoHeartOutline />}
             </button>

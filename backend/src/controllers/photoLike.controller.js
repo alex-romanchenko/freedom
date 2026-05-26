@@ -2,10 +2,24 @@ const PhotoLike = require('../models/photoLike.model');
 const { createNotification } = require('../models/notification.model');
 const db = require('../db');
 
+function getValidId(value) {
+  const id = Number(value);
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return null;
+  }
+
+  return id;
+}
+
 async function like(req, res) {
   try {
     const userId = req.user.id;
-    const photoId = req.params.id;
+    const photoId = getValidId(req.params.id);
+
+      if (!photoId) {
+        return res.status(400).json({ message: 'Invalid photo id' });
+      }
 
     await PhotoLike.likePhoto(userId, photoId);
 
@@ -77,7 +91,11 @@ async function like(req, res) {
 async function unlike(req, res) {
   try {
     const userId = req.user.id;
-    const photoId = req.params.id;
+    const photoId = getValidId(req.params.id);
+
+        if (!photoId) {
+          return res.status(400).json({ message: 'Invalid photo id' });
+        }
 
     await PhotoLike.unlikePhoto(userId, photoId);
 
@@ -90,7 +108,11 @@ async function unlike(req, res) {
 
 async function getLikes(req, res) {
   try {
-    const photoId = req.params.id;
+    const photoId = getValidId(req.params.id);
+
+      if (!photoId) {
+        return res.status(400).json({ message: 'Invalid photo id' });
+      }
 
     const users = await PhotoLike.getPhotoLikes(photoId);
 
