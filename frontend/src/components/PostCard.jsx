@@ -50,6 +50,7 @@ function PostCard({
     setShowDeleteConfirm(false);
     onPostChanged && onPostChanged();
   };
+ 
 
   return (
     <>
@@ -128,6 +129,17 @@ function PostCard({
             alt=""
           />
         )}
+
+        {post.video && (
+          <video
+            src={getFileUrl(post.video)}
+            controls
+            playsInline
+            className="post-video"
+            onClick={(e) => e.stopPropagation()}
+          />
+        )}
+             
 
         <br />
         <br />

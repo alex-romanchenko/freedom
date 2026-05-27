@@ -16,12 +16,27 @@ async function findOrCreateConversation(userId, otherUserId) {
   return result.rows[0];
 }
 
-async function createMessage({ conversationId, senderId, text, image }) {
+async function createMessage({ conversationId, senderId, text, image, video }) {
   const result = await pool.query(
-    `INSERT INTO messages (conversation_id, sender_id, text, image, status)
-     VALUES ($1, $2, $3, $4, 'sent')
-     RETURNING id, conversation_id, sender_id, text, image, status, created_at`,
-    [conversationId, senderId, text || '', image || null]
+    `INSERT INTO messages (
+  conversation_id,
+  sender_id,
+  text,
+  image,
+  video,
+  status
+)
+VALUES ($1, $2, $3, $4, $5, 'sent')
+RETURNING
+  id,
+  conversation_id,
+  sender_id,
+  text,
+  image,
+  video,
+  status,
+  created_at`,
+    [conversationId, senderId, text || '', image || null, video || null]
   );
 
   await pool.query(
@@ -138,7 +153,8 @@ async function getMessagesByConversation(conversationId, before = null, limit = 
         users.username,
         users.display_name,
         users.avatar,
-        messages.image
+        messages.image,
+        messages.video
       FROM messages
       JOIN users ON messages.sender_id = users.id
       WHERE messages.conversation_id = $1
@@ -164,7 +180,8 @@ async function getMessageById(messageId) {
       users.username,
       users.display_name,
       users.avatar,
-      messages.image
+      messages.image,
+      messages.video
     FROM messages
     JOIN users ON messages.sender_id = users.id
     WHERE messages.id = $1

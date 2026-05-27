@@ -37,7 +37,7 @@ function Chat({
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [lastSeenMap, setLastSeenMap] = useState({});
 
-  const [chatImage, setChatImage] = useState(null);
+  const [chatFile, setChatFile] = useState(null);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const [text, setText] = useState('');
   const [replyTo, setReplyTo] = useState(null);
@@ -204,7 +204,7 @@ const {
   };
 
   const sendMessage = async () => {
-    if ((!text.trim() && !chatImage) || !selectedConv) return;
+    if ((!text.trim() && !chatFile) || !selectedConv) return;
 
     let finalText = text;
 
@@ -221,8 +221,8 @@ const {
     const formData = new FormData();
     formData.append('text', finalText);
 
-    if (chatImage) {
-      formData.append('image', chatImage);
+    if (chatFile) {
+      formData.append('image', chatFile);
     }
 
     shouldScrollToBottomRef.current = true;
@@ -236,7 +236,7 @@ const {
 
     setText('');
     setReplyTo(null);
-    setChatImage(null);
+    setChatFile(null);
 
     if (chatImageInputRef.current) {
       chatImageInputRef.current.value = '';
@@ -369,17 +369,16 @@ const handleDragLeave = (e) => {
   setIsDraggingImage(false);
 };
 
-const handleDropImage = (e) => {
+const handleDropFile = (e) => {
   e.preventDefault();
   setIsDraggingImage(false);
 
   const file = e.dataTransfer.files?.[0];
-
   if (!file) return;
 
-  if (!file.type.startsWith('image/')) return;
+  if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
 
-  setChatImage(file);
+  setChatFile(file);
 };
 
   const handlePasteImage = (e) => {
@@ -390,7 +389,7 @@ const handleDropImage = (e) => {
     if (item.type.startsWith('image/')) {
       const file = item.getAsFile();
       if (file) {
-        setChatImage(file);
+        setChatFile(file);
       }
     }
   }
@@ -694,7 +693,7 @@ useEffect(() => {
         onClick={closeMessageMenu}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        onDrop={handleDropImage}
+        onDrop={handleDropFile}
       >
       <div className="chat-sidebar">
         <h3>Chats</h3>
@@ -922,6 +921,16 @@ useEffect(() => {
                               onClick={() => setOpenedImage(getFileUrl(m.image))}
                             />
                           )}
+
+                          {m.video && (
+                            <video
+                              className="message-video"
+                              src={getFileUrl(m.video)}
+                              controls
+                              playsInline
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          )}
                         </>
                       )}
 
@@ -1057,13 +1066,17 @@ useEffect(() => {
               </div>
             )}
 
-            {chatImage && (
-              <div className="chat-image-preview">
-                <img src={URL.createObjectURL(chatImage)} alt="" />
+              {chatFile && (
+                <div className="chat-image-preview">
+                  {chatFile.type.startsWith('video/') ? (
+                    <video src={URL.createObjectURL(chatFile)} controls />
+                  ) : (
+                    <img src={URL.createObjectURL(chatFile)} alt="" />
+                  )}
 
-                <button onClick={() => setChatImage(null)}>×</button>
-              </div>
-            )}
+                  <button onClick={() => setChatFile(null)}>×</button>
+                </div>
+              )}
 
             <div className="chat-input-row">
               <div className="chat-input-box">
@@ -1081,14 +1094,13 @@ useEffect(() => {
                 <input
                   ref={chatImageInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,video/*"
                   style={{ display: 'none' }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-
                     if (!file) return;
 
-                    setChatImage(file);
+                    setChatFile(file);
                     e.target.value = '';
                   }}
                 />
@@ -1124,7 +1136,7 @@ useEffect(() => {
               <button
                 type="button"
                 className="chat-send-btn"
-                disabled={!text.trim() && !chatImage}
+                disabled={!text.trim() && !chatFile}
                 onClick={editingMessage ? saveEditedMessage : sendMessage}
               >
                 <FiSend />

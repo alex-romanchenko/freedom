@@ -8,7 +8,7 @@ import {
   deletePostApi,
 } from '../api/postsApi';
 import { getFileUrl } from '../api/fileUrl';
-import { IoHeartOutline, IoHeart } from 'react-icons/io5';
+import { IoHeartOutline, IoHeart, IoArrowBack } from 'react-icons/io5';
 
 export default function PostDetails({
   post,
@@ -109,7 +109,7 @@ export default function PostDetails({
     <div className="post-details">
       <div className="post-details-header">
         <button onClick={onBack} className="back-btn">
-          ←
+          <IoArrowBack />
         </button>
 
         <h3>Post</h3>
@@ -159,6 +159,14 @@ export default function PostDetails({
           src={getFileUrl(post.image)}
           alt=""
           onClick={() => setFullscreen(true)}
+        />  
+      )}
+      {post.video && (
+        <video
+          className="post-big-video"
+          src={getFileUrl(post.video)}
+          controls
+          playsInline
         />
       )}
 

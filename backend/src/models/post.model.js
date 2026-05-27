@@ -1,11 +1,11 @@
 const pool = require('../db');
 
-async function createPost({ userId, text, image }) {
+async function createPost({ userId, text, image, video }) {
   const result = await pool.query(
-    `INSERT INTO posts (user_id, text, image)
-     VALUES ($1, $2, $3)
-     RETURNING id, user_id, text, image, created_at`,
-    [userId, text, image || null]
+    `INSERT INTO posts (user_id, text, image, video)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, user_id, text, image, video, created_at`,
+    [userId, text, image || null, video || null]
   );
 
   return result.rows[0];
@@ -17,6 +17,7 @@ async function getAllPosts() {
       posts.id,
       posts.text,
       posts.image,
+      posts.video,
       posts.created_at,
       users.username,
       users.display_name,
@@ -55,6 +56,7 @@ async function getLikedPosts(userId) {
       posts.id,
       posts.text,
       posts.image,
+      posts.video,
       posts.created_at,
       users.username,
       users.display_name,
@@ -79,6 +81,7 @@ async function getFeedByFollowing(userId, limit = 20, offset = 0) {
       posts.id,
       posts.text,
       posts.image,
+      posts.video,
       posts.created_at,
       users.username,
       users.display_name,
@@ -110,6 +113,7 @@ async function getPostsByUser(username, currentUserId) {
       posts.id,
       posts.text,
       posts.image,
+      posts.video,
       posts.created_at,
       users.username,
       users.display_name,
@@ -159,6 +163,7 @@ async function getMyPosts(userId, limit = 20, offset = 0) {
       posts.id,
       posts.text,
       posts.image,
+      posts.video,
       posts.created_at,
       users.username,
       users.display_name,
@@ -189,6 +194,7 @@ async function getPopularPosts() {
       posts.id,
       posts.text,
       posts.image,
+      posts.video,
       posts.created_at,
       users.username,
       users.display_name,
@@ -232,6 +238,7 @@ async function getPostById(postId) {
       posts.user_id,
       posts.text,
       posts.image,
+      posts.video,
       posts.created_at,
       users.username,
       users.display_name,
@@ -257,6 +264,7 @@ async function getPostByIdFull(postId, currentUserId) {
       posts.user_id,
       posts.text,
       posts.image,
+      posts.video,
       posts.created_at,
       users.username,
       users.display_name,
@@ -296,5 +304,4 @@ module.exports = {
   getPostLikes,
   getPostById,
   getPostByIdFull,
-  
 };

@@ -89,8 +89,17 @@ function CreatePostForm({ onPostCreated }) {
       />
 
       {imagePreview && (
-      <div className="selected-image-preview">
-        <img src={imagePreview} alt="Preview" />
+        <div className="selected-image-preview">
+          {image?.type?.startsWith('video/') ? (
+            <video
+              src={imagePreview}
+              controls
+              playsInline
+              className="selected-video-preview"
+            />
+          ) : (
+            <img src={imagePreview} alt="Preview" />
+          )}
 
         <button
           type="button"
@@ -132,7 +141,7 @@ function CreatePostForm({ onPostCreated }) {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           hidden
           onChange={handleImageChange}
         />

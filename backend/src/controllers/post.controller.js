@@ -35,16 +35,24 @@ async function createNewPost(req, res) {
       });
     }
 
-    let imagePath = null;
+let imagePath = null;
+let videoPath = null;
 
-    if (req.file) {
-      imagePath = `/uploads/posts/${req.file.filename}`;
-    }
+if (req.file) {
+  if (req.file.mimetype.startsWith('image/')) {
+    imagePath = `/uploads/posts/${req.file.filename}`;
+  }
 
-    const post = await createPost({
+  if (req.file.mimetype.startsWith('video/')) {
+    videoPath = `/uploads/post-videos/${req.file.filename}`;
+  }
+}
+
+const post = await createPost({
   userId,
   text,
   image: imagePath,
+  video: videoPath,
 });
 
 const fullPost = await getPostById(post.id);

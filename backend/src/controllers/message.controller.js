@@ -19,11 +19,18 @@ async function sendMessage(req, res) {
     const { userId } = req.params;
     const { text } = req.body;
 
-    let imagePath = null;
+let imagePath = null;
+let videoPath = null;
 
-    if (req.file) {
-      imagePath = `/uploads/messages/${req.file.filename}`;
-    }
+if (req.file) {
+  if (req.file.mimetype.startsWith('image/')) {
+    imagePath = `/uploads/messages/${req.file.filename}`;
+  }
+
+  if (req.file.mimetype.startsWith('video/')) {
+    videoPath = `/uploads/message-videos/${req.file.filename}`;
+  }
+}
 
     if (Number(senderId) === Number(userId)) {
       return res.status(400).json({
@@ -31,20 +38,21 @@ async function sendMessage(req, res) {
       });
     }
 
-    if (!text && !imagePath) {
+    if (!text && !imagePath && !videoPath) {
       return res.status(400).json({
-        message: 'Message text or image is required',
+        message: 'Message text, image or video is required',
       });
     }
 
     const conversation = await findOrCreateConversation(senderId, userId);
 
-    const message = await createMessage({
-      conversationId: conversation.id,
-      senderId,
-      text,
-      image: imagePath,
-    });
+const message = await createMessage({
+  conversationId: conversation.id,
+  senderId,
+  text,
+  image: imagePath,
+  video: videoPath,
+});
 
     const fullMessage = await getMessageById(message.id);
 let finalMessage = fullMessage;
