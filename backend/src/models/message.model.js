@@ -214,7 +214,9 @@ async function updateMessageById(messageId, userId, text) {
 async function deleteMessageById(messageId) {
   await pool.query(
     `UPDATE messages
-     SET is_deleted = true, text = 'Message deleted'
+     SET is_deleted = true,
+         deleted_at = CURRENT_TIMESTAMP,
+         text = 'Message deleted'
      WHERE id = $1`,
     [messageId]
   );
