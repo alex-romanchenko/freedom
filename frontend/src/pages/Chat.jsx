@@ -1,18 +1,14 @@
+import MessageBubble from './chat/MessageBubble';
+import ChatHeader from './chat/ChatHeader';
+import MediaPreviewModal from './chat/MediaPreviewModal';
+import ChatInput from './chat/ChatInput';
+import ForwardModal from './chat/ForwardModal';
+import MessageContextMenu from './chat/MessageContextMenu';
+import ChatSidebar from './chat/ChatSidebar';
 import { useEffect, useRef, useState } from 'react';
 import api from '../api/api';
 import socket from '../socket';
 import { deleteConversationApi } from '../api/messagesApi';
-import {
-  FiCornerUpLeft,
-  FiCopy,
-  FiSend,
-  FiEdit2,
-  FiTrash2,
-} from 'react-icons/fi';
-import EmojiPicker from 'emoji-picker-react';
-import { FiImage, FiSmile } from 'react-icons/fi';
-import { getFileUrl } from '../api/fileUrl';
-import {   IoCallOutline, IoVideocamOutline, IoArrowBack  } from 'react-icons/io5';
 
 function Chat({
   onUnreadCountChange,
@@ -145,7 +141,9 @@ const {
 
     onUnreadCountChange(totalUnread);
 
-    if (!selectedConv && res.data.length > 0) {
+    const isMobile = window.innerWidth <= 768;
+
+    if (!selectedConv && res.data.length > 0 && !isMobile) {
       setSelectedConv(res.data[0]);
       await loadMessages(res.data[0].id);
     }
@@ -532,8 +530,6 @@ const handleDropFile = (e) => {
       setOnlineUsers(users.map(String));
     };
 
-    
-
     const handleUserOnline = ({ userId }) => {
       const id = String(userId);
 
@@ -656,35 +652,7 @@ useEffect(() => {
     }
   }, [messages]);
 
-  const MessageStatus = ({ status }) => {
-  if (status === 'read') {
-    return (
-      <img
-        src="/icons/readed-msg.svg"
-        className="message-status-icon"
-        alt=""
-      />
-    );
-  }
-
-  if (status === 'delivered') {
-    return (
-      <img
-        src="/icons/delivered.svg"
-        className="message-status-icon"
-        alt=""
-      />
-    );
-  }
-
-  return (
-    <img
-      src="/icons/sent.svg"
-      className="message-status-icon"
-      alt=""
-    />
-  );
-};
+  
 
   return (
       <div
@@ -696,161 +664,35 @@ useEffect(() => {
         onDragLeave={handleDragLeave}
         onDrop={handleDropFile}
       >
-      <div className="chat-sidebar">
-        <h3>Chats</h3>
-
-        {conversations.length === 0 && (
-          <p className="username">No conversations yet</p>
-        )}
-
-        {conversations.map((c) => (
-          <div
-            key={c.id}
-            onClick={async () => {
-              setSelectedUserId?.(null);
-              setSelectedConv(c);
-              setTypingUserId(null);
-              setMessageMenu(null);
-              await loadMessages(c.id);
-            }}
-            className={`chat-item ${selectedConv?.id === c.id ? 'active' : ''}`}
-          >
-            <div
-              className={`chat-avatar-wrap ${
-                onlineUsers.includes(String(c.user_id)) ? 'online' : ''
-              }`}
-            >
-              {c.avatar ? (
-                <img className="chat-avatar" src={getFileUrl(c.avatar)} alt="" />
-              ) : (
-                <div className="chat-avatar-placeholder">
-                  {c.display_name?.[0] || '?'}
-                </div>
-              )}
-            </div>
-
-            <div className="chat-item-content">
-              <div className="chat-item-top">
-                <div className="chat-list-name-row">
-                  <strong>{c.display_name}</strong>
-
-                  {onlineUsers.includes(String(c.user_id)) && (
-                    <span className="chat-list-online-dot"></span>
-                  )}
-                </div>
-
-                {Number(c.unread_count) > 0 && (
-                  <span className="unread-badge">{c.unread_count}</span>
-                )}
-              </div>
-
-              {c.last_message_text && (
-                <div className="chat-preview">{c.last_message_text}</div>
-              )}
-            </div>
-
-            <button
-              className="delete-dialog-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setDeleteDialogId(c.id);
-              }}
-            >
-              ×
-            </button>
-          </div>
-        ))}
-      </div>
-
+      <ChatSidebar
+          conversations={conversations}
+          selectedConv={selectedConv}
+          onlineUsers={onlineUsers}
+          setSelectedUserId={setSelectedUserId}
+          setSelectedConv={setSelectedConv}
+          setTypingUserId={setTypingUserId}
+          setMessageMenu={setMessageMenu}
+          loadMessages={loadMessages}
+          setDeleteDialogId={setDeleteDialogId}
+          onBack={() => window.history.back()}
+        />
       <div className="chat-window">
         {selectedConv ? (
           <>
-            <div className="chat-header">
-              <button
-                className="mobile-back-btn"
-                onClick={() => setSelectedConv(null)}
-              >
-                <IoArrowBack />
-              </button>
-                <div
-                  onClick={() => onOpenUser(selectedConv.username)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {selectedConv.avatar ? (
-                    <img
-                      className="chat-header-avatar"
-                      src={getFileUrl(selectedConv.avatar)}
-                      alt=""
-                    />
-                  ) : (
-                    <div className="chat-header-avatar-placeholder">
-                      {selectedConv.display_name?.[0] || '?'}
-                    </div>
-                  )}
-                </div>
-
-
-                <div className="chat-header-info">
-                  <div
-                    className="chat-header-name"
-                    onClick={() => onOpenUser(selectedConv.username)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {selectedConv.display_name}
-                  </div>
-
-                  <span
-                    className={`chat-header-status ${
-                      getChatStatus() === 'online' ? 'online' : ''
-                    }`}
-                  >
-                    {getChatStatus()}
-                  </span>
-                </div>
-                {isInCall || isCalling ? (
-                  <button className="call-btn active" onClick={endCall}>
-                    ×
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      className="call-btn"
-                      onClick={() => startCall(selectedConv.user_id, false)}
-                    >
-                      <IoCallOutline />
-                    </button>
-
-                    <button
-                      className="call-btn"
-                      onClick={() => startCall(selectedConv.user_id, true)}
-                    >
-                      <IoVideocamOutline />
-                    </button>
-                  </>
-                )}
-                {callStatus && (
-                <div className="call-status">
-                  <span>{callStatus}</span>
-
-                  {isInCall && (
-                    <span className="call-timer">
-                      {String(Math.floor(callDuration / 60)).padStart(2, '0')}
-                      :
-                      {String(callDuration % 60).padStart(2, '0')}
-                    </span>
-                  )}
-                </div>
-                
-              )}
-              {isInCall && (
-              <button
-                className={`mute-btn ${isMuted ? 'muted' : ''}`}
-                onClick={toggleMute}
-              >
-                {isMuted ? 'Mic off' : 'Mic on'}
-              </button>
-            )}
-              </div>
+           <ChatHeader
+              selectedConv={selectedConv}
+              onOpenUser={onOpenUser}
+              getChatStatus={getChatStatus}
+              isInCall={isInCall}
+              isCalling={isCalling}
+              endCall={endCall}
+              startCall={startCall}
+              callStatus={callStatus}
+              callDuration={callDuration}
+              isMuted={isMuted}
+              toggleMute={toggleMute}
+              setSelectedConv={setSelectedConv}
+            />
                       {isInCall && isVideoCall && (
             <div className="video-call-box">
               <video
@@ -879,318 +721,69 @@ useEffect(() => {
               }}
             >
               {messages.map((m) => {
-                const isMine = String(m.sender_id) === String(currentUser?.id);
+              const isMine = String(m.sender_id) === String(currentUser?.id);
 
-                return (
-                  <div
-                    key={m.id}
-                    className={`message-row ${isMine ? 'mine' : 'theirs'}`}
-                  >
-                    <div
-                      className="message-bubble"
-                      onContextMenu={(e) => openMessageMenu(e, m, isMine)}
-                    >
-                      {parseForwardMessage(m.text) ? (
-                        <>
-                          <div className="message-forward-box">
-                            <div>
-                              <span className="forward-gap">Forwarded from</span>
-                              <strong>{parseForwardMessage(m.text).name}</strong>
-                            </div>
-                          </div>
+              return (
+                <MessageBubble
+                  key={m.id}
+                  message={m}
+                  isMine={isMine}
+                  parseForwardMessage={parseForwardMessage}
+                  parseReplyMessage={parseReplyMessage}
+                  openMessageMenu={openMessageMenu}
+                  setOpenedImage={setOpenedImage}
+                  setOpenedVideo={setOpenedVideo}
+                />
+              );
+            })}
 
-                          <p>{parseForwardMessage(m.text).text}</p>
-                        </>
-                      ) : parseReplyMessage(m.text) ? (
-                        <>
-                          <div className="message-reply-box">
-                            <strong>{parseReplyMessage(m.text).name}</strong>
-                            <span>{parseReplyMessage(m.text).preview}</span>
-                          </div>
+              <ForwardModal
+                forwardMessageData={forwardMessageData}
+                conversations={conversations}
+                selectedConv={selectedConv}
+                sendForwardMessage={sendForwardMessage}
+                setForwardMessageData={setForwardMessageData}
+              />
 
-                          <p>{parseReplyMessage(m.text).text}</p>
-                        </>
-                      ) : (
-                        <>
-                          {m.text && <p>{m.text}</p>}
-
-                          {m.image && (
-                            <img
-                              className="message-image"
-                              src={getFileUrl(m.image)}
-                              alt=""
-                              onClick={() => setOpenedImage(getFileUrl(m.image))}
-                            />
-                          )}
-
-                          {m.video && (
-                            <div
-                              className="message-video-wrap"
-                              onClick={() => setOpenedVideo(getFileUrl(m.video))}
-                            >
-                              <video
-                                className="message-video"
-                                src={getFileUrl(m.video)}
-                                autoPlay
-                                muted
-                                loop
-                                playsInline
-                              />
-
-                              <div className="message-video-play">▷</div>
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                    <span className="message-meta">
-                      <span className="message-time">
-                        {new Date(m.created_at).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </span>
-
-                      {isMine && <MessageStatus status={m.status} />}
-                    </span>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {forwardMessageData && (
-                <div className="modal-overlay">
-                  <div className="forward-popup">
-                    <h3>Forward message</h3>
-
-                    {conversations.filter((c) => c.id !== selectedConv?.id)
-                      .length === 0 ? (
-                      <p className="username">
-                        No other conversations to forward this message.
-                      </p>
-                    ) : (
-                      <div className="forward-list">
-                        {conversations
-                          .filter((c) => c.id !== selectedConv?.id)
-                          .map((conversation) => (
-                            <button
-                              key={conversation.id}
-                              className="forward-user"
-                              onClick={() => sendForwardMessage(conversation)}
-                            >
-                              {conversation.avatar ? (
-                                <img
-                                  src={getFileUrl(conversation.avatar)}
-                                  alt=""
-                                />
-                              ) : (
-                                <div className="forward-avatar-placeholder">
-                                  {conversation.display_name?.[0] || '?'}
-                                </div>
-                              )}
-
-                              <span>{conversation.display_name}</span>
-                            </button>
-                          ))}
-                      </div>
-                    )}
-
-                    <button
-                      className="secondary-btn"
-                      onClick={() => setForwardMessageData(null)}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {messageMenu && (
-                <div
-                  className={`message-context-menu ${
-                    messageMenu.openUp ? 'open-up' : ''
-                  }`}
-                  style={{
-                    left: messageMenu.x,
-                    top: messageMenu.y,
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button onClick={startReply}>
-                    <FiCornerUpLeft />
-                    Reply
-                  </button>
-
-                  <button onClick={copyMessageText}>
-                    <FiCopy />
-                    Copy Text
-                  </button>
-
-                  <button onClick={forwardMessage}>
-                    <FiSend />
-                    Forward
-                  </button>
-
-                  {messageMenu.isMine && (
-                    <button onClick={startEditMessage}>
-                      <FiEdit2 />
-                      Edit
-                    </button>
-                  )}
-
-                  <button className="danger" onClick={deleteMessage}>
-                    <FiTrash2 />
-                    Delete
-                  </button>
-                </div>
-              )}
+             <MessageContextMenu
+                messageMenu={messageMenu}
+                startReply={startReply}
+                copyMessageText={copyMessageText}
+                forwardMessage={forwardMessage}
+                startEditMessage={startEditMessage}
+                deleteMessage={deleteMessage}
+              />
 
               <div ref={messagesEndRef} />
             </div>
 
-            {replyTo && (
-              <div className="reply-preview">
-                <strong>Reply to {replyTo.display_name}</strong>
-                <p>
-                  {parseReplyMessage(replyTo.text)
-                    ? parseReplyMessage(replyTo.text).text
-                    : replyTo.text}
-                </p>
-                <button onClick={() => setReplyTo(null)}>×</button>
-              </div>
-            )}
-
-            {editingMessage && (
-              <div className="reply-preview">
-                <strong>Editing message</strong>
-                <p>{editingMessage.text}</p>
-                <button
-                  onClick={() => {
-                    setEditingMessage(null);
-                    setText('');
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            )}
-
-              {chatFile && (
-                <div className="chat-image-preview">
-                  {chatFile.type.startsWith('video/') ? (
-                    <video src={URL.createObjectURL(chatFile)} controls />
-                  ) : (
-                    <img src={URL.createObjectURL(chatFile)} alt="" />
-                  )}
-
-                  <button onClick={() => setChatFile(null)}>×</button>
-                </div>
-              )}
-
-            <div className="chat-input-row">
-              <div className="chat-input-box">
-                <button
-                  type="button"
-                  className="chat-icon-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    chatImageInputRef.current.click();
-                  }}
-                >
-                  <FiImage />
-                </button>
-
-                <input
-                  ref={chatImageInputRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  style={{ display: 'none' }}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-
-                    setChatFile(file);
-                    e.target.value = '';
-                  }}
-                />
-
-                <textarea
-                  ref={textareaRef}
-                  value={text}
-                  onChange={handleTextChange}
-                  onPaste={handlePasteImage}
-                  placeholder="Write a message..."
-                  rows={1}
-                  className="chat-textarea"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      editingMessage ? saveEditedMessage() : sendMessage();
-                    }
-                  }}
-                />
-
-                <button
-                  type="button"
-                  className="chat-icon-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowChatEmoji((prev) => !prev);
-                  }}
-                >
-                  <FiSmile />
-                </button>
-              </div>
-
-              <button
-                type="button"
-                className="chat-send-btn"
-                disabled={!text.trim() && !chatFile}
-                onClick={editingMessage ? saveEditedMessage : sendMessage}
-              >
-                <FiSend />
-              </button>
-            </div>
-
-            {openedImage && (
-              <div
-                className="image-preview-overlay"
-                onClick={() => setOpenedImage(null)}
-              >
-                <img src={openedImage} alt="" />
-              </div>
-            )}
-
-            {openedVideo && (
-            <div
-              className="image-preview-overlay"
-              onClick={() => setOpenedVideo(null)}
-            >
-              <video
-                src={openedVideo}
-                controls
-                autoPlay
-                playsInline
-                onClick={(e) => e.stopPropagation()}
+           <ChatInput
+                replyTo={replyTo}
+                setReplyTo={setReplyTo}
+                editingMessage={editingMessage}
+                setEditingMessage={setEditingMessage}
+                setText={setText}
+                text={text}
+                chatFile={chatFile}
+                setChatFile={setChatFile}
+                chatImageInputRef={chatImageInputRef}
+                textareaRef={textareaRef}
+                handleTextChange={handleTextChange}
+                handlePasteImage={handlePasteImage}
+                showChatEmoji={showChatEmoji}
+                setShowChatEmoji={setShowChatEmoji}
+                chatEmojiRef={chatEmojiRef}
+                parseReplyMessage={parseReplyMessage}
+                saveEditedMessage={saveEditedMessage}
+                sendMessage={sendMessage}
               />
-            </div>
-          )}
 
-            {showChatEmoji && (
-              <div
-                className="chat-emoji-picker"
-                ref={chatEmojiRef}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <EmojiPicker
-                  onEmojiClick={(emojiData) => {
-                    setText((prev) => prev + emojiData.emoji);
-                  }}
-                  height={350}
-                  width={300}
-                />
-              </div>
-            )}
+          <MediaPreviewModal
+              openedImage={openedImage}
+              setOpenedImage={setOpenedImage}
+              openedVideo={openedVideo}
+              setOpenedVideo={setOpenedVideo}
+            />
           </>
         ) : (
           <p>Select a chat</p>

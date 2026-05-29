@@ -1,0 +1,117 @@
+/* SIDEBAR LINKS */
+
+.left-sidebar .sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 500;
+  padding: 13px 16px;
+  border-radius: 999px;
+  margin-bottom: 6px;
+}
+
+.left-sidebar .sidebar-link svg {
+  font-size: 26px;
+  flex-shrink: 0;
+}
+
+.left-sidebar .sidebar-link:hover {
+  background: #f3f4f6;
+}
+
+.left-sidebar .sidebar-link.active {
+  font-weight: 800;
+  background: #e5e7eb;
+}
+
+/* LOGOUT */
+
+.left-sidebar .logout-btn {
+  color: #dc2626;
+}
+
+.left-sidebar .logout-btn:hover {
+  background: #fee2e2;
+}
+
+/* BADGES */
+
+.nav-badge,
+.unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #22c55e;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nav-badge {
+  margin-left: 8px;
+}
+
+/* CHAT MODE SIDEBAR */
+
+.desktop-layout.chat-mode .sidebar-link {
+  position: relative;
+}
+
+.desktop-layout.chat-mode .nav-badge {
+  position: absolute;
+  top: 10px;
+  right: 4px;
+  margin-left: 0;
+}
+
+.desktop-layout.chat-mode .sidebar-link span:not(.nav-badge) {
+  display: none;
+}
+
+.desktop-layout.chat-mode .sidebar-link svg {
+  font-size: 28px;
+}
+
+/* BACK BUTTON */
+
+.chat-back-sidebar-btn {
+  display: none;
+}
+
+.desktop-layout.chat-mode .chat-back-sidebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 48px;
+  height: 48px;
+
+  margin-bottom: 18px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: #f3f4f6;
+  color: #111827;
+
+  flex-shrink: 0;
+}
+
+.desktop-layout.chat-mode .chat-back-sidebar-btn svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.desktop-layout.chat-mode .chat-back-sidebar-btn:hover {
+  background: #e5e7eb;
+}

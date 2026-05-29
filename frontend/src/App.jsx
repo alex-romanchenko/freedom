@@ -3,6 +3,7 @@ import api from './api/api';
 import socket from './socket';
 
 import Feed from './pages/Feed';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Chat from './pages/Chat';
 import Profile from './pages/Profile';
 import UserSearch from './components/UserSearch';
@@ -47,12 +48,47 @@ import { getNotificationsApi } from './api/notificationsApi';
 import './App.css';
 
 function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   
   const [isAuth, setIsAuth] = useState(() =>
     Boolean(localStorage.getItem('token') || sessionStorage.getItem('token'))
   );
 
-  const [page, setPage] = useState('feed');
+  const getPageFromPath = (path) => {
+  if (path === '/friends') return 'friends';
+  if (path === '/messages') return 'chat';
+  if (path === '/actions') return 'notifications';
+  if (path === '/favorites') return 'favorites';
+  if (path === '/profile') return 'profile';
+
+  return 'feed';
+};
+
+const [page, setPageState] = useState(() =>
+  getPageFromPath(window.location.pathname)
+);
+
+const setPage = (nextPage) => {
+  const paths = {
+    feed: '/',
+    friends: '/friends',
+    chat: '/messages',
+    notifications: '/actions',
+    favorites: '/favorites',
+    profile: '/profile',
+    userProfile: '/user',
+    photos: '/photos',
+  };
+
+  setPageState(nextPage);
+
+  const nextPath = paths[nextPage] || '/';
+
+  if (location.pathname !== nextPath) {
+    navigate(nextPath);
+  }
+};
   const [friendRequestSignal, setFriendRequestSignal] = useState(0);
   const [friendPopup, setFriendPopup] = useState(null);
   const [friendAcceptedPopup, setFriendAcceptedPopup] = useState(null);
@@ -83,7 +119,7 @@ const {
 } = audioCall;
 
 
- const path = window.location.pathname;
+ const path = location.pathname;
 
 const isResetPasswordPage = path === '/reset-password';
 const isVerifyEmailPage = path === '/verify-email';
@@ -131,7 +167,7 @@ const isVerifyEmailPage = path === '/verify-email';
       console.error(err);
     }
   };
-
+  
   useEffect(() => {
   if (!isAuth) return;
 
@@ -161,6 +197,13 @@ const isVerifyEmailPage = path === '/verify-email';
     socket.off('connect', join);
   };
 }, [isAuth]);
+
+useEffect(() => {
+  if (location.pathname === '/reset-password') return;
+  if (location.pathname === '/verify-email') return;
+
+  setPageState(getPageFromPath(location.pathname));
+}, [location.pathname]);
 
 useEffect(() => {
   if (!isAuth) return;

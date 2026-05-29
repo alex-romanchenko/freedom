@@ -1,0 +1,93 @@
+import { getFileUrl } from '../../api/fileUrl';
+import {  IoArrowBack } from 'react-icons/io5';
+function ChatSidebar({
+  conversations,
+  selectedConv,
+  onlineUsers,
+  setSelectedUserId,
+  setSelectedConv,
+  setTypingUserId,
+  setMessageMenu,
+  loadMessages,
+  setDeleteDialogId,
+  onBack,
+}) {
+  return (
+    <div className="chat-sidebar">
+    <div className="chat-sidebar-header">
+        <button
+        className="mobile-chat-list-back-btn"
+        onClick={onBack}
+        >
+        <IoArrowBack />
+        </button>
+
+        <h3>Chats</h3>
+    </div>
+
+      {conversations.length === 0 && (
+        <p className="username">No conversations yet</p>
+      )}
+
+      {conversations.map((c) => (
+        <div
+          key={c.id}
+          onClick={async () => {
+            setSelectedUserId?.(null);
+            setSelectedConv(c);
+            setTypingUserId(null);
+            setMessageMenu(null);
+            await loadMessages(c.id);
+          }}
+          className={`chat-item ${selectedConv?.id === c.id ? 'active' : ''}`}
+        >
+          <div
+            className={`chat-avatar-wrap ${
+              onlineUsers.includes(String(c.user_id)) ? 'online' : ''
+            }`}
+          >
+            {c.avatar ? (
+              <img className="chat-avatar" src={getFileUrl(c.avatar)} alt="" />
+            ) : (
+              <div className="chat-avatar-placeholder">
+                {c.display_name?.[0] || '?'}
+              </div>
+            )}
+          </div>
+
+          <div className="chat-item-content">
+            <div className="chat-item-top">
+              <div className="chat-list-name-row">
+                <strong>{c.display_name}</strong>
+
+                {onlineUsers.includes(String(c.user_id)) && (
+                  <span className="chat-list-online-dot"></span>
+                )}
+              </div>
+
+              {Number(c.unread_count) > 0 && (
+                <span className="unread-badge">{c.unread_count}</span>
+              )}
+            </div>
+
+            {c.last_message_text && (
+              <div className="chat-preview">{c.last_message_text}</div>
+            )}
+          </div>
+
+          <button
+            className="delete-dialog-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDeleteDialogId(c.id);
+            }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default ChatSidebar;
