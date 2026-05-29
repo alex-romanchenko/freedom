@@ -29,6 +29,7 @@ function Chat({
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [isLoadingOldMessages, setIsLoadingOldMessages] = useState(false);
   const [openedImage, setOpenedImage] = useState(null);
+  const [openedVideo, setOpenedVideo] = useState(null);
   const [deleteDialogId, setDeleteDialogId] = useState(null);
 
   const [typingUserId, setTypingUserId] = useState(null);
@@ -923,13 +924,21 @@ useEffect(() => {
                           )}
 
                           {m.video && (
-                            <video
-                              className="message-video"
-                              src={getFileUrl(m.video)}
-                              controls
-                              playsInline
-                              onClick={(e) => e.stopPropagation()}
-                            />
+                            <div
+                              className="message-video-wrap"
+                              onClick={() => setOpenedVideo(getFileUrl(m.video))}
+                            >
+                              <video
+                                className="message-video"
+                                src={getFileUrl(m.video)}
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                              />
+
+                              <div className="message-video-play">▷</div>
+                            </div>
                           )}
                         </>
                       )}
@@ -1151,6 +1160,21 @@ useEffect(() => {
                 <img src={openedImage} alt="" />
               </div>
             )}
+
+            {openedVideo && (
+            <div
+              className="image-preview-overlay"
+              onClick={() => setOpenedVideo(null)}
+            >
+              <video
+                src={openedVideo}
+                controls
+                autoPlay
+                playsInline
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          )}
 
             {showChatEmoji && (
               <div
