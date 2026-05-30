@@ -145,13 +145,30 @@
     });
   });
 
-socket.on('callUser', ({ to, offer, from, withVideo }) => {
+socket.on('callUser', async ({ to, offer, from, withVideo }) => {
   console.log('CALL USER:', { from, to, withVideo });
+
+  let caller = null;
+
+  try {
+    const result = await pool.query(
+      'SELECT id, username, avatar FROM users WHERE id = $1',
+      [from]
+    );
+
+    caller = result.rows[0];
+  } catch (error) {
+    console.error('Get caller error:', error.message);
+  }
 
   io.to(`user_${to}`).emit('incomingCall', {
     from,
     offer,
     withVideo,
+    caller: caller || {
+      id: from,
+      username: `User ${from}`,
+    },
   });
 });
 

@@ -739,6 +739,19 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.call-popup-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.call-popup-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
 
 @keyframes popupIn {
   from {

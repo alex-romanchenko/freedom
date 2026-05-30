@@ -263,81 +263,79 @@ const remoteVideoRef = useRef(null);
 };
 
   useEffect(() => {
-    const handleIncomingCall = ({
-        from,
-        offer,
-        withVideo,
-        }) => {
+  const handleIncomingCall = ({ from, offer, withVideo, caller }) => {
+    if (isCalling || isInCall || peerRef.current) {
+      return;
+    }
 
-          if (isCalling || isInCall || peerRef.current) {
-            return;
-          }
-      setCallStatus('Ringing...');
-      
+    setCallStatus('Ringing...');
 
-if (ringtoneRef.current) {
-  ringtoneRef.current.loop = true;
-  ringtoneRef.current.play().catch(() => {});
-}
+    if (ringtoneRef.current) {
+      ringtoneRef.current.loop = true;
+      ringtoneRef.current.play().catch(() => {});
+    }
+
     setIncomingCall({
-        from,
-        offer,
-        withVideo,
-        });
-    };
+      from,
+      offer,
+      withVideo,
+      caller,
+    });
+  };
 
-    const handleCallAnswered = async ({ answer }) => {
-      if (!peerRef.current) return;
+  const handleCallAnswered = async ({ answer }) => {
+    if (!peerRef.current) return;
 
-      await peerRef.current.setRemoteDescription(
-        new RTCSessionDescription(answer)
-      );
-      await flushPendingCandidates();
-
-      setIsCalling(false);
-      setIsInCall(true);
-      setCallStatus('In call');
-
-      if (!timerRef.current) {
-        timerRef.current = setInterval(() => {
-          setCallDuration((prev) => prev + 1);
-        }, 1000);
-      }
-    };
-
-const handleIceCandidate = async ({ candidate }) => {
-  if (!candidate) return;
-
-  if (!peerRef.current || !peerRef.current.remoteDescription) {
-    pendingCandidatesRef.current.push(candidate);
-    return;
-  }
-
-  try {
-    await peerRef.current.addIceCandidate(
-      new RTCIceCandidate(candidate)
+    await peerRef.current.setRemoteDescription(
+      new RTCSessionDescription(answer)
     );
-  } catch (err) {
-    console.error('Add ICE candidate error:', err);
-  }
-};
 
-    const handleCallEnded = () => {
-      cleanupCall();
-    };
+    await flushPendingCandidates();
 
-    socket.on('incomingCall', handleIncomingCall);
-    socket.on('callAnswered', handleCallAnswered);
-    socket.on('iceCandidate', handleIceCandidate);
-    socket.on('callEnded', handleCallEnded);
+    setIsCalling(false);
+    setIsInCall(true);
+    setCallStatus('In call');
 
-    return () => {
-      socket.off('incomingCall', handleIncomingCall);
-      socket.off('callAnswered', handleCallAnswered);
-      socket.off('iceCandidate', handleIceCandidate);
-      socket.off('callEnded', handleCallEnded);
-    };
-  }, []);
+    if (!timerRef.current) {
+      timerRef.current = setInterval(() => {
+        setCallDuration((prev) => prev + 1);
+      }, 1000);
+    }
+  };
+
+  const handleIceCandidate = async ({ candidate }) => {
+    if (!candidate) return;
+
+    if (!peerRef.current || !peerRef.current.remoteDescription) {
+      pendingCandidatesRef.current.push(candidate);
+      return;
+    }
+
+    try {
+      await peerRef.current.addIceCandidate(
+        new RTCIceCandidate(candidate)
+      );
+    } catch (err) {
+      console.error('Add ICE candidate error:', err);
+    }
+  };
+
+  const handleCallEnded = () => {
+    cleanupCall();
+  };
+
+  socket.on('incomingCall', handleIncomingCall);
+  socket.on('callAnswered', handleCallAnswered);
+  socket.on('iceCandidate', handleIceCandidate);
+  socket.on('callEnded', handleCallEnded);
+
+  return () => {
+    socket.off('incomingCall', handleIncomingCall);
+    socket.off('callAnswered', handleCallAnswered);
+    socket.off('iceCandidate', handleIceCandidate);
+    socket.off('callEnded', handleCallEnded);
+  };
+}, [isCalling, isInCall]);
 
 const attachVideoStreams = useCallback(() => {
   if (localVideoRef.current && localStreamRef.current) {

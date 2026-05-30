@@ -12,7 +12,7 @@ async function cleanupDeletedMessageMedia() {
       FROM messages
       WHERE is_deleted = true
         AND deleted_at IS NOT NULL
-        AND deleted_at < NOW() - INTERVAL '1 minute'
+        AND deleted_at < NOW() - INTERVAL '30 days'
         AND (
           image IS NOT NULL
           OR video IS NOT NULL

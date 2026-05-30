@@ -23,6 +23,7 @@ import { getPostByIdApi } from './api/postsApi';
 import { getPhotoByIdApi } from './api/photosApi';
 import VerifyEmail from "./pages/VerifyEmail";
 import { useAudioCall } from './hooks/useAudioCall';
+import { getFileUrl } from './api/fileUrl';
 
 
 import {
@@ -61,6 +62,8 @@ function App() {
   if (path === '/actions') return 'notifications';
   if (path === '/favorites') return 'favorites';
   if (path === '/profile') return 'profile';
+  if (path === '/user') return 'userProfile';
+  if (path === '/photos') return 'photos';
 
   return 'feed';
 };
@@ -418,7 +421,7 @@ if (isVerifyEmailPage) {
           }}
         >
           {page === 'chat' ? <IoChatbubbleEllipses /> : <IoChatbubbleEllipsesOutline />}
-          <span>Messages</span>
+          <span>Chats</span>
           {unreadMessagesCount > 0 && (
             <span className="nav-badge">{unreadMessagesCount}</span>
           )}
@@ -728,9 +731,17 @@ if (isVerifyEmailPage) {
       {incomingCall.withVideo ? 'Incoming video call' : 'Incoming audio call'}
     </h3>
 
-    <p>
-      User {incomingCall.from} is calling you
-    </p>
+<div className="call-popup-user">
+<img
+  src={getFileUrl(incomingCall.caller?.avatar)}
+  alt={incomingCall.caller?.username}
+  className="call-popup-avatar"
+/>
+
+  <p>
+    {incomingCall.caller?.username || `User ${incomingCall.from}`} is calling you
+  </p>
+</div>
 
     <div className="call-popup-actions">
       <button
