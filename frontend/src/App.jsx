@@ -109,6 +109,7 @@ const setPage = (nextPage) => {
   const [activePost, setActivePost] = useState(null);
   const [photosUserId, setPhotosUserId] = useState(null);
   const joinedSocketRef = useRef(null);
+  const videoCallBoxRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
 

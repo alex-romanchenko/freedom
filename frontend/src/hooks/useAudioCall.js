@@ -59,6 +59,17 @@ const remoteVideoRef = useRef(null);
     return peer;
   };
 
+  const [isCameraOff, setIsCameraOff] = useState(false);
+
+  const toggleCamera = () => {
+    const videoTrack = localStreamRef.current?.getVideoTracks()[0];
+
+    if (!videoTrack) return;
+
+    videoTrack.enabled = !videoTrack.enabled;
+    setIsCameraOff(!videoTrack.enabled);
+  };
+
   const getLocalMedia = async (withVideo = false) => {
     const stream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -244,6 +255,7 @@ const remoteVideoRef = useRef(null);
     setIsCalling(false);
     setIsInCall(false);
     setIsMuted(false);
+    setIsCameraOff(false);
   };
 
   const flushPendingCandidates = async () => {
@@ -337,6 +349,7 @@ const remoteVideoRef = useRef(null);
   };
 }, [isCalling, isInCall]);
 
+
 const attachVideoStreams = useCallback(() => {
   if (localVideoRef.current && localStreamRef.current) {
     localVideoRef.current.srcObject = localStreamRef.current;
@@ -368,5 +381,7 @@ const attachVideoStreams = useCallback(() => {
     attachVideoStreams,
     isVideoCall,
     ringtoneRef,
+    toggleCamera,
+    isCameraOff,
   };
 }

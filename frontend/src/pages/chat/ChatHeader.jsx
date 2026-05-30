@@ -1,4 +1,11 @@
-import { IoCallOutline, IoVideocamOutline, IoArrowBack } from 'react-icons/io5';
+import {
+  IoCallOutline,
+  IoVideocamOutline,
+  IoArrowBack,
+  IoMic,
+  IoMicOff,
+  IoCall
+} from 'react-icons/io5';
 import { getFileUrl } from '../../api/fileUrl';
 
 function ChatHeader({
@@ -7,6 +14,7 @@ function ChatHeader({
   getChatStatus,
   isInCall,
   isCalling,
+  isVideoCall,
   endCall,
   startCall,
   callStatus,
@@ -60,9 +68,14 @@ function ChatHeader({
       </div>
 
       {isInCall || isCalling ? (
-        <button className="call-btn active" onClick={endCall}>
-          ×
-        </button>
+        !isVideoCall && (
+          <button
+            className="call-btn active end-audio-call-btn"
+            onClick={endCall}
+          >
+            <IoCall />
+          </button>
+        )
       ) : (
         <>
           <button
@@ -95,12 +108,12 @@ function ChatHeader({
         </div>
       )}
 
-      {isInCall && (
+      {isInCall && !isVideoCall && (
         <button
           className={`mute-btn ${isMuted ? 'muted' : ''}`}
           onClick={toggleMute}
         >
-          {isMuted ? 'Mic off' : 'Mic on'}
+          {isMuted ? <IoMicOff /> : <IoMic />}
         </button>
       )}
     </div>

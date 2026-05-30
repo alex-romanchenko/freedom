@@ -9,6 +9,14 @@ import { useEffect, useRef, useState } from 'react';
 import api from '../api/api';
 import socket from '../socket';
 import { deleteConversationApi } from '../api/messagesApi';
+import {
+  IoMic,
+  IoMicOff,
+  IoVideocam,
+  IoVideocamOff,
+  IoExpand,
+  IoCall,
+} from 'react-icons/io5';
 
 function Chat({
   onUnreadCountChange,
@@ -48,6 +56,7 @@ function Chat({
   const textareaRef = useRef(null);
   const chatEmojiRef = useRef(null);
   const joinedConversationRef = useRef(null);
+  const videoCallBoxRef = useRef(null);
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
 
@@ -64,6 +73,8 @@ const {
   remoteVideoRef,
   attachVideoStreams,
   isVideoCall,
+  isCameraOff,
+  toggleCamera,
 } = audioCall;
 
   const playMessageSound = () => {
@@ -71,6 +82,18 @@ const {
     audio.volume = 0.4;
     audio.play().catch(() => {});
   };
+
+  const toggleFullscreen = () => {
+  const el = videoCallBoxRef.current;
+
+  if (!el) return;
+
+  if (!document.fullscreenElement) {
+    el.requestFullscreen?.();
+  } else {
+    document.exitFullscreen?.();
+  }
+};
 
   const loadMessages = async (id) => {
     const res = await api.get(`/messages/${id}?limit=30`);
@@ -692,25 +715,56 @@ useEffect(() => {
               isMuted={isMuted}
               toggleMute={toggleMute}
               setSelectedConv={setSelectedConv}
+              isVideoCall={isVideoCall}
             />
-                      {isInCall && isVideoCall && (
-            <div className="video-call-box">
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="remote-video"
-              />
+            {isInCall && isVideoCall && (
+              <div className="video-call-box" ref={videoCallBoxRef}>
+                <video
+                  ref={remoteVideoRef}
+                  autoPlay
+                  playsInline
+                  className="remote-video"
+                />
 
-              <video
-                ref={localVideoRef}
-                autoPlay
-                playsInline
-                muted
-                className="local-video"
-              />
-            </div>
-          )}
+                <video
+                  ref={localVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="local-video"
+                />
+
+                <div className="video-call-controls">
+                  <button
+                    className={`video-control-btn ${isMuted ? 'active' : ''}`}
+                    onClick={toggleMute}
+                  >
+                    {isMuted ? <IoMicOff /> : <IoMic />}
+                  </button>
+
+                  <button
+                    className={`video-control-btn ${isCameraOff ? 'active' : ''}`}
+                    onClick={toggleCamera}
+                  >
+                    {isCameraOff ? <IoVideocamOff /> : <IoVideocam />}
+                  </button>
+
+                  <button
+                    className="video-control-btn"
+                    onClick={toggleFullscreen}
+                  >
+                    <IoExpand />
+                  </button>
+
+                  <button
+                    className="video-control-btn end-call-btn"
+                    onClick={endCall}
+                  >
+                    <IoCall />
+                  </button>
+                </div>
+              </div>
+            )}
             <div
               className="messages-list"
               ref={messagesContainerRef}
