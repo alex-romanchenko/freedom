@@ -731,7 +731,7 @@ useEffect(() => {
                   autoPlay
                   playsInline
                   muted
-                  className="local-video"
+                  className={`local-video ${isCameraOff ? 'hidden' : ''}`}
                 />
 
                 <div className="video-call-controls">

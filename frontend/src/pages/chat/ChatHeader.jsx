@@ -4,7 +4,6 @@ import {
   IoArrowBack,
   IoMic,
   IoMicOff,
-  IoCall,
   
 } from 'react-icons/io5';
 import { getFileUrl } from '../../api/fileUrl';
@@ -70,10 +69,10 @@ function ChatHeader({
 
         {isInCall || isCalling ? (
           <button
-            className="call-btn active end-audio-call-btn"
+            className="video-control-btn end-call-btn"
             onClick={endCall}
           >
-            <IoCall />
+            <IoCallOutline />
           </button>
         ) : (
         <>
