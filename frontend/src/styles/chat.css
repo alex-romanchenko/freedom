@@ -809,12 +809,15 @@
 }
 
 .end-audio-call-btn {
-  background: #ef4444 !important;
-  color: white;
+  background: #e5e7eb !important;
+  color: #ef4444 !important;
 }
 
 .end-audio-call-btn svg {
   transform: rotate(135deg);
+}
+.end-audio-call-btn:hover {
+  background: #d1d5db !important;
 }
 @keyframes popupIn {
   from {
@@ -861,6 +864,7 @@
   display: block;
   width: 22px;
   height: 22px;
+  stroke: currentColor;
 }
 
 .call-popup {
@@ -919,19 +923,6 @@
   color: #111827;
 }
 
-.mute-btn {
-  border: none;
-  background: #f3f4f6;
-  color: #111827;
-  padding: 8px 12px;
-  border-radius: 999px;
-  font-weight: 700;
-}
-
-.mute-btn.muted {
-  background: #fee2e2;
-  color: #dc2626;
-}
 
 /* VIDEO CALL */
 
