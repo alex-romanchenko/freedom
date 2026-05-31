@@ -733,11 +733,19 @@ if (isVerifyEmailPage) {
     </h3>
 
 <div className="call-popup-user">
-<img
-  src={getFileUrl(incomingCall.caller?.avatar)}
-  alt={incomingCall.caller?.username}
-  className="call-popup-avatar"
-/>
+  {incomingCall.caller?.avatar ? (
+    <img
+      src={getFileUrl(incomingCall.caller.avatar)}
+      alt={incomingCall.caller.username}
+      className="call-popup-avatar"
+    />
+  ) : (
+    <div className="call-popup-avatar-placeholder">
+      {(incomingCall.caller?.username || '?')
+        .charAt(0)
+        .toUpperCase()}
+    </div>
+  )}
 
   <p>
     {incomingCall.caller?.username || `User ${incomingCall.from}`} is calling you
