@@ -983,18 +983,3 @@
 .local-video.hidden {
   display: none;
 }
-.hangup-icon {
-  width: 22px;
-  height: 22px;
-  display: block;
-}
-
-.end-audio-call-btn,
-.video-control-btn.end-call-btn {
-  background: #fee2e2 !important;
-}
-
-.end-audio-call-btn:hover,
-.video-control-btn.end-call-btn:hover {
-  background: #fecaca !important;
-}

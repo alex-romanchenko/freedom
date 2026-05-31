@@ -68,16 +68,12 @@ function ChatHeader({
       </div>
 
         {isInCall || isCalling ? (
-        <button
-          className="video-control-btn end-call-btn"
-          onClick={endCall}
-        >
-          <img
-            src="/icons/phone-hangup-btn.svg"
-            alt="End call"
-            className="hangup-icon"
-          />
-        </button>
+          <button
+            className="video-control-btn end-call-btn"
+            onClick={endCall}
+          >
+            <IoCallOutline />
+          </button>
         ) : (
         <>
           <button
