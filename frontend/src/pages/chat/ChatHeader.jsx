@@ -11,6 +11,7 @@ import { getFileUrl } from '../../api/fileUrl';
 function ChatHeader({
   selectedConv,
   onOpenUser,
+  onOpenGroupInfo,
   getChatStatus,
   isInCall,
   isCalling,
@@ -23,6 +24,7 @@ function ChatHeader({
   toggleMute,
   setSelectedConv,
 }) {
+  const isGroup = selectedConv?.type === 'group';
   return (
     <div className="chat-header">
       <button
@@ -33,7 +35,10 @@ function ChatHeader({
       </button>
 
       <div
-        onClick={() => onOpenUser(selectedConv.username)}
+        onClick={() => {
+          if (isGroup) onOpenGroupInfo?.();
+          else onOpenUser(selectedConv.username);
+        }}
         style={{ cursor: 'pointer' }}
       >
         {selectedConv.avatar ? (
@@ -52,7 +57,10 @@ function ChatHeader({
       <div className="chat-header-info">
         <div
           className="chat-header-name"
-          onClick={() => onOpenUser(selectedConv.username)}
+          onClick={() => {
+            if (isGroup) onOpenGroupInfo?.();
+            else onOpenUser(selectedConv.username);
+          }}
           style={{ cursor: 'pointer' }}
         >
           {selectedConv.display_name}
@@ -60,39 +68,43 @@ function ChatHeader({
 
         <span
           className={`chat-header-status ${
-            getChatStatus() === 'online' ? 'online' : ''
+            !isGroup && getChatStatus() === 'online' ? 'online' : ''
           }`}
         >
-          {getChatStatus()}
+          {isGroup ? 'group chat' : getChatStatus()}
         </span>
       </div>
 
-        {isInCall || isCalling ? (
-          <button
-            className="video-control-btn end-call-btn"
-            onClick={endCall}
-          >
-            <IoCallOutline />
-          </button>
-        ) : (
-        <>
-          <button
-            className="call-btn"
-            onClick={() => startCall(selectedConv.user_id, false)}
-          >
-            <IoCallOutline />
-          </button>
+        {!isGroup && (
+  <>
+    {isInCall || isCalling ? (
+      <button
+        className="video-control-btn end-call-btn"
+        onClick={endCall}
+      >
+        <IoCallOutline />
+      </button>
+    ) : (
+      <>
+        <button
+          className="call-btn"
+          onClick={() => startCall(selectedConv.user_id, false)}
+        >
+          <IoCallOutline />
+        </button>
 
-          <button
-            className="call-btn"
-            onClick={() => startCall(selectedConv.user_id, true)}
-          >
-            <IoVideocamOutline />
-          </button>
-        </>
-      )}
+        <button
+          className="call-btn"
+          onClick={() => startCall(selectedConv.user_id, true)}
+        >
+          <IoVideocamOutline />
+        </button>
+      </>
+    )}
+  </>
+)}
 
-      {callStatus && (
+      {!isGroup && callStatus && (
         <div className="call-status">
           <span>{callStatus}</span>
 
@@ -106,7 +118,7 @@ function ChatHeader({
         </div>
       )}
 
-      {isInCall && !isVideoCall && (
+      {!isGroup && isInCall && !isVideoCall && (
         <button
           className={`mute-btn ${isMuted ? 'muted' : ''}`}
           onClick={toggleMute}

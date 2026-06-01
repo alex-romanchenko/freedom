@@ -1,7 +1,7 @@
 /* MAIN LAYOUT */
 
 .desktop-layout {
-  width: min(100%, 1440px);
+  width: min(100%, 1960px);
   margin: 0 auto;
 
   display: grid;

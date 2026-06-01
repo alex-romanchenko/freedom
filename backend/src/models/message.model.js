@@ -16,6 +16,19 @@ async function findOrCreateConversation(userId, otherUserId) {
   return result.rows[0];
 }
 
+async function getGroupMemberIds(conversationId) {
+  const result = await pool.query(
+    `
+    SELECT user_id
+    FROM conversation_members
+    WHERE conversation_id = $1
+    `,
+    [conversationId]
+  );
+
+  return result.rows.map((row) => row.user_id);
+}
+
 async function createMessage({ conversationId, senderId, text, image, video }) {
   const result = await pool.query(
     `INSERT INTO messages (
@@ -51,68 +64,143 @@ RETURNING
 
 async function getUserConversations(userId) {
   const result = await pool.query(`
-    SELECT 
-      conversations.id,
-      conversations.updated_at,
+    SELECT *
+    FROM (
+      SELECT 
+        conversations.id,
+        conversations.updated_at,
+        false AS is_group,
+        'private' AS type,
 
-      users.id AS user_id,
-      users.username,
-      users.display_name,
-      users.avatar,
-      users.last_seen,
+        users.id AS user_id,
+        users.username,
+        users.display_name,
+        users.avatar,
+        users.last_seen,
 
-      last_message.text AS last_message_text,
-      last_message.created_at AS last_message_created_at,
-      last_message.sender_id AS last_message_sender_id,
+        NULL AS group_name,
+        NULL AS group_avatar,
+        NULL AS admin_id,
 
-      COUNT(unread_messages.id) AS unread_count
+        last_message.text AS last_message_text,
+        last_message.created_at AS last_message_created_at,
+        last_message.sender_id AS last_message_sender_id,
 
-    FROM conversations
+        COUNT(unread_messages.id) AS unread_count
 
-    JOIN users 
-      ON users.id = 
-        CASE 
-          WHEN conversations.user_one_id = $1 THEN conversations.user_two_id
-          ELSE conversations.user_one_id
-        END
+      FROM conversations
 
-    LEFT JOIN LATERAL (
-      SELECT messages.*
-      FROM messages
-      WHERE messages.conversation_id = conversations.id
-        AND messages.is_deleted = false
-      ORDER BY messages.created_at DESC
-      LIMIT 1
-    ) AS last_message ON true
+      JOIN users 
+        ON users.id = 
+          CASE 
+            WHEN conversations.user_one_id = $1 THEN conversations.user_two_id
+            ELSE conversations.user_one_id
+          END
 
-    LEFT JOIN conversation_reads 
-      ON conversation_reads.conversation_id = conversations.id
-      AND conversation_reads.user_id = $1
+      LEFT JOIN LATERAL (
+        SELECT messages.*
+        FROM messages
+        WHERE messages.conversation_id = conversations.id
+          AND messages.is_deleted = false
+        ORDER BY messages.created_at DESC
+        LIMIT 1
+      ) AS last_message ON true
 
-    LEFT JOIN messages AS unread_messages
-      ON unread_messages.conversation_id = conversations.id
-      AND unread_messages.sender_id <> $1
-      AND unread_messages.is_deleted = false
-      AND (
-        conversation_reads.last_read_at IS NULL
-        OR unread_messages.created_at > conversation_reads.last_read_at
-      )
+      LEFT JOIN conversation_reads 
+        ON conversation_reads.conversation_id = conversations.id
+        AND conversation_reads.user_id = $1
 
-    WHERE conversations.user_one_id = $1 
-       OR conversations.user_two_id = $1
+      LEFT JOIN messages AS unread_messages
+        ON unread_messages.conversation_id = conversations.id
+        AND unread_messages.sender_id <> $1
+        AND unread_messages.is_deleted = false
+        AND (
+          conversation_reads.last_read_at IS NULL
+          OR unread_messages.created_at > conversation_reads.last_read_at
+        )
 
-    GROUP BY 
-      conversations.id,
-      users.id,
-      users.username,
-      users.display_name,
-      users.avatar,
-      users.last_seen,
-      last_message.text,
-      last_message.created_at,
-      last_message.sender_id
+      WHERE conversations.is_group = false
+        AND (
+          conversations.user_one_id = $1 
+          OR conversations.user_two_id = $1
+        )
 
-    ORDER BY conversations.updated_at DESC
+      GROUP BY 
+        conversations.id,
+        users.id,
+        users.username,
+        users.display_name,
+        users.avatar,
+        users.last_seen,
+        last_message.text,
+        last_message.created_at,
+        last_message.sender_id
+
+      UNION ALL
+
+      SELECT
+        conversations.id,
+        conversations.updated_at,
+        true AS is_group,
+        'group' AS type,
+
+        NULL AS user_id,
+        NULL AS username,
+        conversations.group_name AS display_name,
+        conversations.group_avatar AS avatar,
+        NULL AS last_seen,
+
+        conversations.group_name,
+        conversations.group_avatar,
+        conversations.admin_id,
+
+        last_message.text AS last_message_text,
+        last_message.created_at AS last_message_created_at,
+        last_message.sender_id AS last_message_sender_id,
+
+        COUNT(unread_messages.id) AS unread_count
+
+      FROM conversations
+
+      JOIN conversation_members
+        ON conversation_members.conversation_id = conversations.id
+        AND conversation_members.user_id = $1
+
+      LEFT JOIN LATERAL (
+        SELECT messages.*
+        FROM messages
+        WHERE messages.conversation_id = conversations.id
+          AND messages.is_deleted = false
+        ORDER BY messages.created_at DESC
+        LIMIT 1
+      ) AS last_message ON true
+
+      LEFT JOIN conversation_reads 
+        ON conversation_reads.conversation_id = conversations.id
+        AND conversation_reads.user_id = $1
+
+      LEFT JOIN messages AS unread_messages
+        ON unread_messages.conversation_id = conversations.id
+        AND unread_messages.sender_id <> $1
+        AND unread_messages.is_deleted = false
+        AND (
+          conversation_reads.last_read_at IS NULL
+          OR unread_messages.created_at > conversation_reads.last_read_at
+        )
+
+      WHERE conversations.is_group = true
+
+      GROUP BY
+        conversations.id,
+        conversations.group_name,
+        conversations.group_avatar,
+        conversations.admin_id,
+        last_message.text,
+        last_message.created_at,
+        last_message.sender_id
+    ) AS all_conversations
+
+    ORDER BY updated_at DESC
   `, [userId]);
 
   return result.rows;
@@ -293,4 +381,5 @@ module.exports = {
   markMessagesAsRead,
   markMessageAsDelivered,
   markIncomingMessagesAsDelivered,
+  getGroupMemberIds,
 };

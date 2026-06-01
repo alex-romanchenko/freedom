@@ -3,6 +3,7 @@ const authMiddleware = require('../middleware/auth.middleware');
 const uploadMessageImage = require('../middleware/uploadMessageImage');
 const { 
   sendMessage, 
+  sendGroupMessage,
   getConversations, 
   getMessages,
   markAsRead,
@@ -18,6 +19,12 @@ router.get('/', authMiddleware, getConversations);
 router.get('/:conversationId', authMiddleware, getMessages);
 router.post('/conversations/:userId', authMiddleware, createConversation);
 router.post('/:conversationId/read', authMiddleware, markAsRead);
+router.post(
+  '/group/:conversationId',
+  authMiddleware,
+  uploadMessageImage.single('image'),
+  sendGroupMessage
+);
 router.post(
   '/:userId',
   authMiddleware,

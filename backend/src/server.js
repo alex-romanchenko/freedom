@@ -14,6 +14,7 @@
   const photoCommentRoutes = require('./routes/photoComment.routes');
   const postCommentRoutes = require('./routes/postComment.routes');
   const notificationRoutes = require('./routes/notification.routes');
+  const groupChatRoutes = require('./routes/groupChat.routes');
   const { markIncomingMessagesAsDelivered } = require('./models/message.model');
 
   require('dotenv').config();
@@ -33,6 +34,7 @@
   app.use('/api/photos', photoLikeRoutes);
   app.use('/api/photos', photoCommentRoutes);
   app.use('/api/messages', messageRoutes);
+  app.use('/api/group-chats', groupChatRoutes);
   app.use('/api/posts', postRoutes);
   app.use('/api/posts', postCommentRoutes);
   app.get('/', (req, res) => {

@@ -4,6 +4,20 @@
   display: grid;
   grid-template-columns: 300px 1fr;
   min-height: 100vh;
+  transition: grid-template-columns 0.25s ease;
+}
+
+.chat-layout.with-group-info {
+  grid-template-columns: 300px 1fr 340px;
+}
+.chat-layout.with-group-info .messages-list {
+  align-items: flex-start;
+}
+
+.chat-layout.with-group-info .chat-input-row {
+  margin-left: 0;
+  margin-right: auto;
+
 }
 
 .chat-sidebar {
@@ -206,6 +220,9 @@
 
 .messages-list {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   min-height: 0;
   overflow-y: auto;
   padding: 16px;
@@ -224,6 +241,8 @@
 .message-row {
   display: flex;
   margin-bottom: 10px;
+  width: 100%;
+  
 }
 
 .message-row.mine {
@@ -232,6 +251,12 @@
 
 .message-row.theirs {
   justify-content: flex-start;
+}
+
+.message-row,
+.chat-input-row {
+  width: 100%;
+  max-width: 760px;
 }
 
 .message-bubble {
@@ -362,7 +387,9 @@
 .chat-input-row {
   display: flex;
   align-items: center;
+  margin: 0 auto;
   gap: 10px;
+  width: 100%;
 }
 
 .chat-input-box {

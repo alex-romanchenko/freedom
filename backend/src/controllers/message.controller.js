@@ -4,7 +4,7 @@ const {
   getUserConversations,
   getMessagesByConversation,
   getMessageById,
-  
+  getGroupMemberIds,
   markConversationAsRead,
   markMessagesAsRead,
   deleteConversationById,
@@ -99,6 +99,88 @@ if (userRoom) {
   } catch (error) {
     res.status(500).json({
       message: 'Error sending message',
+      error: error.message,
+    });
+  }
+}
+
+async function sendGroupMessage(req, res) {
+  try {
+    const senderId = req.user.id;
+    const { conversationId } = req.params;
+    const { text } = req.body;
+
+    let imagePath = null;
+    let videoPath = null;
+
+    if (req.file) {
+      if (req.file.mimetype.startsWith('image/')) {
+        imagePath = `/uploads/messages/${req.file.filename}`;
+      }
+
+      if (req.file.mimetype.startsWith('video/')) {
+        videoPath = `/uploads/message-videos/${req.file.filename}`;
+      }
+    }
+
+    if (!text && !imagePath && !videoPath) {
+      return res.status(400).json({
+        message: 'Message text, image or video is required',
+      });
+    }
+
+    const memberIds = await getGroupMemberIds(conversationId);
+
+    if (!memberIds.map(Number).includes(Number(senderId))) {
+      return res.status(403).json({
+        message: 'You are not a member of this group',
+      });
+    }
+
+    const message = await createMessage({
+      conversationId,
+      senderId,
+      text,
+      image: imagePath,
+      video: videoPath,
+    });
+
+    const fullMessage = await getMessageById(message.id);
+
+    const io = req.app.get('io');
+
+    const payload = {
+      conversationId: Number(conversationId),
+      message: fullMessage,
+    };
+
+const conversationRoom = io.sockets.adapter.rooms.get(
+  `conversation_${conversationId}`
+);
+
+io.to(`conversation_${conversationId}`).emit('newMessage', payload);
+
+memberIds.forEach((memberId) => {
+  if (Number(memberId) === Number(senderId)) return;
+
+  const userRoom = io.sockets.adapter.rooms.get(`user_${memberId}`);
+
+  if (!userRoom) return;
+
+  userRoom.forEach((socketId) => {
+    if (!conversationRoom || !conversationRoom.has(socketId)) {
+      io.to(socketId).emit('newMessage', payload);
+    }
+  });
+});
+
+    res.status(201).json({
+      message: 'Group message sent successfully',
+      data: fullMessage,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error sending group message',
       error: error.message,
     });
   }
@@ -243,4 +325,5 @@ module.exports = {
   updateMessage,
   deleteMessage,
   markMessagesAsRead,
+  sendGroupMessage,
 };

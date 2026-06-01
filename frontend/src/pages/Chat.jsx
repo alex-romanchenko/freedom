@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import api from '../api/api';
 import socket from '../socket';
 import { deleteConversationApi } from '../api/messagesApi';
+import GroupInfoPanel from './chat/GroupInfoPanel';
 import {
   IoMic,
   IoMicOff,
@@ -35,6 +36,8 @@ function Chat({
   const [openedImage, setOpenedImage] = useState(null);
   const [openedVideo, setOpenedVideo] = useState(null);
   const [deleteDialogId, setDeleteDialogId] = useState(null);
+  const [groupInfo, setGroupInfo] = useState(null);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
 
   const [typingUserId, setTypingUserId] = useState(null);
   const typingTimeoutRef = useRef(null);
@@ -77,12 +80,29 @@ const {
   toggleCamera,
 } = audioCall;
 
+const handleGroupDeletedOrLeft = async () => {
+  setSelectedConv(null);
+  setMessages([]);
+  setShowGroupInfo(false);
+  setGroupInfo(null);
+
+  await refreshConversations();
+};
+
   const playMessageSound = () => {
     const audio = new Audio('/sounds/message.mp3');
     audio.volume = 0.4;
     audio.play().catch(() => {});
   };
 
+  const openGroupInfo = async () => {
+  if (selectedConv?.type !== 'group') return;
+
+  const res = await api.get(`/group-chats/${selectedConv.id}`);
+
+  setGroupInfo(res.data);
+  setShowGroupInfo(true);
+};
   const toggleFullscreen = () => {
   const el = videoCallBoxRef.current;
 
@@ -249,7 +269,12 @@ const {
 
     shouldScrollToBottomRef.current = true;
 
-    await api.post(`/messages/${selectedConv.user_id}`, formData);
+    const messageUrl =
+      selectedConv.type === 'group'
+        ? `/messages/group/${selectedConv.id}`
+        : `/messages/${selectedConv.user_id}`;
+
+    await api.post(messageUrl, formData);
 
     socket.emit('stopTyping', {
       conversationId: selectedConv.id,
@@ -443,6 +468,7 @@ const handleDropFile = (e) => {
   const formatLastSeen = (dateString) => {
     if (!dateString) return '';
 
+      
     const date = new Date(dateString);
     const diffMs = Date.now() - date.getTime();
 
@@ -679,9 +705,11 @@ useEffect(() => {
 
   return (
       <div
-        className={`chat-layout ${selectedConv ? 'chat-open' : ''} ${
-          isDraggingImage ? 'dragging-image' : ''
-        }`}
+        className={`chat-layout
+          ${selectedConv ? 'chat-open' : ''}
+          ${isDraggingImage ? 'dragging-image' : ''}
+          ${showGroupInfo ? 'with-group-info' : ''}
+        `}
         onClick={closeMessageMenu}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -698,6 +726,8 @@ useEffect(() => {
           loadMessages={loadMessages}
           setDeleteDialogId={setDeleteDialogId}
           onBack={() => window.history.back()}
+          setShowGroupInfo={setShowGroupInfo}
+          setGroupInfo={setGroupInfo}
         />
       <div className="chat-window">
         {selectedConv ? (
@@ -705,6 +735,7 @@ useEffect(() => {
            <ChatHeader
               selectedConv={selectedConv}
               onOpenUser={onOpenUser}
+              onOpenGroupInfo={openGroupInfo}
               getChatStatus={getChatStatus}
               isInCall={isInCall}
               isCalling={isCalling}
@@ -782,6 +813,8 @@ useEffect(() => {
                   key={m.id}
                   message={m}
                   isMine={isMine}
+                  isGroup={selectedConv?.type === 'group'}
+                  onOpenUser={onOpenUser}
                   parseForwardMessage={parseForwardMessage}
                   parseReplyMessage={parseReplyMessage}
                   openMessageMenu={openMessageMenu}
@@ -867,6 +900,17 @@ useEffect(() => {
             </div>
           </div>
         </div>
+      )}
+
+      {showGroupInfo && (
+        <GroupInfoPanel
+          groupInfo={groupInfo}
+          currentUser={currentUser}
+          onlineUsers={onlineUsers}
+          onClose={() => setShowGroupInfo(false)}
+          onOpenUser={onOpenUser}
+          onGroupDeletedOrLeft={handleGroupDeletedOrLeft}
+        />
       )}
 
     </div>

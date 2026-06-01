@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import CreateGroupPanel from './CreateGroupPanel';
 import { getFileUrl } from '../../api/fileUrl';
 import {  IoArrowBack } from 'react-icons/io5';
 function ChatSidebar({
@@ -11,9 +13,20 @@ function ChatSidebar({
   loadMessages,
   setDeleteDialogId,
   onBack,
+  setShowGroupInfo,
+  setGroupInfo,
 }) {
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
   return (
     <div className="chat-sidebar">
+          {showCreateGroup && (
+      <CreateGroupPanel
+        onClose={() => setShowCreateGroup(false)}
+        onGroupCreated={async () => {
+          await window.location.reload();
+        }}
+      />
+    )}
     <div className="chat-sidebar-header">
         <button
         className="mobile-chat-list-back-btn"
@@ -22,7 +35,16 @@ function ChatSidebar({
         <IoArrowBack />
         </button>
 
-        <h3>Chats</h3>
+        <div className="chat-sidebar-title-row">
+          <h3>Chats</h3>
+
+          <button
+            className="create-group-open-btn"
+            onClick={() => setShowCreateGroup(true)}
+          >
+            +
+          </button>
+        </div>
     </div>
 
       {conversations.length === 0 && (
@@ -37,6 +59,9 @@ function ChatSidebar({
             setSelectedConv(c);
             setTypingUserId(null);
             setMessageMenu(null);
+            setShowGroupInfo(false);
+            setGroupInfo(null);
+
             await loadMessages(c.id);
           }}
           className={`chat-item ${selectedConv?.id === c.id ? 'active' : ''}`}
@@ -75,6 +100,7 @@ function ChatSidebar({
             )}
           </div>
 
+        {!c.is_group && !c.group_name && !c.group_id && c.type !== 'group' && (
           <button
             className="delete-dialog-btn"
             onClick={(e) => {
@@ -84,6 +110,7 @@ function ChatSidebar({
           >
             ×
           </button>
+        )}
         </div>
       ))}
     </div>
