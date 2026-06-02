@@ -1,6 +1,11 @@
 import { getFileUrl } from '../api/fileUrl';
-function NotificationPopup({ user, text, onClick, onClose }) {
-  if (!user) return null;
+
+function NotificationPopup({ target, text, onClick, onClose }) {
+  if (!target) return null;
+
+  const avatar = target.avatar;
+  const title = target.display_name;
+  const subtitle = target.subtitle;
 
   return (
     <div className="message-popup" onClick={onClick}>
@@ -18,20 +23,17 @@ function NotificationPopup({ user, text, onClick, onClose }) {
       </div>
 
       <div className="popup-user">
-        {user.avatar ? (
-          <img
-            src={getFileUrl(user.avatar)}
-            alt=""
-          />
+        {avatar ? (
+          <img src={getFileUrl(avatar)} alt="" />
         ) : (
           <div className="popup-avatar">
-            {user.display_name?.[0] || '?'}
+            {title?.[0] || '?'}
           </div>
         )}
 
         <div>
-          <strong>{user.display_name}</strong>
-          <p>@{user.username}</p>
+          <strong>{title}</strong>
+          <p>{subtitle}</p>
         </div>
       </div>
 

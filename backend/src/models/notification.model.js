@@ -32,11 +32,24 @@ async function getNotifications(userId, limit = 20, offset = 0) {
     `
     SELECT 
       n.*,
+
       u.username,
       u.display_name,
-      u.avatar
+      u.avatar,
+
+      c.group_name,
+      c.group_avatar,
+      c.is_group
+
     FROM notifications n
-    JOIN users u ON u.id = n.sender_id
+
+    LEFT JOIN users u 
+      ON u.id = n.sender_id
+
+    LEFT JOIN conversations c 
+      ON c.id = n.entity_id
+      AND n.entity_type = 'conversation'
+
     WHERE n.user_id = $1
     ORDER BY n.created_at DESC
     LIMIT $2 OFFSET $3

@@ -8,6 +8,7 @@ const {
   leaveGroup,
   deleteGroup,
 } = require('../models/groupChat.model');
+const Notification = require('../models/notification.model');
 
 async function createGroupChat(req, res) {
   try {
@@ -39,6 +40,28 @@ async function createGroupChat(req, res) {
       adminId,
       memberIds,
     });
+
+    await Promise.all(
+  memberIds.map((memberId) =>
+    Notification.createNotification({
+      userId: memberId,
+      senderId: adminId,
+      type: 'group_added',
+      entityId: group.id,
+      entityType: 'conversation',
+      text: 'added you to a group chat',
+    })
+  )
+);
+
+  const io = req.app.get('io');
+
+  memberIds.forEach((memberId) => {
+    io.to(`user_${memberId}`).emit('groupAdded', {
+      conversationId: group.id,
+      group,
+    });
+  });
 
     res.status(201).json({
       message: 'Group chat created',
@@ -144,6 +167,26 @@ async function addMembersToGroup(req, res) {
         message: 'Only group admin can add members',
       });
     }
+    await Promise.all(
+  memberIds.map((memberId) =>
+    Notification.createNotification({
+      userId: memberId,
+      senderId: adminId,
+      type: 'group_added',
+      entityId: conversationId,
+      entityType: 'conversation',
+      text: 'added you to a group chat',
+    })
+  )
+);
+
+const io = req.app.get('io');
+
+memberIds.forEach((memberId) => {
+  io.to(`user_${memberId}`).emit('groupAdded', {
+    conversationId,
+  });
+});
 
     res.json({ message: 'Members added' });
   } catch (error) {
@@ -172,6 +215,21 @@ async function removeMemberFromGroup(req, res) {
         message: 'Admin cannot remove himself',
       });
     }
+
+    await Notification.createNotification({
+  userId: memberId,
+  senderId: adminId,
+  type: 'group_removed',
+  entityId: conversationId,
+  entityType: 'conversation',
+  text: 'removed you from a group chat',
+});
+
+const io = req.app.get('io');
+
+io.to(`user_${memberId}`).emit('groupRemoved', {
+  conversationId,
+});
 
     res.json({ message: 'Member removed', member: result });
   } catch (error) {

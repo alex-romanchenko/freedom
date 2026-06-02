@@ -9,7 +9,7 @@ import { getFileUrl } from '../api/fileUrl';
 
 const LIMIT = 20;
 
-function Notifications({ onOpenUser, onOpenPost, onOpenPhoto }) {
+function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat }) {
   const [notifications, setNotifications] = useState([]);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -59,6 +59,8 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto }) {
     socket.on('newFriendRequest', handleNewNotification);
     socket.on('newPost', handleNewNotification);
     socket.on('newFriendRequestAccepted', handleNewNotification);
+    socket.on('groupAdded', handleNewNotification);
+    socket.on('groupRemoved', handleNewNotification);
 
     return () => {
       socket.off('newLike', handleNewNotification);
@@ -66,14 +68,15 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto }) {
       socket.off('newFriendRequest', handleNewNotification);
       socket.off('newPost', handleNewNotification);
       socket.off('newFriendRequestAccepted', handleNewNotification);
+      socket.off('groupAdded', handleNewNotification);
+      socket.off('groupRemoved', handleNewNotification);
     };
   }, [offset, loading]);
 
   useEffect(() => {
     const handleScroll = () => {
       const isBottom =
-        window.innerHeight + window.scrollY >=
-        document.body.offsetHeight - 200;
+        window.innerHeight + window.scrollY >= document.body.offsetHeight - 200;
 
       if (isBottom && hasMore && !loading) {
         loadNotifications(false);
@@ -101,31 +104,41 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto }) {
     return `${Math.floor(diff / 86400)}d ago`;
   };
 
-const getText = (item) => {
-  if (item.type === 'friend_request') return 'sent you a friend request';
+  const getText = (item) => {
+    if (item.type === 'friend_request') return 'sent you a friend request';
 
-  if (item.type === 'friend_request_accepted') {
-    return 'accepted your friend request';
-  }
+    if (item.type === 'friend_request_accepted') {
+      return 'accepted your friend request';
+    }
 
-  if (item.type === 'new_post') return `added a new post: ${item.text}`;
-  if (item.type === 'like_post') return 'liked your post';
-  if (item.type === 'like_photo') return 'liked your photo';
-  if (item.type === 'comment_post') return `commented on your post: ${item.text}`;
-  if (item.type === 'comment_photo') return `commented on your photo: ${item.text}`;
+    if (item.type === 'new_post') return `added a new post: ${item.text}`;
+    if (item.type === 'like_post') return 'liked your post';
+    if (item.type === 'like_photo') return 'liked your photo';
+    if (item.type === 'comment_post') {
+      return `commented on your post: ${item.text}`;
+    }
+    if (item.type === 'comment_photo') {
+      return `commented on your photo: ${item.text}`;
+    }
 
-  return 'sent you a notification';
-};
+    if (item.type === 'group_added') return 'added you to a group chat';
+    if (item.type === 'group_removed') return 'removed you from a group chat';
+
+    return 'sent you a notification';
+  };
 
   const openNotification = (item) => {
     setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === item.id ? { ...n, is_read: true } : n
-      )
+      prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n))
     );
 
     if (item.type === 'friend_request') {
       onOpenUser(item.username);
+      return;
+    }
+
+    if (item.entity_type === 'conversation') {
+      onOpenGroupChat?.(item.entity_id);
       return;
     }
 
@@ -139,6 +152,17 @@ const getText = (item) => {
     }
   };
 
+  const handleAvatarClick = (e, item) => {
+    e.stopPropagation();
+
+    if (item.entity_type === 'conversation') {
+      onOpenGroupChat?.(item.entity_id);
+      return;
+    }
+
+    onOpenUser(item.username);
+  };
+
   return (
     <div className="page">
       <h2>Notifications</h2>
@@ -148,62 +172,59 @@ const getText = (item) => {
       )}
 
       <div className="notifications-list">
-        {notifications.map((item) => (
-          <div
-            key={item.id}
-            className={`notification-card ${!item.is_read ? 'unread' : ''}`}
-          >
+        {notifications.map((item) => {
+          const isGroup = item.entity_type === 'conversation';
+
+          const avatar = isGroup ? item.group_avatar : item.avatar;
+          const name = isGroup ? item.group_name : item.display_name;
+          const placeholder = name?.[0] || '?';
+
+          return (
             <div
-              className="notification-main"
-              onClick={() => openNotification(item)}
+              key={item.id}
+              className={`notification-card ${!item.is_read ? 'unread' : ''}`}
             >
-              {item.avatar ? (
-                <img
-                  className="notification-avatar"
-                  src={getFileUrl(item.avatar)}
-                  alt=""
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenUser(item.username);
-                  }}
-                />
-              ) : (
-                <div
-                  className="notification-placeholder"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenUser(item.username);
-                  }}
-                >
-                  {item.display_name?.[0] || '?'}
-                </div>
-              )}
-
-              <div className="notification-content">
-                <p>
-                  <strong
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenUser(item.username);
-                    }}
+              <div
+                className="notification-main"
+                onClick={() => openNotification(item)}
+              >
+                {avatar ? (
+                  <img
+                    className="notification-avatar"
+                    src={getFileUrl(avatar)}
+                    alt=""
+                    onClick={(e) => handleAvatarClick(e, item)}
+                  />
+                ) : (
+                  <div
+                    className="notification-placeholder"
+                    onClick={(e) => handleAvatarClick(e, item)}
                   >
-                    {item.display_name}
-                  </strong>{' '}
-                  {getText(item)}
-                </p>
+                    {placeholder}
+                  </div>
+                )}
 
-                <span>{formatTime(item.created_at)}</span>
+                <div className="notification-content">
+                  <p>
+                    <strong onClick={(e) => handleAvatarClick(e, item)}>
+                      {name}
+                    </strong>{' '}
+                    {getText(item)}
+                  </p>
+
+                  <span>{formatTime(item.created_at)}</span>
+                </div>
               </div>
-            </div>
 
-            <button
-              className="notification-remove"
-              onClick={() => removeNotification(item.id)}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+              <button
+                className="notification-remove"
+                onClick={() => removeNotification(item.id)}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
       </div>
 
       {loading && <p className="username">Loading...</p>}

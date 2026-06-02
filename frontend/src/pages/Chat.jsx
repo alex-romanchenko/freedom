@@ -23,6 +23,8 @@ function Chat({
   onUnreadCountChange,
   selectedUserId,
   setSelectedUserId,
+  selectedConversationId,
+  setSelectedConversationId,
   onOpenUser,
   audioCall,
 }) {
@@ -527,6 +529,22 @@ const handleDropFile = (e) => {
     setSelectedConv(conv);
     loadMessages(conv.id);
   }, [selectedUserId, conversations, selectedConv?.id]);
+
+  useEffect(() => {
+  if (!selectedConversationId || conversations.length === 0) return;
+
+  const conv = conversations.find(
+    (c) => String(c.id) === String(selectedConversationId)
+  );
+
+  if (!conv) return;
+
+  if (String(selectedConv?.id) === String(conv.id)) return;
+
+  setSelectedConv(conv);
+  loadMessages(conv.id);
+  setSelectedConversationId?.(null);
+}, [selectedConversationId, conversations, selectedConv?.id]);
 
   useEffect(() => {
     const handleClickOutsideEmoji = (e) => {

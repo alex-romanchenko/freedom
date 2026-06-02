@@ -11,6 +11,7 @@ const {
   updateMessageById,
   deleteMessageById,
   markMessageAsDelivered,
+  getConversationById,
 } = require('../models/message.model');
 
 async function sendMessage(req, res) {
@@ -137,6 +138,14 @@ async function sendGroupMessage(req, res) {
       });
     }
 
+    const group = await getConversationById(conversationId);
+
+    if (!group || !group.is_group) {
+      return res.status(404).json({
+        message: 'Group conversation not found',
+      });
+    }
+
     const message = await createMessage({
       conversationId,
       senderId,
@@ -151,34 +160,43 @@ async function sendGroupMessage(req, res) {
 
     const payload = {
       conversationId: Number(conversationId),
+
+      group: {
+        id: group.id,
+        group_name: group.group_name,
+        group_avatar: group.group_avatar,
+      },
+
       message: fullMessage,
     };
 
-const conversationRoom = io.sockets.adapter.rooms.get(
-  `conversation_${conversationId}`
-);
+    const conversationRoom = io.sockets.adapter.rooms.get(
+      `conversation_${conversationId}`
+    );
 
-io.to(`conversation_${conversationId}`).emit('newMessage', payload);
+    io.to(`conversation_${conversationId}`).emit('newMessage', payload);
 
-memberIds.forEach((memberId) => {
-  if (Number(memberId) === Number(senderId)) return;
+    memberIds.forEach((memberId) => {
+      if (Number(memberId) === Number(senderId)) return;
 
-  const userRoom = io.sockets.adapter.rooms.get(`user_${memberId}`);
+      const userRoom = io.sockets.adapter.rooms.get(`user_${memberId}`);
 
-  if (!userRoom) return;
+      if (!userRoom) return;
 
-  userRoom.forEach((socketId) => {
-    if (!conversationRoom || !conversationRoom.has(socketId)) {
-      io.to(socketId).emit('newMessage', payload);
-    }
-  });
-});
+      userRoom.forEach((socketId) => {
+        if (!conversationRoom || !conversationRoom.has(socketId)) {
+          io.to(socketId).emit('newMessage', payload);
+        }
+      });
+    });
 
     res.status(201).json({
       message: 'Group message sent successfully',
       data: fullMessage,
     });
   } catch (error) {
+    console.error('Error sending group message:', error);
+
     res.status(500).json({
       message: 'Error sending group message',
       error: error.message,

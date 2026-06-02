@@ -98,6 +98,7 @@ const setPage = (nextPage) => {
   const [commentPopup, setCommentPopup] = useState(null);
   const [likePopup, setLikePopup] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedConversationId, setSelectedConversationId] = useState(null);
   const [friendsUsername, setFriendsUsername] = useState(null);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
   const [friendRequestsCount, setFriendRequestsCount] = useState(0);
@@ -217,17 +218,34 @@ useEffect(() => {
     refreshNotificationsCount();
 
     function handleNewMessage(data) {
-      refreshUnreadCount();
+  refreshUnreadCount();
 
-      if (page !== 'chat') {
-        playNotificationSound();
-        setPopupMessage(data.message);
+  if (page === 'chat') return;
 
-        setTimeout(() => {
-          setPopupMessage(null);
-        }, 10000);
-      }
-    }
+  playNotificationSound();
+
+  if (data.group) {
+    setPopupMessage({
+      isGroup: true,
+
+      group_name: data.group.group_name,
+      group_avatar: data.group.group_avatar,
+
+      sender_name: data.message.display_name,
+      sender_id: data.message.sender_id,
+
+      conversationId: data.conversationId,
+
+      text: data.message.text,
+    });
+  } else {
+    setPopupMessage(data.message);
+  }
+
+  setTimeout(() => {
+    setPopupMessage(null);
+  }, 10000);
+}
 
     function handleNewComment(data) {
       const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -275,6 +293,16 @@ useEffect(() => {
       }, 6000);
     }
 
+    function handleGroupAdded() {
+      setNotificationsCount((prev) => prev + 1);
+      playNotificationSound();
+    }
+
+    function handleGroupRemoved() {
+      setNotificationsCount((prev) => prev + 1);
+      playNotificationSound();
+    }
+
     function handleNewLike(data) {
       const currentUser = JSON.parse(localStorage.getItem('user'));
 
@@ -294,6 +322,8 @@ useEffect(() => {
     socket.on('newComment', handleNewComment);
     socket.on('newFriendRequest', handleNewFriendRequest);
     socket.on('newFriendRequestAccepted', handleFriendRequestAccepted);
+    socket.on('groupAdded', handleGroupAdded);
+    socket.on('groupRemoved', handleGroupRemoved);
  
 
     return () => {
@@ -302,6 +332,8 @@ useEffect(() => {
       socket.off('newComment', handleNewComment);
       socket.off('newFriendRequest', handleNewFriendRequest);
       socket.off('newFriendRequestAccepted', handleFriendRequestAccepted);
+      socket.off('groupAdded', handleGroupAdded);
+      socket.off('groupRemoved', handleGroupRemoved);
 
     };
   }, [isAuth, page]);
@@ -332,6 +364,8 @@ useEffect(() => {
     setPhotosUserId(null);
     setActivePost(null);
     setIsAuth(false);
+    setSelectedConversationId(null);
+    setSelectedUserId(null);
   };
 
   const openPhotos = (userId) => {
@@ -528,6 +562,12 @@ if (isVerifyEmailPage) {
                 const photo = await getPhotoByIdApi(photoId);
                 setPopupPhoto(photo);
               }}
+                onOpenGroupChat={(conversationId) => {
+                setActivePost(null);
+                setSelectedUserId(null);
+                setSelectedConversationId(conversationId);
+                setPage('chat');
+              }}
           />
         )}
         
@@ -580,16 +620,18 @@ if (isVerifyEmailPage) {
         )}
 
         {!activePost && page === 'chat' && (
-        <Chat
-          onUnreadCountChange={setUnreadMessagesCount}
-          selectedUserId={selectedUserId}
-          setSelectedUserId={setSelectedUserId}
-          audioCall={audioCall}
-          onOpenUser={(username) => {
-            setViewUsername(username);
-            setPage('userProfile');
-          }}
-        />
+      <Chat
+        onUnreadCountChange={setUnreadMessagesCount}
+        selectedUserId={selectedUserId}
+        setSelectedUserId={setSelectedUserId}
+        selectedConversationId={selectedConversationId}
+        setSelectedConversationId={setSelectedConversationId}
+        audioCall={audioCall}
+        onOpenUser={(username) => {
+          setViewUsername(username);
+          setPage('userProfile');
+        }}
+      />
         )}
       </main>
 
@@ -646,22 +688,44 @@ if (isVerifyEmailPage) {
       )}
 
       {popupMessage && (
-        <NotificationPopup
-          user={popupMessage}
-          text={popupMessage.text}
-          onClose={() => setPopupMessage(null)}
-          onClick={() => {
-            setActivePost(null);
-            setPage('chat');
+      <NotificationPopup
+        target={
+          popupMessage.isGroup
+            ? {
+                display_name: popupMessage.group_name,
+                avatar: popupMessage.group_avatar,
+                subtitle: popupMessage.sender_name,
+              }
+            : {
+                display_name: popupMessage.display_name,
+                avatar: popupMessage.avatar,
+                subtitle: `@${popupMessage.username}`,
+              }
+        }
+        text={popupMessage.text}
+        onClose={() => setPopupMessage(null)}
+        onClick={() => {
+          setActivePost(null);
+          setPage('chat');
+
+          if (popupMessage.isGroup) {
+            setSelectedConversationId(popupMessage.conversationId);
+          } else {
             setSelectedUserId(popupMessage.sender_id);
-            setPopupMessage(null);
-          }}
-        />
+          }
+
+          setPopupMessage(null);
+        }}
+      />
       )}
 
       {likePopup && (
         <NotificationPopup
-          user={likePopup.likedBy}
+          target={{
+            display_name: likePopup.likedBy.display_name,
+            avatar: likePopup.likedBy.avatar,
+            subtitle: `@${likePopup.likedBy.username}`,
+          }}
           text={`liked your ${likePopup.type}`}
           onClose={() => setLikePopup(null)}
           onClick={() => {
@@ -678,7 +742,11 @@ if (isVerifyEmailPage) {
 
       {commentPopup && (
         <NotificationPopup
-          user={commentPopup.commentedBy}
+          target={{
+            display_name: commentPopup.commentedBy.display_name,
+            avatar: commentPopup.commentedBy.avatar,
+            subtitle: `@${commentPopup.commentedBy.username}`,
+          }}
           text={`commented on your ${commentPopup.type}: ${commentPopup.comment.text}`}
           onClose={() => setCommentPopup(null)}
           onClick={() => {
@@ -694,7 +762,11 @@ if (isVerifyEmailPage) {
       )}
       {friendAcceptedPopup && (
           <NotificationPopup
-            user={friendAcceptedPopup}
+            target={{
+              display_name: friendAcceptedPopup.display_name,
+              avatar: friendAcceptedPopup.avatar,
+              subtitle: `@${friendAcceptedPopup.username}`,
+            }}
             text="accepted your friend request"
             onClose={() => setFriendAcceptedPopup(null)}
             onClick={() => {
@@ -707,7 +779,11 @@ if (isVerifyEmailPage) {
 
       {friendPopup && (
         <NotificationPopup
-          user={friendPopup}
+          target={{
+            display_name: friendPopup.display_name,
+            avatar: friendPopup.avatar,
+            subtitle: `@${friendPopup.username}`,
+          }}
           text="sent you a friend request"
           onClose={() => setFriendPopup(null)}
           onClick={() => {

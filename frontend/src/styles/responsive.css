@@ -36,7 +36,7 @@
     background: white;
     border-top: 1px solid #e5e7eb;
     z-index: 1000;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .logo {
@@ -45,6 +45,8 @@
 
   .sidebar-link,
   .desktop-layout.chat-mode .sidebar-link {
+    position: relative;
+    overflow: visible;
     flex: 1;
     min-width: 0;
     margin: 0;
@@ -73,14 +75,23 @@
 
   .nav-badge {
     position: absolute;
-    top: 1px;
-    right: 8px;
-    min-width: 17px;
-    height: 17px;
+    top: 7px;
+    left: calc(50% + 2px);
+    transform: none;
+
+    min-width: 16px;
+    height: 16px;
     padding: 0 5px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
     font-size: 10px;
-    line-height: 17px;
-    margin-left: 0;
+    line-height: 1;
+    border-radius: 999px;
+    margin: 0;
+    z-index: 10;
   }
 
   .chat-back-sidebar-btn,
@@ -398,4 +409,12 @@
     white-space: nowrap;
     max-width: 100%;
   }
+
+  .desktop-layout.chat-mode .nav-badge {
+  top: 5px;
+  left: calc(50% + 8px);
+  transform: none;
+}
+
+
 }

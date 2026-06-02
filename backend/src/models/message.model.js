@@ -29,6 +29,23 @@ async function getGroupMemberIds(conversationId) {
   return result.rows.map((row) => row.user_id);
 }
 
+async function getConversationById(conversationId) {
+  const result = await pool.query(
+    `
+    SELECT
+      id,
+      is_group,
+      group_name,
+      group_avatar
+    FROM conversations
+    WHERE id = $1
+    `,
+    [conversationId]
+  );
+
+  return result.rows[0];
+}
+
 async function createMessage({ conversationId, senderId, text, image, video }) {
   const result = await pool.query(
     `INSERT INTO messages (
@@ -382,4 +399,5 @@ module.exports = {
   markMessageAsDelivered,
   markIncomingMessagesAsDelivered,
   getGroupMemberIds,
+  getConversationById,
 };
