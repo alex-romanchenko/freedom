@@ -415,6 +415,26 @@
   left: calc(50% + 8px);
   transform: none;
 }
+.chat-sidebar-header {
+  position: relative;
+}
 
+.mobile-chat-list-back-btn {
+  position: absolute;
+  left: 0;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.create-group-open-btn {
+  position: absolute;
+  right: 0;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.chat-sidebar-title-row {
+  pointer-events: none;
+}
 
 }

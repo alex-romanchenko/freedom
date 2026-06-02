@@ -631,6 +631,12 @@ if (isVerifyEmailPage) {
           setViewUsername(username);
           setPage('userProfile');
         }}
+          onBackToHome={() => {
+          setActivePost(null);
+          setSelectedUserId(null);
+          setSelectedConversationId(null);
+          setPage('feed');
+        }}
       />
         )}
       </main>

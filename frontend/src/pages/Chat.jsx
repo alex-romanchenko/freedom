@@ -27,6 +27,7 @@ function Chat({
   setSelectedConversationId,
   onOpenUser,
   audioCall,
+  onBackToHome,
 }) {
   const [conversations, setConversations] = useState([]);
   const [selectedConv, setSelectedConv] = useState(null);
@@ -743,7 +744,7 @@ useEffect(() => {
           setMessageMenu={setMessageMenu}
           loadMessages={loadMessages}
           setDeleteDialogId={setDeleteDialogId}
-          onBack={() => window.history.back()}
+          onBack={onBackToHome}
           setShowGroupInfo={setShowGroupInfo}
           setGroupInfo={setGroupInfo}
         />
