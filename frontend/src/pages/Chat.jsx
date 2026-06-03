@@ -122,11 +122,9 @@ const toggleFullscreen = () => {
 
   if (!el) return;
 
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isIPhone = /iPhone|iPod/.test(navigator.userAgent);
 
-  if (isIOS) {
+  if (isIPhone) {
     setIsFakeFullscreen((prev) => !prev);
     return;
   }
