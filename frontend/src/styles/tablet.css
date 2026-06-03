@@ -1,0 +1,75 @@
+/* TABLET */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+
+      .auth-layout {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+
+  .auth-right {
+    padding: 28px;
+  }
+
+  .auth-card {
+    width: 390px;
+    padding: 36px 34px;
+  }
+
+  .auth-title {
+    font-size: 27px;
+  }
+  
+  .desktop-layout {
+    width: 100%;
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .right-sidebar {
+    display: none;
+  }
+
+  .left-sidebar {
+    padding: 28px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .logo {
+    display: none;
+  }
+
+  .left-sidebar .sidebar-link {
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    margin-bottom: 8px;
+  }
+
+  .left-sidebar .sidebar-link span:not(.nav-badge) {
+    display: none;
+  }
+
+  .left-sidebar .sidebar-link svg {
+    margin-right: 0;
+    font-size: 28px;
+  }
+
+  .nav-badge {
+    position: absolute;
+    top: 4px;
+    right: 2px;
+    margin-left: 0;
+  }
+
+  .main-content {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .page {
+    padding: 20px;
+  }
+}
+
