@@ -438,36 +438,5 @@
   pointer-events: none;
 }
 
-.video-call-box.fake-fullscreen {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100dvh !important;
-  z-index: 99999 !important;
 
-  margin: 0 !important;
-  border-radius: 0 !important;
-  background: #000 !important;
-}
-
-.video-call-box.fake-fullscreen .remote-video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
-
-.video-call-box.fake-fullscreen .local-video {
-  width: 110px !important;
-  height: 150px !important;
-
-  top: 16px !important;
-  right: 16px !important;
-  bottom: auto !important;
-
-  border-radius: 12px !important;
-}
-
-.video-call-box.fake-fullscreen .video-call-controls {
-  bottom: max(20px, env(safe-area-inset-bottom)) !important;
-}
 }

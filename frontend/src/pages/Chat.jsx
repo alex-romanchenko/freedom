@@ -1,4 +1,5 @@
 import MessageBubble from './chat/MessageBubble';
+import { createPortal } from 'react-dom';
 import ChatHeader from './chat/ChatHeader';
 import MediaPreviewModal from './chat/MediaPreviewModal';
 import ChatInput from './chat/ChatInput';
@@ -738,9 +739,66 @@ useEffect(() => {
     }
   }, [messages]);
 
+  const videoCallContent =
+  isInCall && isVideoCall ? (
+    <div
+      className={`video-call-box ${
+        isFakeFullscreen ? 'fake-fullscreen' : ''
+      }`}
+      ref={videoCallBoxRef}
+    >
+      <video
+        ref={remoteVideoRef}
+        autoPlay
+        playsInline
+        className="remote-video"
+      />
+
+      <video
+        ref={localVideoRef}
+        autoPlay
+        playsInline
+        muted
+        className={`local-video ${isCameraOff ? 'hidden' : ''}`}
+      />
+
+      <div className="video-call-controls">
+        <button
+          className={`video-control-btn ${isMuted ? 'active' : ''}`}
+          onClick={toggleMute}
+        >
+          {isMuted ? <IoMicOff /> : <IoMic />}
+        </button>
+
+        <button
+          className={`video-control-btn ${
+            isCameraOff ? 'active' : ''
+          }`}
+          onClick={toggleCamera}
+        >
+          {isCameraOff ? <IoVideocamOff /> : <IoVideocam />}
+        </button>
+
+        <button
+          className="video-control-btn"
+          onClick={toggleFullscreen}
+        >
+          <IoExpand />
+        </button>
+
+        <button
+          className="video-control-btn end-call-btn"
+          onClick={endCall}
+        >
+          <IoCall />
+        </button>
+      </div>
+    </div>
+  ) : null;
   
 
   return (
+    
       <div
         className={`chat-layout
           ${selectedConv ? 'chat-open' : ''}
@@ -785,57 +843,7 @@ useEffect(() => {
               setSelectedConv={setSelectedConv}
               isVideoCall={isVideoCall}
             />
-            {isInCall && isVideoCall && (
-              <div
-                className={`video-call-box ${isFakeFullscreen ? 'fake-fullscreen' : ''}`}
-                ref={videoCallBoxRef}
-              >
-                <video
-                  ref={remoteVideoRef}
-                  autoPlay
-                  playsInline
-                  className="remote-video"
-                />
-
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`local-video ${isCameraOff ? 'hidden' : ''}`}
-                />
-
-                <div className="video-call-controls">
-                  <button
-                    className={`video-control-btn ${isMuted ? 'active' : ''}`}
-                    onClick={toggleMute}
-                  >
-                    {isMuted ? <IoMicOff /> : <IoMic />}
-                  </button>
-
-                  <button
-                    className={`video-control-btn ${isCameraOff ? 'active' : ''}`}
-                    onClick={toggleCamera}
-                  >
-                    {isCameraOff ? <IoVideocamOff /> : <IoVideocam />}
-                  </button>
-
-                  <button
-                    className="video-control-btn"
-                    onClick={toggleFullscreen}
-                  >
-                    <IoExpand />
-                  </button>
-
-                  <button
-                    className="video-control-btn end-call-btn"
-                    onClick={endCall}
-                  >
-                    <IoCall />
-                  </button>
-                </div>
-              </div>
-            )}
+            {!isFakeFullscreen && videoCallContent}
             <div
               className="messages-list custom-scroll"
               ref={messagesContainerRef}
@@ -958,6 +966,7 @@ useEffect(() => {
       )}
 
       {showGroupInfo && (
+        
         <GroupInfoPanel
           groupInfo={groupInfo}
           currentUser={currentUser}
@@ -967,7 +976,8 @@ useEffect(() => {
           onGroupDeletedOrLeft={handleGroupDeletedOrLeft}
         />
       )}
-
+      {isFakeFullscreen && videoCallContent &&
+        createPortal(videoCallContent, document.body)}
     </div>
   );
 }
