@@ -523,13 +523,13 @@ const handleDropFile = (e) => {
     return formatLastSeen(lastSeenMap[userId] || selectedConv.last_seen);
   };
 
-  useEffect(() => {
-  if (isInCall) {
-    setTimeout(() => {
-      attachVideoStreams();
-    }, 100);
-  }
-}, [isInCall, attachVideoStreams]);
+useEffect(() => {
+  if (!isInCall) return;
+
+  setTimeout(() => {
+    attachVideoStreams();
+  }, 100);
+}, [isInCall, isFakeFullscreen, attachVideoStreams]);
 
   useEffect(() => {
     refreshConversations();
