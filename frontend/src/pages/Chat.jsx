@@ -33,6 +33,7 @@ function Chat({
   const [conversations, setConversations] = useState([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [selectedConv, setSelectedConv] = useState(null);
+  const [isFakeFullscreen, setIsFakeFullscreen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [messageMenu, setMessageMenu] = useState(null);
   const [showChatEmoji, setShowChatEmoji] = useState(false);
@@ -116,10 +117,19 @@ const handleGroupDeletedOrLeft = async () => {
   setGroupInfo(res.data);
   setShowGroupInfo(true);
 };
-  const toggleFullscreen = () => {
+const toggleFullscreen = () => {
   const el = videoCallBoxRef.current;
 
   if (!el) return;
+
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  if (isIOS) {
+    setIsFakeFullscreen((prev) => !prev);
+    return;
+  }
 
   if (!document.fullscreenElement) {
     el.requestFullscreen?.();
@@ -778,7 +788,10 @@ useEffect(() => {
               isVideoCall={isVideoCall}
             />
             {isInCall && isVideoCall && (
-              <div className="video-call-box" ref={videoCallBoxRef}>
+              <div
+                className={`video-call-box ${isFakeFullscreen ? 'fake-fullscreen' : ''}`}
+                ref={videoCallBoxRef}
+              >
                 <video
                   ref={remoteVideoRef}
                   autoPlay
