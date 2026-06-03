@@ -65,8 +65,9 @@
   display: flex;
   flex-direction: column;
 
-  z-index: 50;
+  z-index: 0 !important;
 }
+
 
 .group-info-header {
   display: grid;

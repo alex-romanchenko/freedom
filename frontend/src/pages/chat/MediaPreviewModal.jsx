@@ -1,10 +1,14 @@
+import { createPortal } from 'react-dom';
+
 function MediaPreviewModal({
   openedImage,
   setOpenedImage,
   openedVideo,
   setOpenedVideo,
 }) {
-  return (
+  if (!openedImage && !openedVideo) return null;
+
+  return createPortal(
     <>
       {openedImage && (
         <div
@@ -29,7 +33,8 @@ function MediaPreviewModal({
           />
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }
 

@@ -381,7 +381,8 @@
   }
 
   .video-call-box {
-    height: calc(100vh - 180px);
+    width: 100%;
+    height: 300px;
     border-radius: 0;
   }
 
@@ -435,6 +436,38 @@
 
 .chat-sidebar-title-row {
   pointer-events: none;
+}
+
+.video-call-box.fake-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 99999;
+
+  margin: 0;
+  border-radius: 0;
+  background: #000;
+}
+
+.video-call-box.fake-fullscreen .remote-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-call-box.fake-fullscreen .local-video {
+  width: 110px;
+  height: 150px;
+
+  top: 16px;
+  right: 16px;
+
+  border-radius: 12px;
+}
+
+.video-call-box.fake-fullscreen .video-call-controls {
+  bottom: max(20px, env(safe-area-inset-bottom));
 }
 
 }

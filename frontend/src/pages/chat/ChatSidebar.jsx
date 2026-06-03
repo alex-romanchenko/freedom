@@ -18,7 +18,7 @@ function ChatSidebar({
 }) {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   return (
-    <div className="chat-sidebar">
+    <div className="chat-sidebar custom-scroll">
           {showCreateGroup && (
       <CreateGroupPanel
         onClose={() => setShowCreateGroup(false)}

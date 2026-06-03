@@ -17,6 +17,7 @@ import {
   IoVideocamOff,
   IoExpand,
   IoCall,
+  IoArrowDown ,
 } from 'react-icons/io5';
 
 function Chat({
@@ -30,6 +31,7 @@ function Chat({
   onBackToHome,
 }) {
   const [conversations, setConversations] = useState([]);
+  const [showScrollButton, setShowScrollButton] = useState(false);
   const [selectedConv, setSelectedConv] = useState(null);
   const [messages, setMessages] = useState([]);
   const [messageMenu, setMessageMenu] = useState(null);
@@ -82,6 +84,14 @@ const {
   isCameraOff,
   toggleCamera,
 } = audioCall;
+
+const scrollToBottom = () => {
+  messagesEndRef.current?.scrollIntoView({
+    behavior: 'smooth',
+  });
+
+  setShowScrollButton(false);
+};
 
 const handleGroupDeletedOrLeft = async () => {
   setSelectedConv(null);
@@ -816,10 +826,17 @@ useEffect(() => {
               </div>
             )}
             <div
-              className="messages-list"
+              className="messages-list custom-scroll"
               ref={messagesContainerRef}
               onScroll={(e) => {
-                if (e.currentTarget.scrollTop < 40) {
+                const el = e.currentTarget;
+
+                const distanceFromBottom =
+                  el.scrollHeight - el.scrollTop - el.clientHeight;
+
+                setShowScrollButton(distanceFromBottom > 250);
+
+                if (el.scrollTop < 40) {
                   loadOlderMessages();
                 }
               }}
@@ -895,6 +912,14 @@ useEffect(() => {
           <p>Select a chat</p>
         )}
       </div>
+      {showScrollButton && (
+  <button
+    className="scroll-to-bottom-btn"
+    onClick={scrollToBottom}
+  >
+    <IoArrowDown  />
+  </button>
+)}
 
       {deleteDialogId && (
         <div className="modal-overlay">
