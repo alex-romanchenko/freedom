@@ -59,7 +59,14 @@ function ChatInput({
   try {
 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    const recorder = new MediaRecorder(stream);
+    const mimeType = MediaRecorder.isTypeSupported('audio/mp4')
+      ? 'audio/mp4'
+      : MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : 'audio/webm';
+
+    const recorder = new MediaRecorder(stream, { mimeType });
+
 
     audioChunksRef.current = [];
     recordStartRef.current = Date.now();
@@ -71,9 +78,11 @@ const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     };
 
     recorder.onstop = () => {
-      const blob = new Blob(audioChunksRef.current, {
-        type: 'audio/webm',
-      });
+    const blob = new Blob(audioChunksRef.current, {
+      type: recorder.mimeType,
+    });
+
+blob.fileExtension = recorder.mimeType.includes('mp4') ? 'm4a' : 'webm';
 
       const duration = Math.max(
         1,

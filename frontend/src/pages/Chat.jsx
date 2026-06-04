@@ -325,11 +325,13 @@ const sendAudioMessage = async (audioBlob, audioDuration) => {
 
   const formData = new FormData();
 
-  formData.append(
-    'audio',
-    audioBlob,
-    'voice-message.webm'
-  );
+const extension = audioBlob.fileExtension || 'webm';
+
+formData.append(
+  'audio',
+  audioBlob,
+  `voice-message.${extension}`
+);
 
   formData.append(
     'audioDuration',
