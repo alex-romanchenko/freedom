@@ -389,11 +389,17 @@
     z-index: 1200;
   }
 
-  .video-call-box {
-    width: 100%;
-    height: 300px;
-    border-radius: 0;
-  }
+.video-call-box {
+  width: 100%;
+  height: 30vh;
+
+  min-height: 220px;
+  max-height: 320px;
+
+  border-radius: 0;
+  overflow: hidden;
+  
+}
 
   .local-video {
     position: absolute;

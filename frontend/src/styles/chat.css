@@ -1007,6 +1007,7 @@
   border-radius: 18px;
   overflow: hidden;
   margin-bottom: 12px;
+  
 }
 
 .remote-video {
@@ -1014,6 +1015,8 @@
   height: 100%;
   object-fit: cover;
   background: black;
+  transform: none;
+  transform: scaleX(-1);
 }
 
 .local-video {
@@ -1026,6 +1029,9 @@
   border-radius: 14px;
   border: 2px solid white;
   background: black;
+  object-fit: cover;
+  transform: scaleX(-1);
+  
 }
 
 /* FORM ERROR */
@@ -1038,6 +1044,7 @@
   align-items: center;
   justify-content: center;
   margin-top: 2px;
+  transform: scaleX(-1);
 }
 .call-btn,
 .mute-btn,

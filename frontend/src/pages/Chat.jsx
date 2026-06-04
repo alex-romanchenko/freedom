@@ -206,9 +206,11 @@ const toggleFullscreen = () => {
 
     onUnreadCountChange(totalUnread);
 
-    const isMobile = window.innerWidth <= 768;
+    const isCompactChat =
+      window.innerWidth <= 768 ||
+      (window.innerWidth <= 1024 && window.matchMedia('(orientation: portrait)').matches);
 
-    if (!selectedConv && res.data.length > 0 && !isMobile) {
+    if (!selectedConv && res.data.length > 0 && !isCompactChat) {
       setSelectedConv(res.data[0]);
       await loadMessages(res.data[0].id);
     }
