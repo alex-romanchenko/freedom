@@ -4,6 +4,8 @@ import {
   IoArrowBack,
   IoMic,
   IoMicOff,
+  IoCameraReverseOutline,
+  
   
 } from 'react-icons/io5';
 import { getFileUrl } from '../../api/fileUrl';
@@ -22,6 +24,7 @@ function ChatHeader({
   callDuration,
   isMuted,
   toggleMute,
+  switchCamera,
   setSelectedConv,
 }) {
   const isGroup = selectedConv?.type === 'group';
@@ -126,6 +129,7 @@ function ChatHeader({
           {isMuted ? <IoMicOff /> : <IoMic />}
         </button>
       )}
+  
     </div>
   );
 }

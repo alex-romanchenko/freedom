@@ -60,6 +60,7 @@ const remoteVideoRef = useRef(null);
   };
 
   const [isCameraOff, setIsCameraOff] = useState(false);
+  const [cameraMode, setCameraMode] = useState('user');
 
   const toggleCamera = () => {
     const videoTrack = localStreamRef.current?.getVideoTracks()[0];
@@ -70,11 +71,67 @@ const remoteVideoRef = useRef(null);
     setIsCameraOff(!videoTrack.enabled);
   };
 
-  const getLocalMedia = async (withVideo = false) => {
-    const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: withVideo,
-    });
+  const switchCamera = async () => {
+  if (!isVideoCall) return;
+
+  try {
+    const newMode =
+      cameraMode === 'user'
+        ? 'environment'
+        : 'user';
+
+    const newStream =
+      await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: newMode,
+        },
+        audio: false,
+      });
+
+    const newVideoTrack =
+      newStream.getVideoTracks()[0];
+
+    const sender = peerRef.current
+      ?.getSenders()
+      ?.find((s) => s.track?.kind === 'video');
+
+    if (sender) {
+      await sender.replaceTrack(newVideoTrack);
+    }
+
+    const oldTrack =
+      localStreamRef.current?.getVideoTracks()?.[0];
+
+    if (oldTrack) {
+      oldTrack.stop();
+      localStreamRef.current.removeTrack(oldTrack);
+    }
+
+    localStreamRef.current.addTrack(newVideoTrack);
+
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject =
+        localStreamRef.current;
+    }
+
+    setCameraMode(newMode);
+  } catch (err) {
+    console.error('Switch camera error:', err);
+  }
+};
+
+const getLocalMedia = async (
+  withVideo = false,
+  facingMode = cameraMode
+) => {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: true,
+    video: withVideo
+      ? {
+          facingMode,
+        }
+      : false,
+  });
 
     localStreamRef.current = stream;
     if (localVideoRef.current) {
@@ -383,5 +440,7 @@ const attachVideoStreams = useCallback(() => {
     ringtoneRef,
     toggleCamera,
     isCameraOff,
+    switchCamera,
+    cameraMode,
   };
 }

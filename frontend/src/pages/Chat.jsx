@@ -18,7 +18,8 @@ import {
   IoVideocamOff,
   IoExpand,
   IoCall,
-  IoArrowDown ,
+  IoCameraReverseOutline,
+  IoArrowDown,
 } from 'react-icons/io5';
 
 function Chat({
@@ -85,6 +86,7 @@ const {
   isVideoCall,
   isCameraOff,
   toggleCamera,
+  switchCamera,
 } = audioCall;
 
 const scrollToBottom = () => {
@@ -811,6 +813,15 @@ useEffect(() => {
           {isCameraOff ? <IoVideocamOff /> : <IoVideocam />}
         </button>
 
+          {window.innerWidth <= 1024 && (
+    <button
+      className="video-control-btn"
+      onClick={switchCamera}
+    >
+      <IoCameraReverseOutline />
+    </button>
+  )}
+
         <button
           className="video-control-btn"
           onClick={toggleFullscreen}
@@ -872,6 +883,7 @@ useEffect(() => {
               callDuration={callDuration}
               isMuted={isMuted}
               toggleMute={toggleMute}
+              switchCamera={switchCamera}
               setSelectedConv={setSelectedConv}
               isVideoCall={isVideoCall}
             />
