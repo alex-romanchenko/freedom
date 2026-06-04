@@ -72,24 +72,28 @@ const remoteVideoRef = useRef(null);
   };
 
   const switchCamera = async () => {
-  if (!isVideoCall) return;
+  if (!isVideoCall || !localStreamRef.current) return;
 
   try {
-    const newMode =
-      cameraMode === 'user'
-        ? 'environment'
-        : 'user';
+    const newMode = cameraMode === 'user' ? 'environment' : 'user';
 
-    const newStream =
-      await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: newMode,
+    const oldVideoTrack = localStreamRef.current.getVideoTracks()[0];
+
+    if (oldVideoTrack) {
+      oldVideoTrack.stop();
+      localStreamRef.current.removeTrack(oldVideoTrack);
+    }
+
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        facingMode: {
+          exact: newMode,
         },
-        audio: false,
-      });
+      },
+    });
 
-    const newVideoTrack =
-      newStream.getVideoTracks()[0];
+    const newVideoTrack = newStream.getVideoTracks()[0];
 
     const sender = peerRef.current
       ?.getSenders()
@@ -99,24 +103,55 @@ const remoteVideoRef = useRef(null);
       await sender.replaceTrack(newVideoTrack);
     }
 
-    const oldTrack =
-      localStreamRef.current?.getVideoTracks()?.[0];
-
-    if (oldTrack) {
-      oldTrack.stop();
-      localStreamRef.current.removeTrack(oldTrack);
-    }
-
     localStreamRef.current.addTrack(newVideoTrack);
 
     if (localVideoRef.current) {
-      localVideoRef.current.srcObject =
-        localStreamRef.current;
+      localVideoRef.current.srcObject = localStreamRef.current;
     }
 
     setCameraMode(newMode);
+    setIsCameraOff(false);
   } catch (err) {
-    console.error('Switch camera error:', err);
+    console.error('Switch camera exact error:', err);
+
+    try {
+      const fallbackMode = cameraMode === 'user' ? 'environment' : 'user';
+
+      const fallbackStream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: fallbackMode,
+        },
+      });
+
+      const fallbackTrack = fallbackStream.getVideoTracks()[0];
+
+      const sender = peerRef.current
+        ?.getSenders()
+        ?.find((s) => s.track?.kind === 'video');
+
+      if (sender) {
+        await sender.replaceTrack(fallbackTrack);
+      }
+
+      const oldTrack = localStreamRef.current?.getVideoTracks()?.[0];
+
+      if (oldTrack) {
+        oldTrack.stop();
+        localStreamRef.current.removeTrack(oldTrack);
+      }
+
+      localStreamRef.current.addTrack(fallbackTrack);
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = localStreamRef.current;
+      }
+
+      setCameraMode(fallbackMode);
+      setIsCameraOff(false);
+    } catch (fallbackErr) {
+      console.error('Switch camera fallback error:', fallbackErr);
+    }
   }
 };
 
@@ -313,6 +348,7 @@ const getLocalMedia = async (
     setIsInCall(false);
     setIsMuted(false);
     setIsCameraOff(false);
+    setCameraMode('user');
   };
 
   const flushPendingCandidates = async () => {
