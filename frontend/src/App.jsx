@@ -123,6 +123,18 @@ const {
   rejectCall,
 } = audioCall;
 
+const handleAcceptCall = async () => {
+  if (!incomingCall) return;
+
+  const callerId = incomingCall.from;
+
+  setActivePost(null);
+  setSelectedConversationId(null);
+  setSelectedUserId(callerId);
+  setPage('chat');
+
+  await acceptCall();
+};
 
  const path = location.pathname;
 
@@ -835,12 +847,12 @@ if (isVerifyEmailPage) {
 </div>
 
     <div className="call-popup-actions">
-      <button
-        className="accept-call-btn"
-        onClick={acceptCall}
-      >
-        Accept
-      </button>
+    <button
+      className="accept-call-btn"
+      onClick={handleAcceptCall}
+    >
+      Accept
+    </button>
 
       <button
         className="reject-call-btn"
