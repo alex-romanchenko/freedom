@@ -318,6 +318,34 @@ const toggleFullscreen = () => {
     await refreshConversations();
   };
 
+const sendAudioMessage = async (audioBlob, audioDuration) => {
+  if (!selectedConv) return;
+
+  shouldScrollToBottomRef.current = true;
+
+  const formData = new FormData();
+
+  formData.append(
+    'audio',
+    audioBlob,
+    'voice-message.webm'
+  );
+
+  formData.append(
+    'audioDuration',
+    audioDuration
+  );
+
+  const url =
+    selectedConv.type === 'group'
+      ? `/messages/group-audio/${selectedConv.id}`
+      : `/messages/audio/${selectedConv.user_id}`;
+
+  await api.post(url, formData);
+
+  await refreshConversations();
+};
+
   const deleteMessage = async () => {
     const messageId = messageMenu.message.id;
 
@@ -918,6 +946,7 @@ useEffect(() => {
                 parseReplyMessage={parseReplyMessage}
                 saveEditedMessage={saveEditedMessage}
                 sendMessage={sendMessage}
+                sendAudioMessage={sendAudioMessage}
               />
 
           <MediaPreviewModal

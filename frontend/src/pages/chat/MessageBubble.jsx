@@ -1,4 +1,5 @@
 import { getFileUrl } from '../../api/fileUrl';
+import AudioMessagePlayer from './AudioMessagePlayer';
 
 function MessageStatus({ status }) {
   if (status === 'read') {
@@ -43,6 +44,7 @@ function MessageBubble({
 }) {
   const forwardedMessage = parseForwardMessage(message.text);
   const replyMessage = parseReplyMessage(message.text);
+  
 
   return (
   <div className={`message-row ${isMine ? 'mine' : 'theirs'}`}>
@@ -106,22 +108,30 @@ function MessageBubble({
           )}
 
           {message.video && (
-            <div
-              className="message-video-wrap"
-              onClick={() => setOpenedVideo(getFileUrl(message.video))}
-            >
-              <video
-                className="message-video"
-                src={getFileUrl(message.video)}
-                autoPlay
-                muted
-                loop
-                playsInline
-              />
+          <div
+            className="message-video-wrap"
+            onClick={() => setOpenedVideo(getFileUrl(message.video))}
+          >
+            <video
+              className="message-video"
+              src={getFileUrl(message.video)}
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
 
-              <div className="message-video-play">▷</div>
-            </div>
-          )}
+            <div className="message-video-play">▷</div>
+          </div>
+        )}
+
+        {message.audio && (
+          <AudioMessagePlayer
+            src={message.audio}
+            duration={message.audio_duration}
+            isMine={isMine}
+          />
+        )}
         </>
       )}
 

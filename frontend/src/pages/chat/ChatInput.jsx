@@ -1,6 +1,8 @@
-import { useRef } from 'react';
-import EmojiPicker from 'emoji-picker-react';
+import { useRef, useState } from 'react';
 import { FiImage, FiSmile, FiSend } from 'react-icons/fi';
+import { IoMic, IoStop, IoTrash, IoSend } from 'react-icons/io5';
+import EmojiPicker from 'emoji-picker-react';
+
 
 function ChatInput({
   replyTo,
@@ -21,8 +23,16 @@ function ChatInput({
   parseReplyMessage,
   saveEditedMessage,
   sendMessage,
+  sendAudioMessage,
 }) {
   const emojiTimerRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordStartRef = useRef(null);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedAudio, setRecordedAudio] = useState(null);
+  const [recordDuration, setRecordDuration] = useState(0);
 
   const openEmojiWithDelay = () => {
     clearTimeout(emojiTimerRef.current);
@@ -44,6 +54,67 @@ function ChatInput({
     clearTimeout(emojiTimerRef.current);
     setShowChatEmoji(true);
   };
+
+  const startRecording = async () => {
+  try {
+const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const recorder = new MediaRecorder(stream);
+
+    audioChunksRef.current = [];
+    recordStartRef.current = Date.now();
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) {
+        audioChunksRef.current.push(e.data);
+      }
+    };
+
+    recorder.onstop = () => {
+      const blob = new Blob(audioChunksRef.current, {
+        type: 'audio/webm',
+      });
+
+      const duration = Math.max(
+        1,
+        Math.round((Date.now() - recordStartRef.current) / 1000)
+      );
+
+      setRecordedAudio(blob);
+      setRecordDuration(duration);
+
+      stream.getTracks().forEach((track) => track.stop());
+    };
+
+    mediaRecorderRef.current = recorder;
+    recorder.start();
+    setIsRecording(true);
+  } catch (error) {
+    console.error('Microphone error:', error);
+    alert('Не вдалося отримати доступ до мікрофона');
+  }
+};
+
+const stopRecording = () => {
+  if (!mediaRecorderRef.current) return;
+
+  mediaRecorderRef.current.stop();
+  setIsRecording(false);
+};
+
+const cancelRecordedAudio = () => {
+  setRecordedAudio(null);
+  setRecordDuration(0);
+};
+
+const handleSendAudio = async () => {
+  if (!recordedAudio) return;
+
+  await sendAudioMessage(recordedAudio, recordDuration);
+
+  setRecordedAudio(null);
+  setRecordDuration(0);
+};
 
   return (
     <>
@@ -85,6 +156,43 @@ function ChatInput({
           <button onClick={() => setChatFile(null)}>×</button>
         </div>
       )}
+
+      {isRecording && (
+        <div className="voice-preview recording-preview">
+          <span className="record-dot"></span>
+          <span>Запис голосового...</span>
+
+          <button type="button" onClick={stopRecording}>
+            <IoStop />
+          </button>
+        </div>
+      )}
+
+{recordedAudio && !isRecording && (
+  <div className="voice-preview">
+    <audio
+      className="voice-preview-audio"
+      src={URL.createObjectURL(recordedAudio)}
+      controls
+    />
+
+    <button
+      type="button"
+      className="voice-delete-btn"
+      onClick={cancelRecordedAudio}
+    >
+      <IoTrash />
+    </button>
+
+    <button
+      type="button"
+      className="voice-send-btn"
+      onClick={handleSendAudio}
+    >
+      <IoSend />
+    </button>
+  </div>
+)}
 
       <div className="chat-input-zone">
         <div className="chat-input-row">
@@ -141,14 +249,32 @@ function ChatInput({
             </div>
           </div>
 
-          <button
-            type="button"
-            className="chat-send-btn"
-            disabled={!text.trim() && !chatFile}
-            onClick={editingMessage ? saveEditedMessage : sendMessage}
-          >
-            <FiSend />
-          </button>
+          {text.trim() || chatFile || editingMessage ? (
+            <button
+              type="button"
+              className="chat-send-btn"
+              disabled={!text.trim() && !chatFile}
+              onClick={editingMessage ? saveEditedMessage : sendMessage}
+            >
+              <FiSend />
+            </button>
+          ) : isRecording ? (
+            <button
+              type="button"
+              className="chat-send-btn recording"
+              onClick={stopRecording}
+            >
+              <IoStop />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="chat-send-btn"
+              onClick={startRecording}
+            >
+              <IoMic />
+            </button>
+          )}
         </div>
 
         {showChatEmoji && (

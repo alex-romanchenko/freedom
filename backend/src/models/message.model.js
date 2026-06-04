@@ -46,27 +46,47 @@ async function getConversationById(conversationId) {
   return result.rows[0];
 }
 
-async function createMessage({ conversationId, senderId, text, image, video }) {
+async function createMessage({
+  conversationId,
+  senderId,
+  text,
+  image,
+  video,
+  audio,
+  audioDuration,
+}) {
   const result = await pool.query(
     `INSERT INTO messages (
-  conversation_id,
-  sender_id,
-  text,
-  image,
-  video,
-  status
-)
-VALUES ($1, $2, $3, $4, $5, 'sent')
-RETURNING
-  id,
-  conversation_id,
-  sender_id,
-  text,
-  image,
-  video,
-  status,
-  created_at`,
-    [conversationId, senderId, text || '', image || null, video || null]
+      conversation_id,
+      sender_id,
+      text,
+      image,
+      video,
+      audio,
+      audio_duration,
+      status
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, 'sent')
+    RETURNING
+      id,
+      conversation_id,
+      sender_id,
+      text,
+      image,
+      video,
+      audio,
+      audio_duration,
+      status,
+      created_at`,
+    [
+      conversationId,
+      senderId,
+      text || '',
+      image || null,
+      video || null,
+      audio || null,
+      audioDuration || 0,
+    ]
   );
 
   await pool.query(
@@ -259,7 +279,9 @@ async function getMessagesByConversation(conversationId, before = null, limit = 
         users.display_name,
         users.avatar,
         messages.image,
-        messages.video
+        messages.video,
+        messages.audio,
+        messages.audio_duration
       FROM messages
       JOIN users ON messages.sender_id = users.id
       WHERE messages.conversation_id = $1
@@ -286,7 +308,9 @@ async function getMessageById(messageId) {
       users.display_name,
       users.avatar,
       messages.image,
-      messages.video
+      messages.video,
+      messages.audio,
+      messages.audio_duration
     FROM messages
     JOIN users ON messages.sender_id = users.id
     WHERE messages.id = $1

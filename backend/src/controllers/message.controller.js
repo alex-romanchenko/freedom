@@ -22,8 +22,13 @@ async function sendMessage(req, res) {
 
 let imagePath = null;
 let videoPath = null;
+let audioPath = null;
+let audioDuration = Number(req.body.audioDuration || 0);
 
 if (req.file) {
+  if (req.file.mimetype.startsWith('audio/')) {
+  audioPath = `/uploads/message-audios/${req.file.filename}`;
+}
   if (req.file.mimetype.startsWith('image/')) {
     imagePath = `/uploads/messages/${req.file.filename}`;
   }
@@ -39,9 +44,9 @@ if (req.file) {
       });
     }
 
-    if (!text && !imagePath && !videoPath) {
+    if (!text && !imagePath && !videoPath && !audioPath) {
       return res.status(400).json({
-        message: 'Message text, image or video is required',
+        message: 'Message text, image, video or audio is required',
       });
     }
 
@@ -53,6 +58,8 @@ const message = await createMessage({
   text,
   image: imagePath,
   video: videoPath,
+  audio: audioPath,
+  audioDuration,
 });
 
     const fullMessage = await getMessageById(message.id);
@@ -95,7 +102,7 @@ if (userRoom) {
     res.status(201).json({
       message: 'Message sent successfully',
       conversation,
-      data: fullMessage,
+      data: finalMessage,
     });
   } catch (error) {
     res.status(500).json({
@@ -113,8 +120,14 @@ async function sendGroupMessage(req, res) {
 
     let imagePath = null;
     let videoPath = null;
+    let audioPath = null;
+    let audioDuration = Number(req.body.audioDuration || 0);
 
     if (req.file) {
+
+      if (req.file.mimetype.startsWith('audio/')) {
+  audioPath = `/uploads/message-audios/${req.file.filename}`;
+}
       if (req.file.mimetype.startsWith('image/')) {
         imagePath = `/uploads/messages/${req.file.filename}`;
       }
@@ -124,9 +137,9 @@ async function sendGroupMessage(req, res) {
       }
     }
 
-    if (!text && !imagePath && !videoPath) {
+    if (!text && !imagePath && !videoPath && !audioPath) {
       return res.status(400).json({
-        message: 'Message text, image or video is required',
+        message: 'Message text, image, video or audio is required',
       });
     }
 
@@ -152,6 +165,8 @@ async function sendGroupMessage(req, res) {
       text,
       image: imagePath,
       video: videoPath,
+      audio: audioPath,
+      audioDuration,
     });
 
     const fullMessage = await getMessageById(message.id);

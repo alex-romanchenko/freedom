@@ -181,14 +181,15 @@ const createGroup = async () => {
               </div>
             ))}
           </div>
-
-          <button
-            className="create-group-next-btn"
-            disabled={!groupName.trim()}
-            onClick={createGroup}
-          >
-            Create
-          </button>
+          <div className="create-group-footer">
+            <button
+              className="create-group-next-btn"
+              disabled={!groupName.trim()}
+              onClick={createGroup}
+            >
+              Create
+            </button>
+          </div>
         </>
       )}
     </div>
