@@ -105,13 +105,22 @@
     min-height: calc(100vh - 66px);
   }
 
-  .chat-sidebar {
-    position: static;
-    width: 100%;
-    height: auto;
-    padding: 16px 10px 86px;
-    border-right: none;
-  }
+.chat-sidebar {
+  position: fixed;
+  inset: 0 0 40px 0;
+  width: 100%;
+  height: auto;
+
+  padding: 16px 10px 0;
+  border-right: none;
+
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+
+
 
   .chat-layout.chat-open .chat-sidebar {
     display: none;

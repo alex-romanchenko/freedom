@@ -71,5 +71,47 @@
   .page {
     padding: 20px;
   }
+
+  /* AUDIO MESSAGES ON TABLET */
+
+.chat-layout {
+  grid-template-columns: 280px minmax(0, 1fr);
+}
+
+.message-bubble:has(.audio-message) {
+  max-width: 88%;
+  padding: 6px 8px;
+}
+
+.audio-message {
+  width: 220px;
+  min-width: 220px;
+  max-width: 220px;
+  gap: 7px;
+}
+
+.audio-play-btn {
+  width: 30px;
+  height: 30px;
+  font-size: 15px;
+}
+
+.audio-wave {
+  height: 28px;
+  gap: 1.5px;
+}
+
+.audio-wave-bar {
+  width: 2px;
+  max-width: 2px;
+}
+
+.audio-time {
+  font-size: 10px;
+}
+
+.message-meta {
+  font-size: 11px;
+}
 }
 
