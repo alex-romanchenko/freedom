@@ -1,7 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth.middleware');
 const { getMyProfile, updateMyProfile, getUserProfile, searchUsersController, 
-    updateMyAvatar, 
+    updateMyAvatar, saveFcmTokenController,
     updateMyHeaderImage, getWhoToFollow } = require('../controllers/user.controller');
 const uploadAvatar = require('../middleware/uploadAvatar');
 const uploadHeader = require('../middleware/uploadHeader');
@@ -15,4 +15,9 @@ router.get('/:username', authMiddleware, getUserProfile);
 router.put('/me', authMiddleware, updateMyProfile);
 router.put('/me/avatar', authMiddleware, uploadAvatar.single('avatar'), updateMyAvatar);
 router.put('/me/header', authMiddleware, uploadHeader.single('headerImage'), updateMyHeaderImage);
+router.post(
+  '/fcm-token',
+  authMiddleware,
+  saveFcmTokenController
+);
 module.exports = router;

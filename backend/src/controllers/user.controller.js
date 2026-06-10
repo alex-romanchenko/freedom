@@ -6,6 +6,7 @@ const {
   updateUserAvatar,
   updateUserHeaderImage,
   getUsersForFollow,
+  saveFcmToken,
 } = require('../models/user.model');
 const { getPostsByUser } = require('../models/post.model');
 const { isFollowingUser } = require('../models/follow.model');
@@ -193,6 +194,35 @@ async function getWhoToFollow(req, res) {
   }
 }
 
+async function saveFcmTokenController(req, res) {
+  try {
+    const userId = req.user.id;
+    const { token, platform } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        message: 'FCM token is required',
+      });
+    }
+
+    const savedToken = await saveFcmToken(
+      userId,
+      token,
+      platform || 'android'
+    );
+
+    res.json({
+      message: 'FCM token saved',
+      token: savedToken,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error saving FCM token',
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   getMyProfile,
   updateMyProfile,
@@ -201,4 +231,5 @@ module.exports = {
   updateMyAvatar,
   updateMyHeaderImage,
   getWhoToFollow,
+  saveFcmTokenController,
 };

@@ -204,6 +204,24 @@ async function getUsersForFollow(currentUserId) {
   return result.rows;
 }
 
+async function saveFcmToken(userId, token, platform = 'android') {
+  const result = await pool.query(
+    `
+    INSERT INTO user_fcm_tokens (user_id, token, platform, updated_at)
+    VALUES ($1, $2, $3, NOW())
+    ON CONFLICT (token)
+    DO UPDATE SET
+      user_id = EXCLUDED.user_id,
+      platform = EXCLUDED.platform,
+      updated_at = NOW()
+    RETURNING id, user_id, token, platform, updated_at
+    `,
+    [userId, token, platform]
+  );
+
+  return result.rows[0];
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
@@ -214,4 +232,5 @@ module.exports = {
   updateUserAvatar,
   updateUserHeaderImage,
   getUsersForFollow,
+  saveFcmToken,
 };
