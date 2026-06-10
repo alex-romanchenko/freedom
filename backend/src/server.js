@@ -16,6 +16,7 @@
   const notificationRoutes = require('./routes/notification.routes');
   const groupChatRoutes = require('./routes/groupChat.routes');
   const { markIncomingMessagesAsDelivered } = require('./models/message.model');
+  const { getFcmTokensByUserId } = require('./models/user.model');
 
   require('dotenv').config();
 
@@ -190,7 +191,7 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
 
   try {
     const result = await pool.query(
-      'SELECT id, username, avatar FROM users WHERE id = $1',
+      'SELECT id, username, avatar, display_name FROM users WHERE id = $1',
       [from]
     );
 
@@ -199,7 +200,7 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
     console.error('Get caller error:', error.message);
   }
 
-  io.to(`user_${to}`).emit('incomingCall', {
+  const incomingPayload = {
     from,
     offer,
     withVideo,
@@ -207,7 +208,54 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
       id: from,
       username: `User ${from}`,
     },
-  });
+  };
+
+  io.to(`user_${to}`).emit('incomingCall', incomingPayload);
+
+  try {
+    const tokens = await getFcmTokensByUserId(to);
+
+    if (tokens.length > 0) {
+      await Promise.all(
+        tokens.map((token) =>
+          messaging.send({
+            token,
+            notification: {
+              title: caller?.display_name || caller?.username || 'Freedom',
+              body: withVideo ? 'Incoming video call' : 'Incoming audio call',
+            },
+            data: {
+              type: 'incoming_call',
+              from: String(from),
+              withVideo: String(withVideo),
+              callerName:
+                caller?.display_name ||
+                caller?.username ||
+                `User ${from}`,
+              callerAvatar: caller?.avatar || '',
+            },
+            android: {
+              priority: 'high',
+              notification: {
+                channelId: 'calls',
+                priority: 'high',
+                sound: 'default',
+              },
+            },
+          })
+        )
+      );
+
+      console.log('FCM CALL PUSH SENT:', {
+        to,
+        tokens: tokens.length,
+      });
+    } else {
+      console.log('NO FCM TOKENS FOR USER:', to);
+    }
+  } catch (error) {
+    console.error('FCM CALL PUSH ERROR:', error.message);
+  }
 });
 
 socket.on('answerCall', ({ to, answer }) => {

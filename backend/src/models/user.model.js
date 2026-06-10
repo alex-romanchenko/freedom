@@ -222,6 +222,19 @@ async function saveFcmToken(userId, token, platform = 'android') {
   return result.rows[0];
 }
 
+async function getFcmTokensByUserId(userId) {
+  const result = await pool.query(
+    `
+    SELECT token
+    FROM user_fcm_tokens
+    WHERE user_id = $1
+    `,
+    [userId]
+  );
+
+  return result.rows.map((row) => row.token);
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
@@ -233,4 +246,5 @@ module.exports = {
   updateUserHeaderImage,
   getUsersForFollow,
   saveFcmToken,
+  getFcmTokensByUserId,
 };
