@@ -41,7 +41,7 @@
     res.send('Freedom API is running 🚀');
   });
 
-  const admin = require('./utils/firebaseAdmin');
+  const { messaging } = require('./utils/firebaseAdmin');
 
     app.post('/api/test-push', async (req, res) => {
       try {
@@ -53,7 +53,7 @@
           });
         }
 
-        const result = await admin.messaging().send({
+        const result = await messaging.send({
           token,
           notification: {
             title: 'Freedom',
