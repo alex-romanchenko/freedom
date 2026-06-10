@@ -263,19 +263,21 @@ const getLocalMedia = async (
   }
 };
 
-  const rejectCall = () => {
-    if (incomingCall) {
-      socket.emit('endCall', {
-        to: incomingCall.from,
-      });
-    }
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
+const rejectCall = () => {
+  if (incomingCall) {
+    socket.emit('rejectCall', {
+      to: incomingCall.from,
+    });
+  }
 
-    setIncomingCall(null);
-  };
+  if (ringtoneRef.current) {
+    ringtoneRef.current.pause();
+    ringtoneRef.current.currentTime = 0;
+  }
+
+  setIncomingCall(null);
+  setCallStatus('');
+};
 
   const endCall = () => {
     if (callUserId) {
@@ -428,17 +430,28 @@ const getLocalMedia = async (
   const handleCallEnded = () => {
     cleanupCall();
   };
+  const handleCallRejected = () => {
+    cleanupCall();
+
+    setCallStatus('Call rejected');
+
+    setTimeout(() => {
+      setCallStatus('');
+    }, 1500);
+  };
 
   socket.on('incomingCall', handleIncomingCall);
   socket.on('callAnswered', handleCallAnswered);
   socket.on('iceCandidate', handleIceCandidate);
   socket.on('callEnded', handleCallEnded);
+  socket.on('callRejected', handleCallRejected);
 
   return () => {
     socket.off('incomingCall', handleIncomingCall);
     socket.off('callAnswered', handleCallAnswered);
     socket.off('iceCandidate', handleIceCandidate);
     socket.off('callEnded', handleCallEnded);
+    socket.off('callRejected', handleCallRejected);
   };
 }, [isCalling, isInCall]);
 

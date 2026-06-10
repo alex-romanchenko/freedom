@@ -180,6 +180,10 @@ socket.on('answerCall', ({ to, answer }) => {
   });
 });
 
+socket.on('rejectCall', ({ to }) => {
+  io.to(`user_${to}`).emit('callRejected');
+});
+
 socket.on('iceCandidate', ({ to, candidate }) => {
   io.to(`user_${to}`).emit('iceCandidate', {
     candidate,
