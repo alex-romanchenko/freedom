@@ -41,6 +41,42 @@
     res.send('Freedom API is running 🚀');
   });
 
+  const admin = require('./utils/firebaseAdmin');
+
+    app.post('/api/test-push', async (req, res) => {
+      try {
+        const { token } = req.body;
+
+        if (!token) {
+          return res.status(400).json({
+            message: 'Token is required',
+          });
+        }
+
+        const result = await admin.messaging().send({
+          token,
+          notification: {
+            title: 'Freedom',
+            body: 'Test push notification',
+          },
+          data: {
+            type: 'test',
+          },
+        });
+
+        res.json({
+          message: 'Push sent',
+          result,
+        });
+      } catch (error) {
+        console.error('Test push error:', error);
+        res.status(500).json({
+          message: 'Push error',
+          error: error.message,
+        });
+      }
+    });
+
   const server = http.createServer(app);
 
   const io = new Server(server, {
