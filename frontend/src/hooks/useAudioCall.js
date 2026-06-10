@@ -240,6 +240,10 @@ const getLocalMedia = async (
 
     await peer.setLocalDescription(answer);
 
+    socket.emit('acceptCallOnDevice', {
+      from: currentUserId,
+    });
+
     socket.emit('answerCall', {
       to: incomingCall.from,
       answer,
@@ -267,6 +271,7 @@ const rejectCall = () => {
   if (incomingCall) {
     socket.emit('rejectCall', {
       to: incomingCall.from,
+      from: currentUserId,
     });
   }
 
@@ -439,12 +444,24 @@ const rejectCall = () => {
       setCallStatus('');
     }, 1500);
   };
+const handleCallHandledOnOtherDevice = () => {
+  if (!incomingCall) return;
+
+  if (ringtoneRef.current) {
+    ringtoneRef.current.pause();
+    ringtoneRef.current.currentTime = 0;
+  }
+
+  setIncomingCall(null);
+  setCallStatus('');
+};
 
   socket.on('incomingCall', handleIncomingCall);
   socket.on('callAnswered', handleCallAnswered);
   socket.on('iceCandidate', handleIceCandidate);
   socket.on('callEnded', handleCallEnded);
   socket.on('callRejected', handleCallRejected);
+  socket.on('callHandledOnOtherDevice', handleCallHandledOnOtherDevice);
 
   return () => {
     socket.off('incomingCall', handleIncomingCall);
@@ -452,6 +469,7 @@ const rejectCall = () => {
     socket.off('iceCandidate', handleIceCandidate);
     socket.off('callEnded', handleCallEnded);
     socket.off('callRejected', handleCallRejected);
+    socket.off('callHandledOnOtherDevice', handleCallHandledOnOtherDevice);
   };
 }, [isCalling, isInCall]);
 

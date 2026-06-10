@@ -180,8 +180,18 @@ socket.on('answerCall', ({ to, answer }) => {
   });
 });
 
-socket.on('rejectCall', ({ to }) => {
+socket.on('rejectCall', ({ to, from }) => {
   io.to(`user_${to}`).emit('callRejected');
+
+  if (from) {
+    socket.to(`user_${from}`).emit('callHandledOnOtherDevice');
+  }
+});
+
+socket.on('acceptCallOnDevice', ({ from }) => {
+  if (from) {
+    socket.to(`user_${from}`).emit('callHandledOnOtherDevice');
+  }
 });
 
 socket.on('iceCandidate', ({ to, candidate }) => {
