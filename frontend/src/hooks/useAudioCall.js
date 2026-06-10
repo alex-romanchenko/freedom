@@ -445,7 +445,6 @@ const rejectCall = () => {
     }, 1500);
   };
 const handleCallHandledOnOtherDevice = () => {
-  if (!incomingCall) return;
 
   if (ringtoneRef.current) {
     ringtoneRef.current.pause();
