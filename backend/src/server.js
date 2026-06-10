@@ -220,10 +220,6 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
         tokens.map((token) =>
           messaging.send({
             token,
-            notification: {
-              title: caller?.display_name || caller?.username || 'Freedom',
-              body: withVideo ? 'Incoming video call' : 'Incoming audio call',
-            },
             data: {
               type: 'incoming_call',
               callerId: String(from),
@@ -236,11 +232,6 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
             },
             android: {
               priority: 'high',
-              notification: {
-                channelId: 'calls',
-                priority: 'high',
-                sound: 'default',
-              },
             },
           })
         )
