@@ -212,6 +212,17 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
 
   io.to(`user_${to}`).emit('incomingCall', incomingPayload);
 
+  const targetRoom = io.sockets.adapter.rooms.get(`user_${to}`);
+  const targetOnline = Boolean(targetRoom && targetRoom.size > 0);
+
+  if (targetOnline) {
+    console.log('SKIP FCM CALL PUSH, USER ONLINE:', {
+      to,
+      sockets: Array.from(targetRoom),
+    });
+    return;
+  }
+
   try {
     const tokens = await getFcmTokensByUserId(to);
 
