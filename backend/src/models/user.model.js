@@ -235,6 +235,49 @@ async function getFcmTokensByUserId(userId) {
   return result.rows.map((row) => row.token);
 }
 
+async function savePendingCall({ callerId, receiverId, offer, withVideo }) {
+  await pool.query(
+    `DELETE FROM pending_calls WHERE receiver_id = $1`,
+    [receiverId]
+  );
+
+  const result = await pool.query(
+    `
+    INSERT INTO pending_calls (caller_id, receiver_id, offer, with_video)
+    VALUES ($1, $2, $3, $4)
+    RETURNING *
+    `,
+    [callerId, receiverId, JSON.stringify(offer), withVideo]
+  );
+
+  return result.rows[0];
+}
+
+async function getPendingCall(receiverId, callerId) {
+  const result = await pool.query(
+    `
+    SELECT *
+    FROM pending_calls
+    WHERE receiver_id = $1 AND caller_id = $2
+    ORDER BY created_at DESC
+    LIMIT 1
+    `,
+    [receiverId, callerId]
+  );
+
+  return result.rows[0];
+}
+
+async function deletePendingCall(receiverId, callerId) {
+  await pool.query(
+    `
+    DELETE FROM pending_calls
+    WHERE receiver_id = $1 AND caller_id = $2
+    `,
+    [receiverId, callerId]
+  );
+}
+
 module.exports = {
   createUser,
   findUserByEmail,
@@ -247,4 +290,7 @@ module.exports = {
   getUsersForFollow,
   saveFcmToken,
   getFcmTokensByUserId,
+  savePendingCall,
+  getPendingCall,
+  deletePendingCall,
 };

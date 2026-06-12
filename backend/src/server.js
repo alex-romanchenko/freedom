@@ -16,7 +16,12 @@
   const notificationRoutes = require('./routes/notification.routes');
   const groupChatRoutes = require('./routes/groupChat.routes');
   const { markIncomingMessagesAsDelivered } = require('./models/message.model');
-  const { getFcmTokensByUserId } = require('./models/user.model');
+  const {
+    getFcmTokensByUserId,
+    savePendingCall,
+    getPendingCall,
+    deletePendingCall,
+  } = require('./models/user.model');
 
   require('dotenv').config();
 
@@ -77,6 +82,43 @@
         });
       }
     });
+
+    app.get('/api/pending-call/:callerId', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const receiverId = decoded.id;
+    const callerId = req.params.callerId;
+
+    const pendingCall = await getPendingCall(receiverId, callerId);
+
+    if (!pendingCall) {
+      return res.status(404).json({
+        message: 'Pending call not found',
+      });
+    }
+
+    res.json({
+      callerId: pendingCall.caller_id,
+      receiverId: pendingCall.receiver_id,
+      offer: pendingCall.offer,
+      withVideo: pendingCall.with_video,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error getting pending call',
+      error: error.message,
+    });
+  }
+});
 
   const server = http.createServer(app);
 
@@ -209,6 +251,13 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
       username: `User ${from}`,
     },
   };
+
+    await savePendingCall({
+    callerId: from,
+    receiverId: to,
+    offer,
+    withVideo,
+  });
 
   io.to(`user_${to}`).emit('incomingCall', incomingPayload);
 
