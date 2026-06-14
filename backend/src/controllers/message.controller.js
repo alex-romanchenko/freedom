@@ -13,6 +13,44 @@ const {
   markMessageAsDelivered,
   getConversationById,
 } = require('../models/message.model');
+const { getFcmTokensByUserId } = require('../models/user.model');
+const { messaging } = require('../utils/firebaseAdmin');
+
+function notificationText(message) {
+  if (message.text) return message.text;
+  if (message.image) return 'Photo';
+  if (message.video) return 'Video';
+  if (message.audio) return 'Audio';
+  return 'New message';
+}
+
+async function sendMessagePush({ userId, title, body, data = {} }) {
+  try {
+    const tokens = await getFcmTokensByUserId(userId);
+
+    if (!tokens.length) return;
+
+    await Promise.all(
+      tokens.map((token) =>
+        messaging.send({
+          token,
+          notification: {
+            title,
+            body,
+          },
+          data: {
+            type: 'message',
+            ...Object.fromEntries(
+              Object.entries(data).map(([key, value]) => [key, String(value)])
+            ),
+          },
+        })
+      )
+    );
+  } catch (error) {
+    console.error('FCM MESSAGE PUSH ERROR:', error.message);
+  }
+}
 
 async function sendMessage(req, res) {
   try {
@@ -98,6 +136,16 @@ if (userRoom) {
     }
   });
 }
+
+await sendMessagePush({
+  userId,
+  title: fullMessage.display_name || fullMessage.username || 'Freedom',
+  body: notificationText(fullMessage),
+  data: {
+    conversationId: conversation.id,
+    senderId,
+  },
+});
 
     res.status(201).json({
       message: 'Message sent successfully',
@@ -204,6 +252,23 @@ async function sendGroupMessage(req, res) {
         }
       });
     });
+
+    await Promise.all(
+      memberIds
+        .filter((memberId) => Number(memberId) !== Number(senderId))
+        .map((memberId) =>
+          sendMessagePush({
+            userId: memberId,
+            title: group.group_name || 'Group chat',
+            body: `${fullMessage.display_name || fullMessage.username || 'User'}: ${notificationText(fullMessage)}`,
+            data: {
+              conversationId,
+              senderId,
+              groupId: group.id,
+            },
+          })
+        )
+    );
 
     res.status(201).json({
       message: 'Group message sent successfully',
