@@ -52,6 +52,19 @@ async function sendMessagePush({ userId, title, body, data = {} }) {
   }
 }
 
+function isUserInConversation(io, userId, conversationId) {
+  const userRoom = io.sockets.adapter.rooms.get(`user_${userId}`);
+  const conversationRoom = io.sockets.adapter.rooms.get(
+    `conversation_${conversationId}`
+  );
+
+  if (!userRoom || !conversationRoom) return false;
+
+  return Array.from(userRoom).some((socketId) =>
+    conversationRoom.has(socketId)
+  );
+}
+
 async function sendMessage(req, res) {
   try {
     const senderId = req.user.id;
@@ -137,15 +150,17 @@ if (userRoom) {
   });
 }
 
-await sendMessagePush({
-  userId,
-  title: fullMessage.display_name || fullMessage.username || 'Freedom',
-  body: notificationText(fullMessage),
-  data: {
-    conversationId: conversation.id,
-    senderId,
-  },
-});
+if (!isUserInConversation(io, userId, conversation.id)) {
+  await sendMessagePush({
+    userId,
+    title: fullMessage.display_name || fullMessage.username || 'Freedom',
+    body: notificationText(fullMessage),
+    data: {
+      conversationId: conversation.id,
+      senderId,
+    },
+  });
+}
 
     res.status(201).json({
       message: 'Message sent successfully',
@@ -256,6 +271,9 @@ async function sendGroupMessage(req, res) {
     await Promise.all(
       memberIds
         .filter((memberId) => Number(memberId) !== Number(senderId))
+        .filter(
+          (memberId) => !isUserInConversation(io, memberId, conversationId)
+        )
         .map((memberId) =>
           sendMessagePush({
             userId: memberId,
