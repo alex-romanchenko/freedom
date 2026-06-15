@@ -315,11 +315,19 @@ socket.on('answerCall', ({ to, answer }) => {
   });
 });
 
-socket.on('rejectCall', ({ to, from }) => {
+socket.on('rejectCall', async ({ to, from }) => {
   io.to(`user_${to}`).emit('callRejected');
 
   if (from) {
     socket.to(`user_${from}`).emit('callHandledOnOtherDevice');
+  }
+
+  if (from && to) {
+    try {
+      await deletePendingCall(from, to);
+    } catch (error) {
+      console.error('Delete pending rejected call error:', error.message);
+    }
   }
 });
 
