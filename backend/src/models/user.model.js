@@ -46,7 +46,20 @@ async function findUserByUsername(username) {
 
 async function getUserById(id) {
   const result = await pool.query(
-    `SELECT id, username, email, display_name, avatar, header_image, created_at
+    `SELECT
+       id,
+       username,
+       email,
+       display_name,
+       avatar,
+       header_image,
+       first_name,
+       last_name,
+       birth_date,
+       city,
+       country,
+       gender,
+       created_at
      FROM users
      WHERE id = $1`,
     [id]
