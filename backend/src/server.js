@@ -133,6 +133,70 @@
   function getOnlineUserIds() {
       return Array.from(onlineUsers.keys());
   }
+
+async function sendCallCancelPush(userId, callerId) {
+  try {
+    const tokens = await getFcmTokensByUserId(userId);
+
+    if (tokens.length === 0) return;
+
+    await Promise.all(
+      tokens.map((token) =>
+        messaging.send({
+          token,
+          data: {
+            type: 'call_cancel',
+            callerId: callerId ? String(callerId) : '',
+          },
+          android: {
+            priority: 'high',
+          },
+        })
+      )
+    );
+  } catch (error) {
+    console.error('FCM CALL CANCEL ERROR:', error.message);
+  }
+}
+
+app.post('/api/calls/reject', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    const receiverId = decoded.id;
+    const { callerId } = req.body;
+
+    if (!callerId) {
+      return res.status(400).json({ message: 'Caller id is required' });
+    }
+
+    io.to(`user_${callerId}`).emit('callRejected');
+
+    try {
+      await deletePendingCall(receiverId, callerId);
+    } catch (error) {
+      console.error('Delete pending HTTP rejected call error:', error.message);
+    }
+
+    await sendCallCancelPush(callerId, receiverId);
+
+    res.json({ message: 'Call rejected' });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error rejecting call',
+      error: error.message,
+    });
+  }
+});
+
   io.on('connection', (socket) => {
 
     socket.on('getOnlineUsers', () => {
