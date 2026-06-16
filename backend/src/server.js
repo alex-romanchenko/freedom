@@ -309,11 +309,44 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
   }
 });
 
-socket.on('answerCall', ({ to, answer }) => {
+socket.on('answerCall', async ({ to, from, answer }) => {
   io.to(`user_${to}`).emit('callAnswered', {
     answer,
   });
+
+  if (from && to) {
+    try {
+      await deletePendingCall(from, to);
+    } catch (error) {
+      console.error('Delete pending answered call error:', error.message);
+    }
+  }
 });
+
+async function sendCallCancelPush(userId, callerId) {
+  try {
+    const tokens = await getFcmTokensByUserId(userId);
+
+    if (tokens.length === 0) return;
+
+    await Promise.all(
+      tokens.map((token) =>
+        messaging.send({
+          token,
+          data: {
+            type: 'call_cancel',
+            callerId: callerId ? String(callerId) : '',
+          },
+          android: {
+            priority: 'high',
+          },
+        })
+      )
+    );
+  } catch (error) {
+    console.error('FCM CALL CANCEL ERROR:', error.message);
+  }
+}
 
 socket.on('rejectCall', async ({ to, from }) => {
   io.to(`user_${to}`).emit('callRejected');
@@ -329,6 +362,10 @@ socket.on('rejectCall', async ({ to, from }) => {
       console.error('Delete pending rejected call error:', error.message);
     }
   }
+
+  if (to && from) {
+    await sendCallCancelPush(to, from);
+  }
 });
 
 socket.on('acceptCallOnDevice', ({ from }) => {
@@ -343,8 +380,18 @@ socket.on('iceCandidate', ({ to, candidate }) => {
   });
 });
 
-socket.on('endCall', ({ to }) => {
+socket.on('endCall', async ({ to, from }) => {
   io.to(`user_${to}`).emit('callEnded');
+
+  if (from && to) {
+    try {
+      await deletePendingCall(to, from);
+    } catch (error) {
+      console.error('Delete pending ended call error:', error.message);
+    }
+
+    await sendCallCancelPush(to, from);
+  }
 });
 
 socket.on('disconnect', async () => {
