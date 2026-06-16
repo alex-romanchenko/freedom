@@ -131,6 +131,7 @@
 
   app.set('io', io);
   const onlineUsers = new Map();
+  const CALL_TIMEOUT_MS = 30000;
   function getOnlineUserIds() {
       return Array.from(onlineUsers.keys());
   }
@@ -193,6 +194,28 @@ async function sendCallCancelPush(userId, callerId) {
   } catch (error) {
     console.error('FCM CALL CANCEL ERROR:', error.message);
   }
+}
+
+function schedulePendingCallTimeout({ callerId, receiverId }) {
+  setTimeout(async () => {
+    try {
+      const pendingCall = await getPendingCall(receiverId, callerId);
+
+      if (!pendingCall) return;
+
+      await deletePendingCall(receiverId, callerId);
+
+      io.to(`user_${callerId}`).emit('callEnded');
+      await sendCallCancelPush(receiverId, callerId);
+
+      console.log('CALL AUTO TIMEOUT:', {
+        from: callerId,
+        to: receiverId,
+      });
+    } catch (error) {
+      console.error('CALL AUTO TIMEOUT ERROR:', error.message);
+    }
+  }, CALL_TIMEOUT_MS);
 }
 
 app.post('/api/calls/reject', async (req, res) => {
@@ -369,6 +392,11 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
     withVideo,
   });
 
+  schedulePendingCallTimeout({
+    callerId: from,
+    receiverId: to,
+  });
+
   io.to(`user_${to}`).emit('incomingCall', incomingPayload);
 
   const targetRoom = io.sockets.adapter.rooms.get(`user_${to}`);
@@ -421,6 +449,8 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
 });
 
 socket.on('answerCall', async ({ to, from, answer }) => {
+  console.log('ANSWER CALL:', { from, to });
+
   io.to(`user_${to}`).emit('callAnswered', {
     answer,
   });
@@ -435,6 +465,8 @@ socket.on('answerCall', async ({ to, from, answer }) => {
 });
 
 socket.on('rejectCall', async ({ to, from }) => {
+  console.log('REJECT CALL:', { from, to });
+
   io.to(`user_${to}`).emit('callRejected');
 
   if (from) {
@@ -467,6 +499,8 @@ socket.on('iceCandidate', ({ to, candidate }) => {
 });
 
 socket.on('endCall', async ({ to, from }) => {
+  console.log('END CALL:', { from, to });
+
   io.to(`user_${to}`).emit('callEnded');
 
   if (from && to) {
