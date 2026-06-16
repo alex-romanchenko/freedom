@@ -132,6 +132,7 @@
   app.set('io', io);
   const onlineUsers = new Map();
   const CALL_TIMEOUT_MS = 30000;
+  const pendingCallTimeouts = new Map();
   function getOnlineUserIds() {
       return Array.from(onlineUsers.keys());
   }
@@ -196,12 +197,53 @@ async function sendCallCancelPush(userId, callerId) {
   }
 }
 
-function schedulePendingCallTimeout({ callerId, receiverId }) {
-  setTimeout(async () => {
+function getPendingCallTimeoutKey(callerId, receiverId) {
+  return `${callerId}:${receiverId}`;
+}
+
+function getPendingCallCreatedAtMs(pendingCall) {
+  if (!pendingCall?.created_at) return null;
+
+  const createdAt = pendingCall.created_at;
+
+  if (createdAt instanceof Date) {
+    return createdAt.getTime();
+  }
+
+  return new Date(createdAt).getTime();
+}
+
+function clearPendingCallTimeout(callerId, receiverId) {
+  const key = getPendingCallTimeoutKey(callerId, receiverId);
+  const timeout = pendingCallTimeouts.get(key);
+
+  if (timeout) {
+    clearTimeout(timeout);
+    pendingCallTimeouts.delete(key);
+  }
+}
+
+function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
+  clearPendingCallTimeout(callerId, receiverId);
+
+  const key = getPendingCallTimeoutKey(callerId, receiverId);
+  const timeout = setTimeout(async () => {
     try {
+      pendingCallTimeouts.delete(key);
+
       const pendingCall = await getPendingCall(receiverId, callerId);
 
       if (!pendingCall) return;
+
+      const pendingCreatedAtMs = getPendingCallCreatedAtMs(pendingCall);
+
+      if (pendingCreatedAtMs !== createdAtMs) {
+        console.log('CALL AUTO TIMEOUT SKIPPED STALE TIMER:', {
+          from: callerId,
+          to: receiverId,
+        });
+        return;
+      }
 
       await deletePendingCall(receiverId, callerId);
 
@@ -216,6 +258,8 @@ function schedulePendingCallTimeout({ callerId, receiverId }) {
       console.error('CALL AUTO TIMEOUT ERROR:', error.message);
     }
   }, CALL_TIMEOUT_MS);
+
+  pendingCallTimeouts.set(key, timeout);
 }
 
 app.post('/api/calls/reject', async (req, res) => {
@@ -246,6 +290,7 @@ app.post('/api/calls/reject', async (req, res) => {
 
     try {
       await deletePendingCall(receiverId, callerId);
+      clearPendingCallTimeout(callerId, receiverId);
     } catch (error) {
       console.error('Delete pending HTTP rejected call error:', error.message);
     }
@@ -385,7 +430,7 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
     },
   };
 
-    await savePendingCall({
+  const pendingCall = await savePendingCall({
     callerId: from,
     receiverId: to,
     offer,
@@ -395,6 +440,7 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
   schedulePendingCallTimeout({
     callerId: from,
     receiverId: to,
+    createdAtMs: getPendingCallCreatedAtMs(pendingCall),
   });
 
   io.to(`user_${to}`).emit('incomingCall', incomingPayload);
@@ -458,6 +504,7 @@ socket.on('answerCall', async ({ to, from, answer }) => {
   if (from && to) {
     try {
       await deletePendingCall(from, to);
+      clearPendingCallTimeout(to, from);
     } catch (error) {
       console.error('Delete pending answered call error:', error.message);
     }
@@ -476,6 +523,7 @@ socket.on('rejectCall', async ({ to, from }) => {
   if (from && to) {
     try {
       await deletePendingCall(from, to);
+      clearPendingCallTimeout(to, from);
     } catch (error) {
       console.error('Delete pending rejected call error:', error.message);
     }
@@ -506,6 +554,7 @@ socket.on('endCall', async ({ to, from }) => {
   if (from && to) {
     try {
       await deletePendingCall(to, from);
+      clearPendingCallTimeout(from, to);
     } catch (error) {
       console.error('Delete pending ended call error:', error.message);
     }
