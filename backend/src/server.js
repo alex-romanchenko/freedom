@@ -18,6 +18,7 @@
   const { markIncomingMessagesAsDelivered } = require('./models/message.model');
   const {
     getFcmTokensByUserId,
+    deleteFcmToken,
     savePendingCall,
     getPendingCall,
     deletePendingCall,
@@ -134,26 +135,61 @@
       return Array.from(onlineUsers.keys());
   }
 
+async function sendFcmToTokens(tokens, buildMessage, label) {
+  let sent = 0;
+
+  await Promise.all(
+    tokens.map(async (token) => {
+      try {
+        await messaging.send(buildMessage(token));
+        sent += 1;
+      } catch (error) {
+        console.error(`${label} TOKEN ERROR:`, error.message);
+
+        if (
+          error.code === 'messaging/registration-token-not-registered' ||
+          error.message === 'Requested entity was not found.'
+        ) {
+          try {
+            await deleteFcmToken(token);
+            console.log('DELETED INVALID FCM TOKEN');
+          } catch (deleteError) {
+            console.error('DELETE INVALID FCM TOKEN ERROR:', deleteError.message);
+          }
+        }
+      }
+    })
+  );
+
+  return sent;
+}
+
 async function sendCallCancelPush(userId, callerId) {
   try {
     const tokens = await getFcmTokensByUserId(userId);
 
     if (tokens.length === 0) return;
 
-    await Promise.all(
-      tokens.map((token) =>
-        messaging.send({
-          token,
-          data: {
-            type: 'call_cancel',
-            callerId: callerId ? String(callerId) : '',
-          },
-          android: {
-            priority: 'high',
-          },
-        })
-      )
+    const sent = await sendFcmToTokens(
+      tokens,
+      (token) => ({
+        token,
+        data: {
+          type: 'call_cancel',
+          callerId: callerId ? String(callerId) : '',
+        },
+        android: {
+          priority: 'high',
+        },
+      }),
+      'FCM CALL CANCEL'
     );
+
+    console.log('FCM CALL CANCEL SENT:', {
+      to: userId,
+      tokens: tokens.length,
+      sent,
+    });
   } catch (error) {
     console.error('FCM CALL CANCEL ERROR:', error.message);
   }
@@ -173,6 +209,11 @@ app.post('/api/calls/reject', async (req, res) => {
 
     const receiverId = decoded.id;
     const { callerId } = req.body;
+
+    console.log('HTTP CALL REJECT:', {
+      callerId,
+      receiverId,
+    });
 
     if (!callerId) {
       return res.status(400).json({ message: 'Caller id is required' });
@@ -233,8 +274,13 @@ app.post('/api/calls/reject', async (req, res) => {
 
   socket.on('joinUser', async (userId) => {
   const id = String(userId);
+  const roomName = `user_${id}`;
 
-  socket.join(`user_${id}`);
+  if (socket.rooms.has(roomName)) {
+    return;
+  }
+
+  socket.join(roomName);
 
   if (!onlineUsers.has(id)) {
     onlineUsers.set(id, new Set());
@@ -340,9 +386,9 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
     const tokens = await getFcmTokensByUserId(to);
 
     if (tokens.length > 0) {
-      await Promise.all(
-        tokens.map((token) =>
-          messaging.send({
+      const sent = await sendFcmToTokens(
+        tokens,
+        (token) => ({
             token,
             data: {
               type: 'incoming_call',
@@ -357,13 +403,14 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
             android: {
               priority: 'high',
             },
-          })
-        )
+          }),
+        'FCM CALL PUSH'
       );
 
       console.log('FCM CALL PUSH SENT:', {
         to,
         tokens: tokens.length,
+        sent,
       });
     } else {
       console.log('NO FCM TOKENS FOR USER:', to);
@@ -386,31 +433,6 @@ socket.on('answerCall', async ({ to, from, answer }) => {
     }
   }
 });
-
-async function sendCallCancelPush(userId, callerId) {
-  try {
-    const tokens = await getFcmTokensByUserId(userId);
-
-    if (tokens.length === 0) return;
-
-    await Promise.all(
-      tokens.map((token) =>
-        messaging.send({
-          token,
-          data: {
-            type: 'call_cancel',
-            callerId: callerId ? String(callerId) : '',
-          },
-          android: {
-            priority: 'high',
-          },
-        })
-      )
-    );
-  } catch (error) {
-    console.error('FCM CALL CANCEL ERROR:', error.message);
-  }
-}
 
 socket.on('rejectCall', async ({ to, from }) => {
   io.to(`user_${to}`).emit('callRejected');

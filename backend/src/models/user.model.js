@@ -248,6 +248,16 @@ async function getFcmTokensByUserId(userId) {
   return result.rows.map((row) => row.token);
 }
 
+async function deleteFcmToken(token) {
+  await pool.query(
+    `
+    DELETE FROM user_fcm_tokens
+    WHERE token = $1
+    `,
+    [token]
+  );
+}
+
 async function savePendingCall({ callerId, receiverId, offer, withVideo }) {
   await pool.query(
     `DELETE FROM pending_calls WHERE receiver_id = $1`,
@@ -303,6 +313,7 @@ module.exports = {
   getUsersForFollow,
   saveFcmToken,
   getFcmTokensByUserId,
+  deleteFcmToken,
   savePendingCall,
   getPendingCall,
   deletePendingCall,
