@@ -42,8 +42,8 @@
   app.use('/api/photos', photoCommentRoutes);
   app.use('/api/messages', messageRoutes);
   app.use('/api/group-chats', groupChatRoutes);
-  app.use('/api/posts', postRoutes);
   app.use('/api/posts', postCommentRoutes);
+  app.use('/api/posts', postRoutes);
   app.get('/', (req, res) => {
     res.send('Freedom API is running 🚀');
   });
