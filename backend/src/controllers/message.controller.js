@@ -404,7 +404,18 @@ async function deleteMessage(req, res) {
   try {
     const { messageId } = req.params;
 
-    await deleteMessageById(messageId);
+    const deletedMessage = await deleteMessageById(messageId);
+
+    if (deletedMessage) {
+      const io = req.app.get('io');
+      io.to(`conversation_${deletedMessage.conversation_id}`).emit(
+        'messageDeleted',
+        {
+          conversationId: deletedMessage.conversation_id,
+          messageId: deletedMessage.id,
+        }
+      );
+    }
 
     res.json({ message: 'Message deleted' });
   } catch (error) {

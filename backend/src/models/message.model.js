@@ -341,14 +341,17 @@ async function updateMessageById(messageId, userId, text) {
 }
 
 async function deleteMessageById(messageId) {
-  await pool.query(
+  const result = await pool.query(
     `UPDATE messages
      SET is_deleted = true,
          deleted_at = CURRENT_TIMESTAMP,
          text = 'Message deleted'
-     WHERE id = $1`,
+     WHERE id = $1
+     RETURNING id, conversation_id`,
     [messageId]
   );
+
+  return result.rows[0];
 }
 
 async function markMessagesAsRead(conversationId, userId) {
