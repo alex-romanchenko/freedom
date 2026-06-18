@@ -168,6 +168,8 @@ if (!isUserInConversation(io, userId, conversation.id)) {
       data: finalMessage,
     });
   } catch (error) {
+    console.error('Error sending message:', error);
+
     res.status(500).json({
       message: 'Error sending message',
       error: error.message,

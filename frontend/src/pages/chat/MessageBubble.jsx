@@ -38,12 +38,16 @@ function MessageBubble({
   parseForwardMessage,
   parseReplyMessage,
   openMessageMenu,
+  setMessageReaction,
   setOpenedImage,
   setOpenedVideo,
   onOpenUser,
 }) {
   const forwardedMessage = parseForwardMessage(message.text);
   const replyMessage = parseReplyMessage(message.text);
+  const reactions = (message.reactions || []).filter(
+    (item) => item.reaction && Number(item.count || 0) > 0
+  );
   
 
   return (
@@ -64,6 +68,7 @@ function MessageBubble({
     <div
       className="message-bubble"
       onContextMenu={(e) => openMessageMenu(e, message, isMine)}
+      onDoubleClick={() => setMessageReaction?.(message, '❤️')}
     >
       {isGroup && !isMine && (
         <button
@@ -145,6 +150,20 @@ function MessageBubble({
 
         {isMine && <MessageStatus status={message.status} />}
       </span>
+
+      {reactions.length > 0 && (
+        <div className="message-reactions">
+          {reactions.map((item) => (
+            <span
+              key={item.reaction}
+              className={item.reacted_by_me ? 'mine' : ''}
+            >
+              {item.reaction}
+              {Number(item.count) > 1 ? ` ${item.count}` : ''}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   </div>
 );

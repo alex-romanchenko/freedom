@@ -462,6 +462,52 @@ formData.append(
     closeMessageMenu();
   };
 
+  const getMyReaction = (message) => {
+    return message?.reactions?.find((item) => item.reacted_by_me)?.reaction || null;
+  };
+
+  const setMessageReaction = (message, reaction) => {
+    if (!selectedConv || !message) return;
+
+    const nextReaction = getMyReaction(message) === reaction ? null : reaction;
+
+    socket.emit('messageReaction', {
+      conversationId: selectedConv.id,
+      messageId: message.id,
+      reaction: nextReaction,
+    });
+
+    closeMessageMenu();
+  };
+
+  const applyMessageReactionUpdate = ({
+    conversationId,
+    messageId,
+    userId,
+    reaction,
+    reactions,
+  }) => {
+    if (String(conversationId) !== String(selectedConv?.id)) return;
+
+    setMessages((prev) =>
+      prev.map((message) => {
+        if (String(message.id) !== String(messageId)) return message;
+
+        const previousMyReaction = getMyReaction(message);
+        const nextMyReaction =
+          String(userId) === String(currentUser?.id) ? reaction : previousMyReaction;
+
+        return {
+          ...message,
+          reactions: (reactions || []).map((item) => ({
+            ...item,
+            reacted_by_me: item.reaction === nextMyReaction,
+          })),
+        };
+      })
+    );
+  };
+
   const handleDragOver = (e) => {
   e.preventDefault();
   setIsDraggingImage(true);
@@ -753,6 +799,14 @@ useEffect(() => {
   };
 }, [selectedConv?.id]);
 
+useEffect(() => {
+  socket.on('messageReactionUpdated', applyMessageReactionUpdate);
+
+  return () => {
+    socket.off('messageReactionUpdated', applyMessageReactionUpdate);
+  };
+}, [selectedConv?.id, currentUser?.id]);
+
   useEffect(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
@@ -917,6 +971,7 @@ useEffect(() => {
                   parseForwardMessage={parseForwardMessage}
                   parseReplyMessage={parseReplyMessage}
                   openMessageMenu={openMessageMenu}
+                  setMessageReaction={setMessageReaction}
                   setOpenedImage={setOpenedImage}
                   setOpenedVideo={setOpenedVideo}
                 />
@@ -938,6 +993,7 @@ useEffect(() => {
                 forwardMessage={forwardMessage}
                 startEditMessage={startEditMessage}
                 deleteMessage={deleteMessage}
+                setMessageReaction={setMessageReaction}
               />
 
               <div ref={messagesEndRef} />

@@ -96,15 +96,7 @@ async function createMessage({
     [conversationId]
   );
 
-  const message = result.rows[0];
-  if (!message) return message;
-
-  const [messageWithReactions] = await attachReactionsToMessages(
-    [message],
-    currentUserId
-  );
-
-  return messageWithReactions;
+  return result.rows[0];
 }
 
 async function ensureMessageReactionsTable() {
@@ -423,7 +415,15 @@ async function getMessageById(messageId, currentUserId = null) {
     WHERE messages.id = $1
   `, [messageId]);
 
-  return result.rows[0];
+  const message = result.rows[0];
+  if (!message) return message;
+
+  const [messageWithReactions] = await attachReactionsToMessages(
+    [message],
+    currentUserId
+  );
+
+  return messageWithReactions;
 }
 
 async function deleteConversationById(conversationId, userId) {
@@ -458,15 +458,7 @@ async function deleteMessageById(messageId) {
     [messageId]
   );
 
-  const message = result.rows[0];
-  if (!message) return message;
-
-  const [messageWithReactions] = await attachReactionsToMessages(
-    [message],
-    currentUserId
-  );
-
-  return messageWithReactions;
+  return result.rows[0];
 }
 
 async function markMessagesAsRead(conversationId, userId) {
