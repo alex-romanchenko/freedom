@@ -96,7 +96,109 @@ async function createMessage({
     [conversationId]
   );
 
-  return result.rows[0];
+  const message = result.rows[0];
+  if (!message) return message;
+
+  const [messageWithReactions] = await attachReactionsToMessages(
+    [message],
+    currentUserId
+  );
+
+  return messageWithReactions;
+}
+
+async function ensureMessageReactionsTable() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS message_reactions (
+      id SERIAL PRIMARY KEY,
+      message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      reaction TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(message_id, user_id)
+    )
+  `);
+}
+
+async function getReactionRows(messageIds, currentUserId = null) {
+  if (!messageIds.length) return [];
+
+  const result = await pool.query(
+    `
+    SELECT
+      message_id,
+      reaction,
+      COUNT(*)::int AS count,
+      BOOL_OR(user_id = $2) AS reacted_by_me
+    FROM message_reactions
+    WHERE message_id = ANY($1::int[])
+    GROUP BY message_id, reaction
+    ORDER BY MIN(created_at)
+    `,
+    [messageIds, currentUserId]
+  );
+
+  return result.rows;
+}
+
+async function attachReactionsToMessages(messages, currentUserId = null) {
+  const messageIds = messages.map((message) => Number(message.id));
+  const reactionRows = await getReactionRows(messageIds, currentUserId);
+
+  const reactionsByMessageId = reactionRows.reduce((acc, row) => {
+    const id = Number(row.message_id);
+
+    if (!acc[id]) acc[id] = [];
+
+    acc[id].push({
+      reaction: row.reaction,
+      count: Number(row.count || 0),
+      reacted_by_me: Boolean(row.reacted_by_me),
+    });
+
+    return acc;
+  }, {});
+
+  return messages.map((message) => ({
+    ...message,
+    reactions: reactionsByMessageId[Number(message.id)] || [],
+  }));
+}
+
+async function getMessageReactions(messageId, currentUserId = null) {
+  const rows = await getReactionRows([Number(messageId)], currentUserId);
+
+  return rows.map((row) => ({
+    reaction: row.reaction,
+    count: Number(row.count || 0),
+    reacted_by_me: Boolean(row.reacted_by_me),
+  }));
+}
+
+async function setMessageReaction({ messageId, userId, reaction }) {
+  if (!reaction) {
+    await pool.query(
+      `
+      DELETE FROM message_reactions
+      WHERE message_id = $1 AND user_id = $2
+      `,
+      [messageId, userId]
+    );
+
+    return getMessageReactions(messageId, userId);
+  }
+
+  await pool.query(
+    `
+    INSERT INTO message_reactions (message_id, user_id, reaction)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (message_id, user_id)
+    DO UPDATE SET reaction = EXCLUDED.reaction, created_at = CURRENT_TIMESTAMP
+    `,
+    [messageId, userId, reaction]
+  );
+
+  return getMessageReactions(messageId, userId);
 }
 
 async function getUserConversations(userId) {
@@ -255,7 +357,12 @@ async function markConversationAsRead(conversationId, userId) {
   );
 }
 
-async function getMessagesByConversation(conversationId, before = null, limit = 30) {
+async function getMessagesByConversation(
+  conversationId,
+  before = null,
+  limit = 30,
+  currentUserId = null
+) {
   const params = [conversationId];
   let beforeCondition = '';
 
@@ -293,10 +400,10 @@ async function getMessagesByConversation(conversationId, before = null, limit = 
     ORDER BY created_at ASC
   `, params);
 
-  return result.rows;
+  return attachReactionsToMessages(result.rows, currentUserId);
 }
 
-async function getMessageById(messageId) {
+async function getMessageById(messageId, currentUserId = null) {
   const result = await pool.query(`
     SELECT 
       messages.id,
@@ -351,7 +458,15 @@ async function deleteMessageById(messageId) {
     [messageId]
   );
 
-  return result.rows[0];
+  const message = result.rows[0];
+  if (!message) return message;
+
+  const [messageWithReactions] = await attachReactionsToMessages(
+    [message],
+    currentUserId
+  );
+
+  return messageWithReactions;
 }
 
 async function markMessagesAsRead(conversationId, userId) {
@@ -427,4 +542,7 @@ module.exports = {
   markIncomingMessagesAsDelivered,
   getGroupMemberIds,
   getConversationById,
+  ensureMessageReactionsTable,
+  getMessageReactions,
+  setMessageReaction,
 };

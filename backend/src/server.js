@@ -15,7 +15,11 @@
   const postCommentRoutes = require('./routes/postComment.routes');
   const notificationRoutes = require('./routes/notification.routes');
   const groupChatRoutes = require('./routes/groupChat.routes');
-  const { markIncomingMessagesAsDelivered } = require('./models/message.model');
+  const {
+    markIncomingMessagesAsDelivered,
+    ensureMessageReactionsTable,
+    setMessageReaction,
+  } = require('./models/message.model');
   const {
     getFcmTokensByUserId,
     deleteFcmToken,
@@ -404,6 +408,35 @@ app.post('/api/calls/reject', async (req, res) => {
     });
   });
 
+  socket.on('messageReaction', async ({ conversationId, messageId, reaction }) => {
+    const userId = socket.userId;
+
+    if (!userId || !conversationId || !messageId) {
+      return;
+    }
+
+    const normalizedReaction =
+      typeof reaction === 'string' && reaction.trim() ? reaction.trim() : null;
+
+    try {
+      const reactions = await setMessageReaction({
+        messageId: Number(messageId),
+        userId: Number(userId),
+        reaction: normalizedReaction,
+      });
+
+      io.to(`conversation_${conversationId}`).emit('messageReactionUpdated', {
+        conversationId: Number(conversationId),
+        messageId: Number(messageId),
+        userId: Number(userId),
+        reaction: normalizedReaction,
+        reactions,
+      });
+    } catch (error) {
+      console.error('MESSAGE REACTION ERROR:', error.message);
+    }
+  });
+
 socket.on('callUser', async ({ to, offer, from, withVideo }) => {
   console.log('CALL USER:', { from, to, withVideo });
 
@@ -625,6 +658,12 @@ socket.on('disconnect', async () => {
 
   const PORT = process.env.PORT || 5000;
 
-  server.listen(PORT, () => {
-    console.log(`Server started on port ${PORT}`);
-  });
+  ensureMessageReactionsTable()
+    .catch((error) => {
+      console.error('Ensure message reactions table error:', error.message);
+    })
+    .finally(() => {
+      server.listen(PORT, () => {
+        console.log(`Server started on port ${PORT}`);
+      });
+    });

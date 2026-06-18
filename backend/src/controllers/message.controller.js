@@ -113,7 +113,7 @@ const message = await createMessage({
   audioDuration,
 });
 
-    const fullMessage = await getMessageById(message.id);
+    const fullMessage = await getMessageById(message.id, senderId);
 let finalMessage = fullMessage;
 
 const io = req.app.get('io');
@@ -232,7 +232,7 @@ async function sendGroupMessage(req, res) {
       audioDuration,
     });
 
-    const fullMessage = await getMessageById(message.id);
+    const fullMessage = await getMessageById(message.id, senderId);
 
     const io = req.app.get('io');
 
@@ -353,7 +353,8 @@ async function getMessages(req, res) {
     const messages = await getMessagesByConversation(
       conversationId,
       before || null,
-      Number(limit) || 30
+      Number(limit) || 30,
+      req.user.id
     );
 
     res.json(messages);
