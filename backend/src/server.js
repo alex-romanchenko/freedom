@@ -116,6 +116,10 @@
       receiverId: pendingCall.receiver_id,
       offer: pendingCall.offer,
       withVideo: pendingCall.with_video,
+      iceCandidates: getPendingCallIceCandidates(
+        pendingCall.caller_id,
+        pendingCall.receiver_id
+      ),
     });
   } catch (error) {
     res.status(500).json({
@@ -137,6 +141,43 @@
   const onlineUsers = new Map();
   const CALL_TIMEOUT_MS = 30000;
   const pendingCallTimeouts = new Map();
+  // ICE candidates are normally delivered over Socket.IO. A device woken by FCM
+  // is not connected yet, so keep the caller's early candidates until it reads
+  // its pending call and can add them to the peer connection.
+  const pendingCallIceCandidates = new Map();
+
+  function getPendingCallIceKey(callerId, receiverId) {
+    return `${callerId}:${receiverId}`;
+  }
+
+  function clearPendingCallIceCandidates(callerId, receiverId) {
+    pendingCallIceCandidates.delete(
+      getPendingCallIceKey(callerId, receiverId)
+    );
+  }
+
+  function storePendingCallIceCandidate(callerId, receiverId, candidate) {
+    const key = getPendingCallIceKey(callerId, receiverId);
+    const candidates = pendingCallIceCandidates.get(key) || [];
+    const candidateValue = candidate?.candidate;
+
+    if (
+      candidateValue &&
+      !candidates.some((item) => item?.candidate === candidateValue)
+    ) {
+      candidates.push(candidate);
+      pendingCallIceCandidates.set(key, candidates);
+    }
+  }
+
+  function getPendingCallIceCandidates(callerId, receiverId) {
+    return [
+      ...(pendingCallIceCandidates.get(
+        getPendingCallIceKey(callerId, receiverId)
+      ) || []),
+    ];
+  }
+
   function getOnlineUserIds() {
       return Array.from(onlineUsers.keys());
   }
@@ -250,6 +291,7 @@ function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
       }
 
       await deletePendingCall(receiverId, callerId);
+      clearPendingCallIceCandidates(callerId, receiverId);
 
       io.to(`user_${callerId}`).emit('callEnded');
       await sendCallCancelPush(receiverId, callerId);
@@ -295,6 +337,7 @@ app.post('/api/calls/reject', async (req, res) => {
     try {
       await deletePendingCall(receiverId, callerId);
       clearPendingCallTimeout(callerId, receiverId);
+      clearPendingCallIceCandidates(callerId, receiverId);
     } catch (error) {
       console.error('Delete pending HTTP rejected call error:', error.message);
     }
@@ -439,6 +482,7 @@ app.post('/api/calls/reject', async (req, res) => {
 
 socket.on('callUser', async ({ to, offer, from, withVideo }) => {
   console.log('CALL USER:', { from, to, withVideo });
+  clearPendingCallIceCandidates(from, to);
 
   let caller = null;
 
@@ -542,6 +586,7 @@ socket.on('answerCall', async ({ to, from, answer }) => {
     try {
       await deletePendingCall(actorId, to);
       clearPendingCallTimeout(to, actorId);
+      clearPendingCallIceCandidates(to, actorId);
     } catch (error) {
       console.error('Delete pending answered call error:', error.message);
     }
@@ -561,6 +606,7 @@ socket.on('rejectCall', async ({ to, from }) => {
     try {
       await deletePendingCall(from, to);
       clearPendingCallTimeout(to, from);
+      clearPendingCallIceCandidates(to, from);
     } catch (error) {
       console.error('Delete pending rejected call error:', error.message);
     }
@@ -578,6 +624,14 @@ socket.on('acceptCallOnDevice', ({ from }) => {
 });
 
 socket.on('iceCandidate', ({ to, candidate }) => {
+  const from = socket.userId;
+  const targetRoom = io.sockets.adapter.rooms.get(`user_${to}`);
+
+  if (from && (!targetRoom || targetRoom.size === 0)) {
+    storePendingCallIceCandidate(from, to, candidate);
+    console.log('STORED PENDING ICE CANDIDATE:', { from, to });
+  }
+
   io.to(`user_${to}`).emit('iceCandidate', {
     candidate,
   });
@@ -594,6 +648,7 @@ socket.on('endCall', async ({ to, from }) => {
     try {
       await deletePendingCall(to, actorId);
       clearPendingCallTimeout(actorId, to);
+      clearPendingCallIceCandidates(actorId, to);
     } catch (error) {
       console.error('Delete pending ended call error:', error.message);
     }
