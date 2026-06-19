@@ -528,16 +528,20 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
 });
 
 socket.on('answerCall', async ({ to, from, answer }) => {
-  console.log('ANSWER CALL:', { from, to });
+  const actorId = from || socket.userId;
+
+  console.log('ANSWER CALL:', { from: actorId, to });
 
   io.to(`user_${to}`).emit('callAnswered', {
     answer,
+    from: actorId,
+    to,
   });
 
-  if (from && to) {
+  if (actorId && to) {
     try {
-      await deletePendingCall(from, to);
-      clearPendingCallTimeout(to, from);
+      await deletePendingCall(actorId, to);
+      clearPendingCallTimeout(to, actorId);
     } catch (error) {
       console.error('Delete pending answered call error:', error.message);
     }

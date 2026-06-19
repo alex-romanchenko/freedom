@@ -282,6 +282,7 @@ const getLocalMedia = async (
 
     socket.emit('answerCall', {
       to: incomingCall.from,
+      from: currentUserId,
       answer,
     });
 
