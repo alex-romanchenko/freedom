@@ -580,19 +580,21 @@ socket.on('iceCandidate', ({ to, candidate }) => {
 });
 
 socket.on('endCall', async ({ to, from }) => {
-  console.log('END CALL:', { from, to });
+  const actorId = from || socket.userId;
 
-  io.to(`user_${to}`).emit('callEnded', { from, to });
+  console.log('END CALL:', { from: actorId, to });
 
-  if (from && to) {
+  io.to(`user_${to}`).emit('callEnded', { from: actorId, to });
+
+  if (actorId && to) {
     try {
-      await deletePendingCall(to, from);
-      clearPendingCallTimeout(from, to);
+      await deletePendingCall(to, actorId);
+      clearPendingCallTimeout(actorId, to);
     } catch (error) {
       console.error('Delete pending ended call error:', error.message);
     }
 
-    await sendCallCancelPush(to, from);
+    await sendCallCancelPush(to, actorId);
   }
 });
 

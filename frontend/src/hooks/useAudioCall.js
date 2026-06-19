@@ -33,6 +33,7 @@ const remoteVideoRef = useRef(null);
   const ringtoneRef = useRef(null);
   const outgoingRingRef = useRef(null);
   const callEndedSoundRef = useRef(null);
+  const callActiveRef = useRef(false);
   const pendingCandidatesRef = useRef([]);
 
   const stopAudio = (audio) => {
@@ -231,6 +232,7 @@ const getLocalMedia = async (
     setIsCalling(true);
     setIsVideoCall(withVideo);
     setCallStatus('Calling...');
+    callActiveRef.current = true;
     playOutgoingRing();
 
     socket.emit('callUser', {
@@ -287,6 +289,7 @@ const getLocalMedia = async (
     setIncomingCall(null);
     setIsInCall(true);
     setIsVideoCall(Boolean(incomingCall.withVideo));
+    callActiveRef.current = true;
 
     setCallStatus('In call');
 
@@ -315,12 +318,14 @@ const rejectCall = () => {
 
   setIncomingCall(null);
   setCallStatus('');
+  callActiveRef.current = false;
 };
 
   const endCall = () => {
     if (callUserId) {
       socket.emit('endCall', {
         to: callUserId,
+        from: currentUserId,
       });
     }
 
@@ -388,6 +393,7 @@ const rejectCall = () => {
     setIsMuted(false);
     setIsCameraOff(false);
     setCameraMode('user');
+    callActiveRef.current = false;
   };
 
   const flushPendingCandidates = async () => {
@@ -413,6 +419,7 @@ const rejectCall = () => {
     }
 
     setCallStatus('Ringing...');
+    callActiveRef.current = true;
 
     if (ringtoneRef.current) {
       ringtoneRef.current.loop = true;
@@ -466,10 +473,14 @@ const rejectCall = () => {
   };
 
   const handleCallEnded = () => {
+    if (!callActiveRef.current && !peerRef.current) return;
+
     playCallEndedSound();
     cleanupCall();
   };
   const handleCallRejected = () => {
+    if (!callActiveRef.current && !peerRef.current) return;
+
     playCallEndedSound();
     cleanupCall();
 
@@ -485,6 +496,7 @@ const handleCallHandledOnOtherDevice = () => {
 
   setIncomingCall(null);
   setCallStatus('');
+  callActiveRef.current = false;
 };
 
   socket.on('incomingCall', handleIncomingCall);
