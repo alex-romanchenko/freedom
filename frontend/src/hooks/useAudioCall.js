@@ -31,7 +31,40 @@ export function useAudioCall(currentUserId) {
 const remoteVideoRef = useRef(null);
   const timerRef = useRef(null);
   const ringtoneRef = useRef(null);
+  const outgoingRingRef = useRef(null);
+  const callEndedSoundRef = useRef(null);
   const pendingCandidatesRef = useRef([]);
+
+  const stopAudio = (audio) => {
+    if (!audio) return;
+
+    audio.pause();
+    audio.currentTime = 0;
+  };
+
+  const playOutgoingRing = () => {
+    if (!outgoingRingRef.current) {
+      outgoingRingRef.current = new Audio('/sounds/outgoing_ring.mp3');
+      outgoingRingRef.current.loop = true;
+    }
+
+    outgoingRingRef.current.play().catch(() => {});
+  };
+
+  const stopOutgoingRing = () => {
+    stopAudio(outgoingRingRef.current);
+  };
+
+  const playCallEndedSound = () => {
+    stopOutgoingRing();
+
+    if (!callEndedSoundRef.current) {
+      callEndedSoundRef.current = new Audio('/sounds/call_ended.mp3');
+    }
+
+    stopAudio(callEndedSoundRef.current);
+    callEndedSoundRef.current.play().catch(() => {});
+  };
 
   const createPeer = (targetUserId) => {
     const peer = new RTCPeerConnection(peerConfig);
@@ -198,6 +231,7 @@ const getLocalMedia = async (
     setIsCalling(true);
     setIsVideoCall(withVideo);
     setCallStatus('Calling...');
+    playOutgoingRing();
 
     socket.emit('callUser', {
       to: targetUserId,
@@ -207,6 +241,7 @@ const getLocalMedia = async (
     });
   } catch (err) {
     console.error('Start call error:', err);
+    playCallEndedSound();
     cleanupCall();
   }
 };
@@ -216,8 +251,7 @@ const getLocalMedia = async (
 
   try {
     if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
+      stopAudio(ringtoneRef.current);
     }
 
     const stream = await getLocalMedia(
@@ -263,6 +297,7 @@ const getLocalMedia = async (
     }
   } catch (err) {
     console.error('Accept call error:', err);
+    playCallEndedSound();
     cleanupCall();
   }
 };
@@ -275,10 +310,8 @@ const rejectCall = () => {
     });
   }
 
-  if (ringtoneRef.current) {
-    ringtoneRef.current.pause();
-    ringtoneRef.current.currentTime = 0;
-  }
+  stopAudio(ringtoneRef.current);
+  playCallEndedSound();
 
   setIncomingCall(null);
   setCallStatus('');
@@ -292,6 +325,7 @@ const rejectCall = () => {
     }
 
     cleanupCall();
+    playCallEndedSound();
     setIsVideoCall(false);
   };
 
@@ -316,10 +350,8 @@ const rejectCall = () => {
       peerRef.current = null;
     }
 
-    if (ringtoneRef.current) {
-      ringtoneRef.current.pause();
-      ringtoneRef.current.currentTime = 0;
-    }
+    stopAudio(ringtoneRef.current);
+    stopOutgoingRing();
 
     localStreamRef.current?.getTracks().forEach((track) => {
       track.stop();
@@ -407,6 +439,7 @@ const rejectCall = () => {
     setIsCalling(false);
     setIsInCall(true);
     setCallStatus('In call');
+    stopOutgoingRing();
 
     if (!timerRef.current) {
       timerRef.current = setInterval(() => {
@@ -433,9 +466,11 @@ const rejectCall = () => {
   };
 
   const handleCallEnded = () => {
+    playCallEndedSound();
     cleanupCall();
   };
   const handleCallRejected = () => {
+    playCallEndedSound();
     cleanupCall();
 
     setCallStatus('Call rejected');
@@ -446,10 +481,7 @@ const rejectCall = () => {
   };
 const handleCallHandledOnOtherDevice = () => {
 
-  if (ringtoneRef.current) {
-    ringtoneRef.current.pause();
-    ringtoneRef.current.currentTime = 0;
-  }
+  stopAudio(ringtoneRef.current);
 
   setIncomingCall(null);
   setCallStatus('');

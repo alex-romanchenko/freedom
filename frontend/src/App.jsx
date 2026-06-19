@@ -870,7 +870,7 @@ if (isVerifyEmailPage) {
 />
 <audio
   ref={ringtoneRef}
-  src="/sounds/call.mp3"
+  src="/sounds/incoming_call.mp3"
 />
     </div>
   );
