@@ -582,7 +582,7 @@ socket.on('iceCandidate', ({ to, candidate }) => {
 socket.on('endCall', async ({ to, from }) => {
   console.log('END CALL:', { from, to });
 
-  io.to(`user_${to}`).emit('callEnded');
+  io.to(`user_${to}`).emit('callEnded', { from, to });
 
   if (from && to) {
     try {
