@@ -7,7 +7,10 @@ const peerConfig = {
       urls: 'stun:stun.l.google.com:19302',
     },
     {
-      urls: 'turn:freedom.viktorromanchenko.netxi.in:3478',
+      urls: [
+        'turn:freedom.viktorromanchenko.netxi.in:3478?transport=udp',
+        'turn:freedom.viktorromanchenko.netxi.in:3478?transport=tcp',
+      ],
       username: 'freedom',
       credential: 'FreedomSecret123',
     },
@@ -72,6 +75,8 @@ const remoteVideoRef = useRef(null);
 
     peer.onicecandidate = (event) => {
       if (event.candidate) {
+        console.log('ICE candidate:', event.candidate.candidate);
+
         socket.emit('iceCandidate', {
           to: targetUserId,
           candidate: event.candidate,
@@ -80,6 +85,13 @@ const remoteVideoRef = useRef(null);
     };
 
     peer.ontrack = (event) => {
+        console.log(
+          'Remote track:',
+          event.track.kind,
+          'streams:',
+          event.streams.length
+        );
+
         if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = event.streams[0];
         }
@@ -87,6 +99,14 @@ const remoteVideoRef = useRef(null);
         if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = event.streams[0];
         }
+    };
+
+    peer.oniceconnectionstatechange = () => {
+      console.log('ICE connection state:', peer.iceConnectionState);
+    };
+
+    peer.onconnectionstatechange = () => {
+      console.log('Peer connection state:', peer.connectionState);
     };
 
     peerRef.current = peer;
