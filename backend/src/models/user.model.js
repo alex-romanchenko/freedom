@@ -1,11 +1,11 @@
 const pool = require('../db');
 
-async function createUser({ username, email, password, displayName }) {
+async function createUser({ username, email, password, displayName, language = 'en' }) {
   const result = await pool.query(
-    `INSERT INTO users (username, email, password, display_name)
-     VALUES ($1, $2, $3, $4)
-     RETURNING id, username, email, display_name, created_at`,
-    [username, email, password, displayName]
+    `INSERT INTO users (username, email, password, display_name, language)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id, username, email, display_name, language, created_at`,
+    [username, email, password, displayName, language]
   );
 
   return result.rows[0];
@@ -35,7 +35,8 @@ async function findUserByUsername(username) {
        birth_date AS "birthDate",
        city,
        country,
-       gender
+       gender,
+       language
      FROM users
      WHERE username = $1`,
     [username]
@@ -59,6 +60,7 @@ async function getUserById(id) {
        city,
        country,
        gender,
+       language,
        created_at
      FROM users
      WHERE id = $1`,
@@ -248,6 +250,18 @@ async function getFcmTokensByUserId(userId) {
   return result.rows.map((row) => row.token);
 }
 
+async function updateUserLanguage(userId, language) {
+  const result = await pool.query(
+    `UPDATE users
+     SET language = $1
+     WHERE id = $2
+     RETURNING id, language`,
+    [language, userId]
+  );
+
+  return result.rows[0];
+}
+
 async function deleteFcmToken(token) {
   await pool.query(
     `
@@ -307,6 +321,7 @@ module.exports = {
   findUserByUsername,
   getUserById,
   updateUserProfile,
+  updateUserLanguage,
   searchUsers,
   updateUserAvatar,
   updateUserHeaderImage,

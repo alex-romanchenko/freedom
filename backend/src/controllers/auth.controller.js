@@ -94,11 +94,15 @@ async function resetPassword(req, res) {
 
 async function register(req, res) {
   try {
-    const { username, email, password, displayName } = req.body;
+    const { username, email, password, displayName, language = 'en' } = req.body;
 
     const usernameRegex = /^[A-Za-z]{2,10}$/;
     const displayNameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!['en', 'uk', 'ru'].includes(language)) {
+      return res.status(400).json({ message: 'Unsupported language' });
+    }
 
     if (!username || !email || !password) {
 
@@ -157,6 +161,7 @@ async function register(req, res) {
       email,
       password: hashedPassword,
       displayName: displayName || username,
+      language,
     });
 
     const token = crypto.randomBytes(32).toString('hex');
@@ -261,6 +266,7 @@ async function login(req, res) {
         displayName: user.display_name,
         avatar: user.avatar,
         headerImage: user.header_image,
+        language: user.language || 'en',
       },
     });
   } catch (error) {

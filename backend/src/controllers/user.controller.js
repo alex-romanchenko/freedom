@@ -1,6 +1,7 @@
 const { 
   getUserById, 
-  updateUserProfile, 
+  updateUserProfile,
+  updateUserLanguage,
   findUserByUsername,
   searchUsers,
   updateUserAvatar,
@@ -59,6 +60,23 @@ async function updateMyProfile(req, res) {
   } catch (error) {
     res.status(500).json({
       message: 'Error updating profile',
+      error: error.message,
+    });
+  }
+}
+
+async function updateMyLanguage(req, res) {
+  try {
+    const { language } = req.body;
+    if (!['en', 'uk', 'ru'].includes(language)) {
+      return res.status(400).json({ message: 'Unsupported language' });
+    }
+
+    const user = await updateUserLanguage(req.user.id, language);
+    res.json({ language: user.language });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error updating language',
       error: error.message,
     });
   }
@@ -226,6 +244,7 @@ async function saveFcmTokenController(req, res) {
 module.exports = {
   getMyProfile,
   updateMyProfile,
+  updateMyLanguage,
   getUserProfile,
   searchUsersController,
   updateMyAvatar,
