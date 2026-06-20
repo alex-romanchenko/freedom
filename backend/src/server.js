@@ -142,8 +142,8 @@
   const CALL_TIMEOUT_MS = 30000;
   const pendingCallTimeouts = new Map();
   // ICE candidates are normally delivered over Socket.IO. A device woken by FCM
-  // is not connected yet, so keep the caller's early candidates until it reads
-  // its pending call and can add them to the peer connection.
+  // Keep every early candidate until the receiver has answered. A socket can
+  // already be connected while Flutter is still navigating to CallScreen.
   const pendingCallIceCandidates = new Map();
 
   function getPendingCallIceKey(callerId, receiverId) {
@@ -625,9 +625,8 @@ socket.on('acceptCallOnDevice', ({ from }) => {
 
 socket.on('iceCandidate', ({ to, candidate }) => {
   const from = socket.userId;
-  const targetRoom = io.sockets.adapter.rooms.get(`user_${to}`);
 
-  if (from && (!targetRoom || targetRoom.size === 0)) {
+  if (from && to && candidate) {
     storePendingCallIceCandidate(from, to, candidate);
     console.log('STORED PENDING ICE CANDIDATE:', { from, to });
   }
