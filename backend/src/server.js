@@ -437,6 +437,11 @@ app.post('/api/calls/reject', async (req, res) => {
       console.log(`Socket ${socket.id} joined conversation_${conversationId}`);
     });
 
+    socket.on('leaveConversation', (conversationId) => {
+      socket.leave(`conversation_${conversationId}`);
+      console.log(`Socket ${socket.id} left conversation_${conversationId}`);
+    });
+
     socket.on('typing', ({ conversationId, userId }) => {
     socket.to(`conversation_${conversationId}`).emit('typing', {
       conversationId,
