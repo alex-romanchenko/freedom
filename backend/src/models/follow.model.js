@@ -12,8 +12,23 @@ async function followUser(followerId, followingId) {
 async function unfollowUser(followerId, followingId) {
   await pool.query(
     `DELETE FROM follows
-     WHERE follower_id = $1 AND following_id = $2`,
+     WHERE (follower_id = $1 AND following_id = $2)
+        OR (follower_id = $2 AND following_id = $1)`,
     [followerId, followingId]
+  );
+}
+
+async function ignoreFollowRequest(userId, requesterId) {
+  await pool.query(
+    `DELETE FROM follows
+     WHERE follower_id = $1 AND following_id = $2
+       AND NOT EXISTS (
+         SELECT 1
+         FROM follows f2
+         WHERE f2.follower_id = $2
+           AND f2.following_id = $1
+       )`,
+    [requesterId, userId]
   );
 }
 async function isFollowingUser(followerId, followingId) {
@@ -131,6 +146,7 @@ async function hasReverseFollowRequest(followerId, followingId) {
 module.exports = {
   followUser,
   unfollowUser,
+  ignoreFollowRequest,
   isFollowingUser,
   getMyFriends,
   getUserFriendsByUsername,

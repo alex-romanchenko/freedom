@@ -7,6 +7,7 @@ const {
   markIncomingRequestsSeen,
   isFollowingUser,
   hasReverseFollowRequest,
+  ignoreFollowRequest,
 } = require('../models/follow.model');
 
 const { createNotification } = require('../models/notification.model');
@@ -130,6 +131,22 @@ async function unfollow(req, res) {
   }
 }
 
+async function ignoreRequest(req, res) {
+  try {
+    const userId = req.user.id;
+    const { requesterId } = req.params;
+
+    await ignoreFollowRequest(userId, requesterId);
+
+    res.json({ message: 'Friend request ignored' });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error ignoring friend request',
+      error: error.message,
+    });
+  }
+}
+
 async function getIncoming(req, res) {
   try {
     const requests = await getIncomingRequests(req.user.id);
@@ -162,4 +179,5 @@ module.exports = {
   getUserFriends,
   getIncoming,
   markRequestsSeen,
+  ignoreRequest,
 };
