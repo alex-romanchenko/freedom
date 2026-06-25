@@ -10,6 +10,7 @@ const {
   markAsRead,
   createConversation,
   deleteConversation,
+  clearConversation,
   updateMessage,
   deleteMessage,
 } = require('../controllers/message.controller');
@@ -43,6 +44,11 @@ router.post(
   authMiddleware,
   uploadMessageImage.single('image'),
   sendMessage
+);
+router.delete(
+  '/conversations/:conversationId/clear',
+  authMiddleware,
+  clearConversation
 );
 router.delete('/conversations/:conversationId', authMiddleware, deleteConversation);
 router.put('/message/:messageId', authMiddleware, updateMessage);

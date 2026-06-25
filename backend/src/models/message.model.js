@@ -435,6 +435,46 @@ async function deleteConversationById(conversationId, userId) {
   );
 }
 
+async function clearConversationById(conversationId, userId) {
+  const result = await pool.query(
+    `
+    UPDATE messages
+    SET is_deleted = true,
+        deleted_at = CURRENT_TIMESTAMP,
+        text = ''
+    WHERE conversation_id = $1
+      AND is_deleted = false
+      AND EXISTS (
+        SELECT 1
+        FROM conversations
+        WHERE conversations.id = $1
+          AND (
+            (
+              conversations.is_group = false
+              AND (
+                conversations.user_one_id = $2
+                OR conversations.user_two_id = $2
+              )
+            )
+            OR (
+              conversations.is_group = true
+              AND EXISTS (
+                SELECT 1
+                FROM conversation_members
+                WHERE conversation_members.conversation_id = conversations.id
+                  AND conversation_members.user_id = $2
+              )
+            )
+          )
+      )
+    RETURNING id
+    `,
+    [conversationId, userId]
+  );
+
+  return result.rows;
+}
+
 async function updateMessageById(messageId, userId, text) {
   const result = await pool.query(
     `UPDATE messages
@@ -532,6 +572,7 @@ module.exports = {
   markMessagesAsRead,
   markMessageAsDelivered,
   markIncomingMessagesAsDelivered,
+  clearConversationById,
   getGroupMemberIds,
   getConversationById,
   ensureMessageReactionsTable,

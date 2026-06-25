@@ -8,6 +8,7 @@ const {
   markConversationAsRead,
   markMessagesAsRead,
   deleteConversationById,
+  clearConversationById,
   updateMessageById,
   deleteMessageById,
   markMessageAsDelivered,
@@ -435,10 +436,49 @@ async function deleteConversation(req, res) {
 
     await deleteConversationById(conversationId, userId);
 
+    const io = req.app.get('io');
+    io.to(`conversation_${conversationId}`).emit('conversationDeleted', {
+      conversationId: Number(conversationId),
+      userId,
+    });
+    io.to(`user_${userId}`).emit('conversationDeleted', {
+      conversationId: Number(conversationId),
+      userId,
+    });
+
     res.json({ message: 'Conversation deleted' });
   } catch (error) {
     res.status(500).json({
       message: 'Error deleting conversation',
+      error: error.message,
+    });
+  }
+}
+
+async function clearConversation(req, res) {
+  try {
+    const userId = req.user.id;
+    const { conversationId } = req.params;
+
+    const clearedMessages = await clearConversationById(conversationId, userId);
+
+    const io = req.app.get('io');
+    io.to(`conversation_${conversationId}`).emit('conversationCleared', {
+      conversationId: Number(conversationId),
+      userId,
+    });
+    io.to(`user_${userId}`).emit('conversationCleared', {
+      conversationId: Number(conversationId),
+      userId,
+    });
+
+    res.json({
+      message: 'Conversation cleared',
+      deletedCount: clearedMessages.length,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error clearing conversation',
       error: error.message,
     });
   }
@@ -452,6 +492,7 @@ module.exports = {
   markAsRead,
   createConversation,
   deleteConversation,
+  clearConversation,
   updateMessage,
   deleteMessage,
   markMessagesAsRead,
