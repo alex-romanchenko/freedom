@@ -216,6 +216,11 @@ async function getUserConversations(userId) {
         last_message.text AS last_message_text,
         last_message.created_at AS last_message_created_at,
         last_message.sender_id AS last_message_sender_id,
+        last_message.status AS last_message_status,
+        last_message.image AS last_message_image,
+        last_message.video AS last_message_video,
+        last_message.audio AS last_message_audio,
+        last_message.audio_duration AS last_message_audio_duration,
 
         COUNT(unread_messages.id) AS unread_count
 
@@ -265,7 +270,12 @@ async function getUserConversations(userId) {
         users.last_seen,
         last_message.text,
         last_message.created_at,
-        last_message.sender_id
+        last_message.sender_id,
+        last_message.status,
+        last_message.image,
+        last_message.video,
+        last_message.audio,
+        last_message.audio_duration
 
       UNION ALL
 
@@ -288,6 +298,11 @@ async function getUserConversations(userId) {
         last_message.text AS last_message_text,
         last_message.created_at AS last_message_created_at,
         last_message.sender_id AS last_message_sender_id,
+        last_message.status AS last_message_status,
+        last_message.image AS last_message_image,
+        last_message.video AS last_message_video,
+        last_message.audio AS last_message_audio,
+        last_message.audio_duration AS last_message_audio_duration,
 
         COUNT(unread_messages.id) AS unread_count
 
@@ -328,7 +343,12 @@ async function getUserConversations(userId) {
         conversations.admin_id,
         last_message.text,
         last_message.created_at,
-        last_message.sender_id
+        last_message.sender_id,
+        last_message.status,
+        last_message.image,
+        last_message.video,
+        last_message.audio,
+        last_message.audio_duration
     ) AS all_conversations
 
     ORDER BY updated_at DESC
