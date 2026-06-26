@@ -1,6 +1,7 @@
 const express = require('express');
 const uploadMessageAudio = require('../middleware/uploadMessageAudio');
 const authMiddleware = require('../middleware/auth.middleware');
+const uploadMessageFile = require('../middleware/uploadMessageFile');
 const uploadMessageImage = require('../middleware/uploadMessageImage');
 const { 
   sendMessage, 
@@ -27,6 +28,19 @@ router.post(
   '/group-audio/:conversationId',
   authMiddleware,
   uploadMessageAudio.single('audio'),
+  sendGroupMessage
+);
+router.post(
+  '/file/:userId',
+  authMiddleware,
+  uploadMessageFile.single('file'),
+  sendMessage
+);
+
+router.post(
+  '/group-file/:conversationId',
+  authMiddleware,
+  uploadMessageFile.single('file'),
   sendGroupMessage
 );
 router.get('/', authMiddleware, getConversations);

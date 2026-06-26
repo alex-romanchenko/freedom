@@ -1,5 +1,12 @@
 import { useRef, useState } from 'react';
-import { FiImage, FiSmile, FiSend } from 'react-icons/fi';
+import {
+  FiFile,
+  FiImage,
+  FiMusic,
+  FiPaperclip,
+  FiSmile,
+  FiSend,
+} from 'react-icons/fi';
 import { IoMic, IoStop, IoTrash, IoSend } from 'react-icons/io5';
 import EmojiPicker from 'emoji-picker-react';
 
@@ -29,10 +36,13 @@ function ChatInput({
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const recordStartRef = useRef(null);
+  const musicInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState(null);
   const [recordDuration, setRecordDuration] = useState(0);
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   const openEmojiWithDelay = () => {
     clearTimeout(emojiTimerRef.current);
@@ -158,8 +168,13 @@ const handleSendAudio = async () => {
         <div className="chat-image-preview">
           {chatFile.type.startsWith('video/') ? (
             <video src={URL.createObjectURL(chatFile)} controls />
-          ) : (
+          ) : chatFile.type.startsWith('image/') ? (
             <img src={URL.createObjectURL(chatFile)} alt="" />
+          ) : (
+            <div className="chat-file-preview">
+              {chatFile.type.startsWith('audio/') ? <FiMusic /> : <FiFile />}
+              <span>{chatFile.name}</span>
+            </div>
           )}
 
           <button onClick={() => setChatFile(null)}>×</button>
@@ -211,16 +226,78 @@ const handleSendAudio = async () => {
               className="chat-icon-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                chatImageInputRef.current.click();
+                setShowAttachMenu((value) => !value);
               }}
             >
-              <FiImage />
+              <FiPaperclip />
             </button>
+
+            {showAttachMenu && (
+              <div className="chat-attach-menu">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    chatImageInputRef.current.click();
+                  }}
+                >
+                  <FiImage />
+                  <span>Gallery</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    musicInputRef.current.click();
+                  }}
+                >
+                  <FiMusic />
+                  <span>Music</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAttachMenu(false);
+                    fileInputRef.current.click();
+                  }}
+                >
+                  <FiFile />
+                  <span>File</span>
+                </button>
+              </div>
+            )}
 
             <input
               ref={chatImageInputRef}
               type="file"
               accept="image/*,video/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                setChatFile(file);
+                e.target.value = '';
+              }}
+            />
+
+            <input
+              ref={musicInputRef}
+              type="file"
+              accept="audio/*"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+
+                setChatFile(file);
+                e.target.value = '';
+              }}
+            />
+
+            <input
+              ref={fileInputRef}
+              type="file"
               style={{ display: 'none' }}
               onChange={(e) => {
                 const file = e.target.files?.[0];

@@ -22,7 +22,51 @@ function notificationText(message) {
   if (message.image) return 'Photo';
   if (message.video) return 'Video';
   if (message.audio) return 'Audio';
+  if (message.file) {
+    return message.file_mime?.startsWith('audio/')
+      ? 'Music'
+      : message.file_name || 'File';
+  }
   return 'New message';
+}
+
+function messageUploadFromRequest(file) {
+  const upload = {
+    imagePath: null,
+    videoPath: null,
+    audioPath: null,
+    filePath: null,
+    fileName: null,
+    fileMime: null,
+    fileSize: 0,
+  };
+
+  if (!file) return upload;
+
+  if (file.fieldname === 'file') {
+    upload.filePath = `/uploads/message-files/${file.filename}`;
+    upload.fileName = file.originalname;
+    upload.fileMime = file.mimetype;
+    upload.fileSize = file.size || 0;
+    return upload;
+  }
+
+  if (file.mimetype.startsWith('audio/') && file.fieldname === 'audio') {
+    upload.audioPath = `/uploads/message-audios/${file.filename}`;
+    return upload;
+  }
+
+  if (file.mimetype.startsWith('image/')) {
+    upload.imagePath = `/uploads/messages/${file.filename}`;
+    return upload;
+  }
+
+  if (file.mimetype.startsWith('video/')) {
+    upload.videoPath = `/uploads/message-videos/${file.filename}`;
+    return upload;
+  }
+
+  return upload;
 }
 
 async function sendMessagePush({ userId, title, body, data = {} }) {
@@ -81,24 +125,16 @@ async function sendMessage(req, res) {
     const senderId = req.user.id;
     const { userId } = req.params;
     const { text } = req.body;
-
-let imagePath = null;
-let videoPath = null;
-let audioPath = null;
-let audioDuration = Number(req.body.audioDuration || 0);
-
-if (req.file) {
-  if (req.file.mimetype.startsWith('audio/')) {
-  audioPath = `/uploads/message-audios/${req.file.filename}`;
-}
-  if (req.file.mimetype.startsWith('image/')) {
-    imagePath = `/uploads/messages/${req.file.filename}`;
-  }
-
-  if (req.file.mimetype.startsWith('video/')) {
-    videoPath = `/uploads/message-videos/${req.file.filename}`;
-  }
-}
+    const {
+      imagePath,
+      videoPath,
+      audioPath,
+      filePath,
+      fileName,
+      fileMime,
+      fileSize,
+    } = messageUploadFromRequest(req.file);
+    const audioDuration = Number(req.body.audioDuration || 0);
 
     if (Number(senderId) === Number(userId)) {
       return res.status(400).json({
@@ -106,9 +142,9 @@ if (req.file) {
       });
     }
 
-    if (!text && !imagePath && !videoPath && !audioPath) {
+    if (!text && !imagePath && !videoPath && !audioPath && !filePath) {
       return res.status(400).json({
-        message: 'Message text, image, video or audio is required',
+        message: 'Message text, image, video, audio or file is required',
       });
     }
 
@@ -122,6 +158,10 @@ const message = await createMessage({
   video: videoPath,
   audio: audioPath,
   audioDuration,
+  file: filePath,
+  fileName,
+  fileMime,
+  fileSize,
 });
 
     const fullMessage = await getMessageById(message.id, senderId);
@@ -193,29 +233,20 @@ async function sendGroupMessage(req, res) {
     const senderId = req.user.id;
     const { conversationId } = req.params;
     const { text } = req.body;
+    const {
+      imagePath,
+      videoPath,
+      audioPath,
+      filePath,
+      fileName,
+      fileMime,
+      fileSize,
+    } = messageUploadFromRequest(req.file);
+    const audioDuration = Number(req.body.audioDuration || 0);
 
-    let imagePath = null;
-    let videoPath = null;
-    let audioPath = null;
-    let audioDuration = Number(req.body.audioDuration || 0);
-
-    if (req.file) {
-
-      if (req.file.mimetype.startsWith('audio/')) {
-  audioPath = `/uploads/message-audios/${req.file.filename}`;
-}
-      if (req.file.mimetype.startsWith('image/')) {
-        imagePath = `/uploads/messages/${req.file.filename}`;
-      }
-
-      if (req.file.mimetype.startsWith('video/')) {
-        videoPath = `/uploads/message-videos/${req.file.filename}`;
-      }
-    }
-
-    if (!text && !imagePath && !videoPath && !audioPath) {
+    if (!text && !imagePath && !videoPath && !audioPath && !filePath) {
       return res.status(400).json({
-        message: 'Message text, image, video or audio is required',
+        message: 'Message text, image, video, audio or file is required',
       });
     }
 
@@ -243,6 +274,10 @@ async function sendGroupMessage(req, res) {
       video: videoPath,
       audio: audioPath,
       audioDuration,
+      file: filePath,
+      fileName,
+      fileMime,
+      fileSize,
     });
 
     const fullMessage = await getMessageById(message.id, senderId);

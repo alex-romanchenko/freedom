@@ -137,6 +137,33 @@ function MessageBubble({
             isMine={isMine}
           />
         )}
+
+        {message.file && (
+          message.file_mime?.startsWith('audio/') ? (
+            <AudioMessagePlayer
+              src={message.file}
+              duration={0}
+              isMine={isMine}
+            />
+          ) : (
+            <a
+              className="message-file"
+              href={getFileUrl(message.file)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span className="message-file-icon">📄</span>
+              <span>
+                <strong>{message.file_name || 'File'}</strong>
+                {Number(message.file_size || 0) > 0 && (
+                  <small>
+                    {(Number(message.file_size) / 1024 / 1024).toFixed(1)} MB
+                  </small>
+                )}
+              </span>
+            </a>
+          )
+        )}
         </>
       )}
 

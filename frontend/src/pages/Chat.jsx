@@ -289,16 +289,24 @@ const toggleFullscreen = () => {
     const formData = new FormData();
     formData.append('text', finalText);
 
+    const isMediaFile =
+      chatFile?.type?.startsWith('image/') ||
+      chatFile?.type?.startsWith('video/');
+
     if (chatFile) {
-      formData.append('image', chatFile);
+      formData.append(isMediaFile ? 'image' : 'file', chatFile);
     }
 
     shouldScrollToBottomRef.current = true;
 
     const messageUrl =
       selectedConv.type === 'group'
-        ? `/messages/group/${selectedConv.id}`
-        : `/messages/${selectedConv.user_id}`;
+        ? isMediaFile
+          ? `/messages/group/${selectedConv.id}`
+          : `/messages/group-file/${selectedConv.id}`
+        : isMediaFile
+        ? `/messages/${selectedConv.user_id}`
+        : `/messages/file/${selectedConv.user_id}`;
 
     await api.post(messageUrl, formData);
 
@@ -524,8 +532,6 @@ const handleDropFile = (e) => {
 
   const file = e.dataTransfer.files?.[0];
   if (!file) return;
-
-  if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
 
   setChatFile(file);
 };

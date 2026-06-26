@@ -54,6 +54,10 @@ async function createMessage({
   video,
   audio,
   audioDuration,
+  file,
+  fileName,
+  fileMime,
+  fileSize,
 }) {
   const result = await pool.query(
     `INSERT INTO messages (
@@ -64,9 +68,13 @@ async function createMessage({
       video,
       audio,
       audio_duration,
+      file,
+      file_name,
+      file_mime,
+      file_size,
       status
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, 'sent')
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'sent')
     RETURNING
       id,
       conversation_id,
@@ -76,6 +84,10 @@ async function createMessage({
       video,
       audio,
       audio_duration,
+      file,
+      file_name,
+      file_mime,
+      file_size,
       status,
       created_at`,
     [
@@ -86,6 +98,10 @@ async function createMessage({
       video || null,
       audio || null,
       audioDuration || 0,
+      file || null,
+      fileName || null,
+      fileMime || null,
+      fileSize || 0,
     ]
   );
 
@@ -221,6 +237,10 @@ async function getUserConversations(userId) {
         last_message.video AS last_message_video,
         last_message.audio AS last_message_audio,
         last_message.audio_duration AS last_message_audio_duration,
+        last_message.file AS last_message_file,
+        last_message.file_name AS last_message_file_name,
+        last_message.file_mime AS last_message_file_mime,
+        last_message.file_size AS last_message_file_size,
 
         COUNT(unread_messages.id) AS unread_count
 
@@ -275,7 +295,11 @@ async function getUserConversations(userId) {
         last_message.image,
         last_message.video,
         last_message.audio,
-        last_message.audio_duration
+        last_message.audio_duration,
+        last_message.file,
+        last_message.file_name,
+        last_message.file_mime,
+        last_message.file_size
 
       UNION ALL
 
@@ -303,6 +327,10 @@ async function getUserConversations(userId) {
         last_message.video AS last_message_video,
         last_message.audio AS last_message_audio,
         last_message.audio_duration AS last_message_audio_duration,
+        last_message.file AS last_message_file,
+        last_message.file_name AS last_message_file_name,
+        last_message.file_mime AS last_message_file_mime,
+        last_message.file_size AS last_message_file_size,
 
         COUNT(unread_messages.id) AS unread_count
 
@@ -348,7 +376,11 @@ async function getUserConversations(userId) {
         last_message.image,
         last_message.video,
         last_message.audio,
-        last_message.audio_duration
+        last_message.audio_duration,
+        last_message.file,
+        last_message.file_name,
+        last_message.file_mime,
+        last_message.file_size
     ) AS all_conversations
 
     ORDER BY updated_at DESC
@@ -400,7 +432,11 @@ async function getMessagesByConversation(
         messages.image,
         messages.video,
         messages.audio,
-        messages.audio_duration
+        messages.audio_duration,
+        messages.file,
+        messages.file_name,
+        messages.file_mime,
+        messages.file_size
       FROM messages
       JOIN users ON messages.sender_id = users.id
       WHERE messages.conversation_id = $1
@@ -429,7 +465,11 @@ async function getMessageById(messageId, currentUserId = null) {
       messages.image,
       messages.video,
       messages.audio,
-      messages.audio_duration
+      messages.audio_duration,
+      messages.file,
+      messages.file_name,
+      messages.file_mime,
+      messages.file_size
     FROM messages
     JOIN users ON messages.sender_id = users.id
     WHERE messages.id = $1

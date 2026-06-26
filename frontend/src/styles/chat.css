@@ -432,6 +432,39 @@
   pointer-events: none;
 }
 
+.message-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 220px;
+  max-width: 280px;
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.16);
+  color: inherit;
+  text-decoration: none;
+}
+
+.message-file-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.14);
+}
+
+.message-file strong,
+.message-file small {
+  display: block;
+}
+
+.message-file small {
+  margin-top: 2px;
+  color: #64748b;
+}
+
 /* CHAT INPUT */
 
 .chat-input-row {
@@ -443,6 +476,7 @@
 }
 
 .chat-input-box {
+  position: relative;
   flex: 1;
   min-height: 48px;
   max-height: 140px;
@@ -575,6 +609,66 @@
   background: rgba(0, 0, 0, 0.65);
   color: white;
   font-size: 18px;
+}
+
+.chat-file-preview {
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #2563eb;
+  text-align: center;
+}
+
+.chat-file-preview svg {
+  width: 30px;
+  height: 30px;
+}
+
+.chat-file-preview span {
+  max-width: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #111827;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.chat-attach-menu {
+  position: absolute;
+  left: 8px;
+  bottom: 54px;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+}
+
+.chat-attach-menu button {
+  border: none;
+  background: transparent;
+  color: #334155;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 72px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.chat-attach-menu svg {
+  width: 24px;
+  height: 24px;
+  color: #2563eb;
 }
 
 /* EMOJI */
