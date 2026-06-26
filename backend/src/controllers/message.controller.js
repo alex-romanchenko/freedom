@@ -45,6 +45,16 @@ async function sendMessagePush({ userId, title, body, data = {} }) {
               Object.entries(data).map(([key, value]) => [key, String(value)])
             ),
           },
+          android: {
+            priority: 'high',
+            ttl: 3600 * 1000,
+            notification: {
+              channelId: 'messages',
+              priority: 'high',
+              defaultSound: true,
+              defaultVibrateTimings: true,
+            },
+          },
         })
       )
     );
