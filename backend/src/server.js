@@ -142,6 +142,7 @@
 
   app.set('io', io);
   const onlineUsers = new Map();
+  const foregroundSockets = new Map();
   const CALL_TIMEOUT_MS = 30000;
   const pendingCallTimeouts = new Map();
   const recentCallLogEvents = new Map();
@@ -171,7 +172,10 @@
     ) {
       candidates.push(candidate);
       pendingCallIceCandidates.set(key, candidates);
+      return true;
     }
+
+    return false;
   }
 
   function getPendingCallIceCandidates(callerId, receiverId) {
@@ -184,6 +188,34 @@
 
   function getOnlineUserIds() {
       return Array.from(onlineUsers.keys());
+  }
+
+  function getForegroundSocketIds(userId) {
+    return Array.from(foregroundSockets.get(String(userId)) || []);
+  }
+
+  function setSocketForeground(socket, isForeground) {
+    const userId = socket.userId;
+    if (!userId) return;
+
+    const id = String(userId);
+
+    if (isForeground) {
+      if (!foregroundSockets.has(id)) {
+        foregroundSockets.set(id, new Set());
+      }
+
+      foregroundSockets.get(id).add(socket.id);
+      return;
+    }
+
+    if (!foregroundSockets.has(id)) return;
+
+    foregroundSockets.get(id).delete(socket.id);
+
+    if (foregroundSockets.get(id).size === 0) {
+      foregroundSockets.delete(id);
+    }
   }
 
 async function sendFcmToTokens(tokens, buildMessage, label) {
@@ -453,6 +485,7 @@ app.post('/api/calls/reject', async (req, res) => {
   const id = String(userId);
 
   onlineUsers.delete(id);
+  foregroundSockets.delete(id);
 
   try {
     await pool.query(
@@ -519,6 +552,15 @@ app.post('/api/calls/reject', async (req, res) => {
 
   console.log(`Socket ${socket.id} joined user_${id}`);
 });
+
+  socket.on('appState', ({ foreground } = {}) => {
+    setSocketForeground(socket, foreground === true);
+    console.log('APP STATE:', {
+      userId: socket.userId,
+      socketId: socket.id,
+      foreground: foreground === true,
+    });
+  });
 
     socket.on('joinConversation', (conversationId) => {
       socket.join(`conversation_${conversationId}`);
@@ -617,13 +659,22 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
 
   const targetRoom = io.sockets.adapter.rooms.get(`user_${to}`);
   const targetOnline = Boolean(targetRoom && targetRoom.size > 0);
+  const targetForegroundSockets = getForegroundSocketIds(to);
+  const targetForeground = targetForegroundSockets.length > 0;
+
+  if (targetForeground) {
+    console.log('SKIP FCM CALL PUSH, USER FOREGROUND:', {
+      to,
+      sockets: targetForegroundSockets,
+    });
+    return;
+  }
 
   if (targetOnline) {
-    console.log('SKIP FCM CALL PUSH, USER ONLINE:', {
+    console.log('SEND FCM CALL PUSH, USER ONLINE BUT BACKGROUND:', {
       to,
       sockets: Array.from(targetRoom),
     });
-    return;
   }
 
   try {
@@ -726,8 +777,10 @@ socket.on('iceCandidate', ({ to, candidate }) => {
   const from = socket.userId;
 
   if (from && to && candidate) {
-    storePendingCallIceCandidate(from, to, candidate);
-    console.log('STORED PENDING ICE CANDIDATE:', { from, to });
+    const stored = storePendingCallIceCandidate(from, to, candidate);
+    if (stored) {
+      console.log('STORED PENDING ICE CANDIDATE:', { from, to });
+    }
   }
 
   io.to(`user_${to}`).emit('iceCandidate', {
@@ -790,6 +843,7 @@ socket.on('disconnect', async () => {
 
   if (userId && onlineUsers.has(userId)) {
     onlineUsers.get(userId).delete(socket.id);
+    setSocketForeground(socket, false);
 
     if (onlineUsers.get(userId).size === 0) {
       setTimeout(async () => {
