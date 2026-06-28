@@ -19,6 +19,9 @@
     markIncomingMessagesAsDelivered,
     ensureMessageReactionsTable,
     setMessageReaction,
+    findOrCreateConversation,
+    createMessage,
+    getMessageById,
   } = require('./models/message.model');
   const {
     getFcmTokensByUserId,
@@ -141,6 +144,7 @@
   const onlineUsers = new Map();
   const CALL_TIMEOUT_MS = 30000;
   const pendingCallTimeouts = new Map();
+  const recentCallLogEvents = new Map();
   // ICE candidates are normally delivered over Socket.IO. A device woken by FCM
   // Keep every early candidate until the receiver has answered. A socket can
   // already be connected while Flutter is still navigating to CallScreen.
@@ -268,6 +272,78 @@ function clearPendingCallTimeout(callerId, receiverId) {
   }
 }
 
+function callLogKey(userA, userB) {
+  const first = Math.min(Number(userA), Number(userB));
+  const second = Math.max(Number(userA), Number(userB));
+  return `${first}:${second}`;
+}
+
+async function emitCallLogMessage({
+  callerId,
+  receiverId,
+  actorId,
+  status,
+  durationSeconds = 0,
+  withVideo = false,
+}) {
+  if (!callerId || !receiverId || !actorId || !status) return;
+
+  const key = callLogKey(callerId, receiverId);
+  const now = Date.now();
+  const lastAt = recentCallLogEvents.get(key) || 0;
+
+  if (now - lastAt < 2500) return;
+  recentCallLogEvents.set(key, now);
+
+  setTimeout(() => {
+    if (recentCallLogEvents.get(key) === now) {
+      recentCallLogEvents.delete(key);
+    }
+  }, 3000);
+
+  try {
+    const conversation = await findOrCreateConversation(callerId, receiverId);
+    const text = [
+      'CALL_EVENT',
+      status,
+      callerId,
+      receiverId,
+      Math.max(0, Number(durationSeconds) || 0),
+      withVideo ? 'video' : 'audio',
+    ].join('|');
+
+    const message = await createMessage({
+      conversationId: conversation.id,
+      senderId: actorId,
+      text,
+    });
+
+    const fullMessage = await getMessageById(message.id, actorId);
+    const payload = {
+      conversationId: conversation.id,
+      message: fullMessage,
+    };
+
+    const conversationRoom = io.sockets.adapter.rooms.get(
+      `conversation_${conversation.id}`
+    );
+
+    io.to(`conversation_${conversation.id}`).emit('newMessage', payload);
+
+    [callerId, receiverId].forEach((userId) => {
+      const userRoom = io.sockets.adapter.rooms.get(`user_${userId}`);
+      if (!userRoom) return;
+
+      userRoom.forEach((socketId) => {
+        if (conversationRoom && conversationRoom.has(socketId)) return;
+        io.to(socketId).emit('newMessage', payload);
+      });
+    });
+  } catch (error) {
+    console.error('CALL LOG MESSAGE ERROR:', error.message);
+  }
+}
+
 function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
   clearPendingCallTimeout(callerId, receiverId);
 
@@ -292,6 +368,12 @@ function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
 
       await deletePendingCall(receiverId, callerId);
       clearPendingCallIceCandidates(callerId, receiverId);
+      await emitCallLogMessage({
+        callerId,
+        receiverId,
+        actorId: callerId,
+        status: 'missed',
+      });
 
       io.to(`user_${callerId}`).emit('callEnded');
       await sendCallCancelPush(receiverId, callerId);
@@ -338,6 +420,12 @@ app.post('/api/calls/reject', async (req, res) => {
       await deletePendingCall(receiverId, callerId);
       clearPendingCallTimeout(callerId, receiverId);
       clearPendingCallIceCandidates(callerId, receiverId);
+      await emitCallLogMessage({
+        callerId,
+        receiverId,
+        actorId: receiverId,
+        status: 'rejected',
+      });
     } catch (error) {
       console.error('Delete pending HTTP rejected call error:', error.message);
     }
@@ -612,6 +700,12 @@ socket.on('rejectCall', async ({ to, from }) => {
       await deletePendingCall(from, to);
       clearPendingCallTimeout(to, from);
       clearPendingCallIceCandidates(to, from);
+      await emitCallLogMessage({
+        callerId: to,
+        receiverId: from,
+        actorId: from,
+        status: 'rejected',
+      });
     } catch (error) {
       console.error('Delete pending rejected call error:', error.message);
     }
@@ -641,7 +735,7 @@ socket.on('iceCandidate', ({ to, candidate }) => {
   });
 });
 
-socket.on('endCall', async ({ to, from }) => {
+socket.on('endCall', async ({ to, from, durationSeconds, withVideo }) => {
   const actorId = from || socket.userId;
 
   console.log('END CALL:', { from: actorId, to });
@@ -650,9 +744,39 @@ socket.on('endCall', async ({ to, from }) => {
 
   if (actorId && to) {
     try {
+      const pendingOutgoingCall = await getPendingCall(to, actorId);
+      const pendingIncomingCall = await getPendingCall(actorId, to);
+      const pendingCall = pendingOutgoingCall || pendingIncomingCall;
+      const callerId = pendingOutgoingCall
+        ? actorId
+        : pendingIncomingCall
+        ? to
+        : actorId;
+      const receiverId = pendingOutgoingCall
+        ? to
+        : pendingIncomingCall
+        ? actorId
+        : to;
+      const callWasAnswered = !pendingCall;
+
       await deletePendingCall(to, actorId);
+      await deletePendingCall(actorId, to);
       clearPendingCallTimeout(actorId, to);
+      clearPendingCallTimeout(to, actorId);
       clearPendingCallIceCandidates(actorId, to);
+      clearPendingCallIceCandidates(to, actorId);
+
+      await emitCallLogMessage({
+        callerId,
+        receiverId,
+        actorId,
+        status: callWasAnswered ? 'ended' : 'canceled',
+        durationSeconds,
+        withVideo:
+          typeof withVideo === 'boolean'
+            ? withVideo
+            : Boolean(pendingCall?.with_video),
+      });
     } catch (error) {
       console.error('Delete pending ended call error:', error.message);
     }
