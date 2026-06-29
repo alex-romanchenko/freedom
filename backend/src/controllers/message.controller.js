@@ -3,6 +3,7 @@ const {
   createMessage,
   getUserConversations,
   getMessagesByConversation,
+  searchMessages,
   getMessageById,
   getGroupMemberIds,
   markConversationAsRead,
@@ -414,6 +415,27 @@ async function getMessages(req, res) {
   }
 }
 
+async function searchUserMessages(req, res) {
+  try {
+    const userId = req.user.id;
+    const query = `${req.query.q || ''}`.trim();
+    const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+
+    if (!query) {
+      return res.json([]);
+    }
+
+    const results = await searchMessages(userId, query, limit, offset);
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error searching messages',
+      error: error.message,
+    });
+  }
+}
+
 async function createConversation(req, res) {
   try {
     const currentUserId = req.user.id;
@@ -534,6 +556,7 @@ module.exports = {
   sendMessage,
   getConversations,
   getMessages,
+  searchUserMessages,
   markAsRead,
   createConversation,
   deleteConversation,

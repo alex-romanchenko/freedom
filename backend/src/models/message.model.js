@@ -451,6 +451,75 @@ async function getMessagesByConversation(
   return attachReactionsToMessages(result.rows, currentUserId);
 }
 
+async function searchMessages(userId, query, limit = 20, offset = 0) {
+  const normalizedQuery = `%${query}%`;
+
+  const result = await pool.query(`
+    SELECT
+      messages.id AS message_id,
+      messages.conversation_id,
+      messages.text,
+      messages.created_at,
+      messages.sender_id,
+      messages.status,
+      conversations.is_group,
+      conversations.group_name,
+      conversations.group_avatar,
+      other_user.id AS user_id,
+      other_user.username,
+      other_user.display_name,
+      other_user.avatar,
+      sender.username AS sender_username,
+      sender.display_name AS sender_display_name
+    FROM messages
+    JOIN conversations
+      ON conversations.id = messages.conversation_id
+    JOIN users AS sender
+      ON sender.id = messages.sender_id
+    LEFT JOIN users AS other_user
+      ON other_user.id = CASE
+        WHEN conversations.user_one_id = $1 THEN conversations.user_two_id
+        ELSE conversations.user_one_id
+      END
+      AND conversations.is_group = false
+    LEFT JOIN conversation_members
+      ON conversation_members.conversation_id = conversations.id
+      AND conversation_members.user_id = $1
+    WHERE messages.is_deleted = false
+      AND messages.text ILIKE $2
+      AND (
+        (
+          conversations.is_group = false
+          AND (
+            conversations.user_one_id = $1
+            OR conversations.user_two_id = $1
+          )
+        )
+        OR (
+          conversations.is_group = true
+          AND conversation_members.user_id IS NOT NULL
+        )
+      )
+    ORDER BY messages.created_at DESC, messages.id DESC
+    LIMIT $3 OFFSET $4
+  `, [userId, normalizedQuery, limit, offset]);
+
+  return result.rows.map((row) => ({
+    messageId: row.message_id,
+    conversationId: row.conversation_id,
+    text: row.text,
+    createdAt: row.created_at,
+    senderId: row.sender_id,
+    status: row.status,
+    isGroup: row.is_group,
+    displayName: row.is_group ? row.group_name : row.display_name,
+    username: row.is_group ? null : row.username,
+    avatar: row.is_group ? row.group_avatar : row.avatar,
+    userId: row.is_group ? null : row.user_id,
+    senderName: row.sender_display_name || row.sender_username,
+  }));
+}
+
 async function getMessageById(messageId, currentUserId = null) {
   const result = await pool.query(`
     SELECT 
@@ -624,6 +693,7 @@ module.exports = {
   createMessage,
   getUserConversations,
   getMessagesByConversation,
+  searchMessages,
   getMessageById,
   markConversationAsRead,
   deleteConversationById,

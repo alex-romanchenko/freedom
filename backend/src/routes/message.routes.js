@@ -8,6 +8,7 @@ const {
   sendGroupMessage,
   getConversations, 
   getMessages,
+  searchUserMessages,
   markAsRead,
   createConversation,
   deleteConversation,
@@ -44,6 +45,7 @@ router.post(
   sendGroupMessage
 );
 router.get('/', authMiddleware, getConversations);
+router.get('/search', authMiddleware, searchUserMessages);
 router.get('/:conversationId', authMiddleware, getMessages);
 router.post('/conversations/:userId', authMiddleware, createConversation);
 router.post('/:conversationId/read', authMiddleware, markAsRead);
