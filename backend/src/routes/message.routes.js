@@ -15,6 +15,7 @@ const {
   clearConversation,
   updateMessage,
   deleteMessage,
+  forwardMessage,
 } = require('../controllers/message.controller');
 
 const router = express.Router();
@@ -46,6 +47,7 @@ router.post(
 );
 router.get('/', authMiddleware, getConversations);
 router.get('/search', authMiddleware, searchUserMessages);
+router.post('/forward', authMiddleware, forwardMessage);
 router.get('/:conversationId', authMiddleware, getMessages);
 router.post('/conversations/:userId', authMiddleware, createConversation);
 router.post('/:conversationId/read', authMiddleware, markAsRead);

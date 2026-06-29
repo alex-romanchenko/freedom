@@ -5,6 +5,7 @@ const {
   getMessagesByConversation,
   searchMessages,
   getMessageById,
+  getForwardableMessageById,
   getGroupMemberIds,
   markConversationAsRead,
   markMessagesAsRead,
@@ -415,6 +416,197 @@ async function getMessages(req, res) {
   }
 }
 
+function forwardedTextFromMessage(message) {
+  const senderName = (
+    message.display_name ||
+    message.username ||
+    'User'
+  ).replace(/\|/g, ' ');
+
+  return `FORWARDED|${senderName}|${message.text || ''}`;
+}
+
+async function forwardMessage(req, res) {
+  try {
+    const senderId = req.user.id;
+    const { messageId, userId, conversationId, isGroup } = req.body;
+
+    if (!messageId) {
+      return res.status(400).json({ message: 'Message id is required' });
+    }
+
+    const originalMessage = await getForwardableMessageById(
+      messageId,
+      senderId
+    );
+
+    if (!originalMessage) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    const targetIsGroup = isGroup === true || isGroup === 'true';
+    const text = forwardedTextFromMessage(originalMessage);
+    let targetConversation = null;
+    let memberIds = [];
+
+    if (targetIsGroup) {
+      if (!conversationId) {
+        return res
+          .status(400)
+          .json({ message: 'Conversation id is required' });
+      }
+
+      memberIds = await getGroupMemberIds(conversationId);
+
+      if (!memberIds.map(Number).includes(Number(senderId))) {
+        return res.status(403).json({
+          message: 'You are not a member of this group',
+        });
+      }
+
+      targetConversation = await getConversationById(conversationId);
+
+      if (!targetConversation || !targetConversation.is_group) {
+        return res.status(404).json({
+          message: 'Group conversation not found',
+        });
+      }
+    } else {
+      if (!userId) {
+        return res.status(400).json({ message: 'User id is required' });
+      }
+
+      if (Number(senderId) === Number(userId)) {
+        return res.status(400).json({
+          message: 'You cannot send message to yourself',
+        });
+      }
+
+      targetConversation = await findOrCreateConversation(senderId, userId);
+    }
+
+    const message = await createMessage({
+      conversationId: targetConversation.id,
+      senderId,
+      text,
+      image: originalMessage.image,
+      video: originalMessage.video,
+      audio: originalMessage.audio,
+      audioDuration: originalMessage.audio_duration,
+      file: originalMessage.file,
+      fileName: originalMessage.file_name,
+      fileMime: originalMessage.file_mime,
+      fileSize: originalMessage.file_size,
+    });
+
+    const fullMessage = await getMessageById(message.id, senderId);
+    const io = req.app.get('io');
+    const conversationRoom = io.sockets.adapter.rooms.get(
+      `conversation_${targetConversation.id}`
+    );
+
+    if (targetIsGroup) {
+      const payload = {
+        conversationId: Number(targetConversation.id),
+        group: {
+          id: targetConversation.id,
+          group_name: targetConversation.group_name,
+          group_avatar: targetConversation.group_avatar,
+        },
+        message: fullMessage,
+      };
+
+      io.to(`conversation_${targetConversation.id}`).emit('newMessage', payload);
+
+      memberIds.forEach((memberId) => {
+        if (Number(memberId) === Number(senderId)) return;
+
+        const userRoom = io.sockets.adapter.rooms.get(`user_${memberId}`);
+        if (!userRoom) return;
+
+        userRoom.forEach((socketId) => {
+          if (!conversationRoom || !conversationRoom.has(socketId)) {
+            io.to(socketId).emit('newMessage', payload);
+          }
+        });
+      });
+
+      await Promise.all(
+        memberIds
+          .filter((memberId) => Number(memberId) !== Number(senderId))
+          .filter(
+            (memberId) =>
+              !isUserInConversation(io, memberId, targetConversation.id)
+          )
+          .map((memberId) =>
+            sendMessagePush({
+              userId: memberId,
+              title: targetConversation.group_name || 'Group chat',
+              body: `${fullMessage.display_name || fullMessage.username || 'User'}: ${notificationText(fullMessage)}`,
+              data: {
+                conversationId: targetConversation.id,
+                senderId,
+                groupId: targetConversation.id,
+              },
+            })
+          )
+      );
+    } else {
+      let finalMessage = fullMessage;
+      const userRoom = io.sockets.adapter.rooms.get(`user_${userId}`);
+
+      if (userRoom) {
+        const deliveredMessage = await markMessageAsDelivered(message.id);
+
+        if (deliveredMessage) {
+          finalMessage = {
+            ...fullMessage,
+            status: 'delivered',
+          };
+        }
+      }
+
+      const payload = {
+        conversationId: targetConversation.id,
+        message: finalMessage,
+      };
+
+      io.to(`conversation_${targetConversation.id}`).emit('newMessage', payload);
+
+      if (userRoom) {
+        userRoom.forEach((socketId) => {
+          if (!conversationRoom || !conversationRoom.has(socketId)) {
+            io.to(socketId).emit('newMessage', payload);
+          }
+        });
+      }
+
+      if (!isUserInConversation(io, userId, targetConversation.id)) {
+        await sendMessagePush({
+          userId,
+          title: fullMessage.display_name || fullMessage.username || 'Freedom',
+          body: notificationText(fullMessage),
+          data: {
+            conversationId: targetConversation.id,
+            senderId,
+          },
+        });
+      }
+    }
+
+    res.status(201).json({
+      message: 'Message forwarded successfully',
+      data: fullMessage,
+    });
+  } catch (error) {
+    console.error('Error forwarding message:', error);
+    res.status(500).json({
+      message: 'Error forwarding message',
+      error: error.message,
+    });
+  }
+}
+
 async function searchUserMessages(req, res) {
   try {
     const userId = req.user.id;
@@ -565,4 +757,5 @@ module.exports = {
   deleteMessage,
   markMessagesAsRead,
   sendGroupMessage,
+  forwardMessage,
 };

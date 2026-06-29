@@ -524,6 +524,7 @@ async function getMessageById(messageId, currentUserId = null) {
   const result = await pool.query(`
     SELECT 
       messages.id,
+      messages.conversation_id,
       messages.text,
       messages.created_at,
       messages.sender_id,
@@ -553,6 +554,52 @@ async function getMessageById(messageId, currentUserId = null) {
   );
 
   return messageWithReactions;
+}
+
+async function getForwardableMessageById(messageId, userId) {
+  const result = await pool.query(`
+    SELECT
+      messages.id,
+      messages.conversation_id,
+      messages.text,
+      messages.created_at,
+      messages.sender_id,
+      messages.status,
+      users.username,
+      users.display_name,
+      users.avatar,
+      messages.image,
+      messages.video,
+      messages.audio,
+      messages.audio_duration,
+      messages.file,
+      messages.file_name,
+      messages.file_mime,
+      messages.file_size
+    FROM messages
+    JOIN users ON messages.sender_id = users.id
+    JOIN conversations ON conversations.id = messages.conversation_id
+    LEFT JOIN conversation_members
+      ON conversation_members.conversation_id = conversations.id
+      AND conversation_members.user_id = $2
+    WHERE messages.id = $1
+      AND messages.is_deleted = false
+      AND (
+        (
+          conversations.is_group = false
+          AND (
+            conversations.user_one_id = $2
+            OR conversations.user_two_id = $2
+          )
+        )
+        OR (
+          conversations.is_group = true
+          AND conversation_members.user_id IS NOT NULL
+        )
+      )
+  `, [messageId, userId]);
+
+  return result.rows[0];
 }
 
 async function deleteConversationById(conversationId, userId) {
@@ -695,6 +742,7 @@ module.exports = {
   getMessagesByConversation,
   searchMessages,
   getMessageById,
+  getForwardableMessageById,
   markConversationAsRead,
   deleteConversationById,
   updateMessageById,
