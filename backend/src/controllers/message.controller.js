@@ -422,7 +422,7 @@ async function searchUserMessages(req, res) {
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
     const offset = Math.max(Number(req.query.offset) || 0, 0);
 
-    if (!query) {
+    if (query.length < 2) {
       return res.json([]);
     }
 
