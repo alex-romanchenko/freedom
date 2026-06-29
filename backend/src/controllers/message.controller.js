@@ -32,6 +32,36 @@ function notificationText(message) {
   return 'New message';
 }
 
+function notificationMediaType(message) {
+  if (message.image) return 'image';
+  if (message.video) return 'video';
+  if (message.audio) return 'voice';
+  if (message.file) {
+    return message.file_mime?.startsWith('audio/') ? 'music' : 'file';
+  }
+  return 'text';
+}
+
+function notificationMediaPath(message) {
+  return message.image || message.video || message.audio || message.file || '';
+}
+
+function notificationPayloadForMessage(message, extra = {}) {
+  return {
+    messageId: message.id,
+    senderId: message.sender_id,
+    senderName: message.display_name || message.username || 'Freedom',
+    senderAvatar: message.avatar || '',
+    messageText: message.text || '',
+    mediaType: notificationMediaType(message),
+    mediaPath: notificationMediaPath(message),
+    fileName: message.file_name || '',
+    fileMime: message.file_mime || '',
+    previewText: notificationText(message),
+    ...extra,
+  };
+}
+
 function messageUploadFromRequest(file) {
   const upload = {
     imagePath: null,
@@ -81,12 +111,10 @@ async function sendMessagePush({ userId, title, body, data = {} }) {
       tokens.map((token) =>
         messaging.send({
           token,
-          notification: {
-            title,
-            body,
-          },
           data: {
             type: 'message',
+            title,
+            body,
             ...Object.fromEntries(
               Object.entries(data).map(([key, value]) => [key, String(value)])
             ),
@@ -210,7 +238,7 @@ if (!isUserInConversation(io, userId, conversation.id)) {
     body: notificationText(fullMessage),
     data: {
       conversationId: conversation.id,
-      senderId,
+      ...notificationPayloadForMessage(fullMessage),
     },
   });
 }
@@ -328,11 +356,12 @@ async function sendGroupMessage(req, res) {
           sendMessagePush({
             userId: memberId,
             title: group.group_name || 'Group chat',
-            body: `${fullMessage.display_name || fullMessage.username || 'User'}: ${notificationText(fullMessage)}`,
+            body: notificationText(fullMessage),
             data: {
               conversationId,
-              senderId,
               groupId: group.id,
+              groupName: group.group_name || '',
+              ...notificationPayloadForMessage(fullMessage),
             },
           })
         )
@@ -542,11 +571,12 @@ async function forwardMessage(req, res) {
             sendMessagePush({
               userId: memberId,
               title: targetConversation.group_name || 'Group chat',
-              body: `${fullMessage.display_name || fullMessage.username || 'User'}: ${notificationText(fullMessage)}`,
+              body: notificationText(fullMessage),
               data: {
                 conversationId: targetConversation.id,
-                senderId,
                 groupId: targetConversation.id,
+                groupName: targetConversation.group_name || '',
+                ...notificationPayloadForMessage(fullMessage),
               },
             })
           )
@@ -588,7 +618,7 @@ async function forwardMessage(req, res) {
           body: notificationText(fullMessage),
           data: {
             conversationId: targetConversation.id,
-            senderId,
+            ...notificationPayloadForMessage(fullMessage),
           },
         });
       }
