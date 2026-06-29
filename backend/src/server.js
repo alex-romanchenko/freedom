@@ -247,22 +247,60 @@ async function sendFcmToTokens(tokens, buildMessage, label) {
   return sent;
 }
 
-async function sendCallCancelPush(userId, callerId) {
+async function sendCallCancelPush(
+  userId,
+  callerId,
+  { showMissedNotification = false, withVideo = false } = {}
+) {
   try {
     const tokens = await getFcmTokensByUserId(userId);
 
     if (tokens.length === 0) return;
 
+    const caller = showMissedNotification
+      ? await getCallUserSummary(callerId)
+      : null;
+    const callerName =
+      caller?.display_name || caller?.username || `User ${callerId}`;
+    const title = 'Missed call';
+    const body = withVideo
+      ? `Missed video call from ${callerName}`
+      : `Missed audio call from ${callerName}`;
+
     const sent = await sendFcmToTokens(
       tokens,
       (token) => ({
         token,
+        ...(showMissedNotification
+          ? {
+              notification: {
+                title,
+                body,
+              },
+            }
+          : {}),
         data: {
           type: 'call_cancel',
           callerId: callerId ? String(callerId) : '',
+          ...(showMissedNotification
+            ? {
+                missedNotification: 'true',
+                callerName,
+                callerAvatar: caller?.avatar || '',
+                withVideo: String(Boolean(withVideo)),
+              }
+            : {}),
         },
         android: {
           priority: 'high',
+          ...(showMissedNotification
+            ? {
+                notification: {
+                  channelId: 'missed_calls',
+                  tag: `missed_call_${callerId || 'unknown'}`,
+                },
+              }
+            : {}),
         },
       }),
       'FCM CALL CANCEL'
@@ -860,10 +898,14 @@ socket.on('endCall', async ({ to, from, durationSeconds, withVideo }) => {
   io.to(`user_${to}`).emit('callEnded', { from: actorId, to });
 
   if (actorId && to) {
+    let pendingOutgoingCall = null;
+    let pendingCall = null;
+    let callWithVideo = Boolean(withVideo);
+
     try {
-      const pendingOutgoingCall = await getPendingCall(to, actorId);
+      pendingOutgoingCall = await getPendingCall(to, actorId);
       const pendingIncomingCall = await getPendingCall(actorId, to);
-      const pendingCall = pendingOutgoingCall || pendingIncomingCall;
+      pendingCall = pendingOutgoingCall || pendingIncomingCall;
       const callerId = pendingOutgoingCall
         ? actorId
         : pendingIncomingCall
@@ -883,22 +925,27 @@ socket.on('endCall', async ({ to, from, durationSeconds, withVideo }) => {
       clearPendingCallIceCandidates(actorId, to);
       clearPendingCallIceCandidates(to, actorId);
 
+      callWithVideo =
+        typeof withVideo === 'boolean'
+          ? withVideo
+          : Boolean(pendingCall?.with_video);
+
       await emitCallLogMessage({
         callerId,
         receiverId,
         actorId,
         status: callWasAnswered ? 'ended' : 'canceled',
         durationSeconds,
-        withVideo:
-          typeof withVideo === 'boolean'
-            ? withVideo
-            : Boolean(pendingCall?.with_video),
+        withVideo: callWithVideo,
       });
     } catch (error) {
       console.error('Delete pending ended call error:', error.message);
     }
 
-    await sendCallCancelPush(to, actorId);
+    await sendCallCancelPush(to, actorId, {
+      showMissedNotification: Boolean(pendingOutgoingCall),
+      withVideo: callWithVideo,
+    });
   }
 });
 
