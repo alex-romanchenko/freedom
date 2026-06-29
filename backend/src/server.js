@@ -278,6 +278,70 @@ async function sendCallCancelPush(userId, callerId) {
   }
 }
 
+async function getCallUserSummary(userId) {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, avatar, display_name FROM users WHERE id = $1',
+      [userId]
+    );
+
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('GET CALL USER SUMMARY ERROR:', error.message);
+    return null;
+  }
+}
+
+async function sendMissedCallPush(userId, callerId, withVideo = false) {
+  try {
+    const tokens = await getFcmTokensByUserId(userId);
+
+    if (tokens.length === 0) return;
+
+    const caller = await getCallUserSummary(callerId);
+    const callerName =
+      caller?.display_name || caller?.username || `User ${callerId}`;
+    const title = 'Missed call';
+    const body = withVideo
+      ? `Missed video call from ${callerName}`
+      : `Missed audio call from ${callerName}`;
+
+    const sent = await sendFcmToTokens(
+      tokens,
+      (token) => ({
+        token,
+        notification: {
+          title,
+          body,
+        },
+        data: {
+          type: 'missed_call',
+          callerId: callerId ? String(callerId) : '',
+          callerName,
+          callerAvatar: caller?.avatar || '',
+          withVideo: String(Boolean(withVideo)),
+        },
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'missed_calls',
+            tag: `missed_call_${callerId || 'unknown'}`,
+          },
+        },
+      }),
+      'FCM MISSED CALL'
+    );
+
+    console.log('FCM MISSED CALL SENT:', {
+      to: userId,
+      tokens: tokens.length,
+      sent,
+    });
+  } catch (error) {
+    console.error('FCM MISSED CALL ERROR:', error.message);
+  }
+}
+
 function getPendingCallTimeoutKey(callerId, receiverId) {
   return `${callerId}:${receiverId}`;
 }
@@ -408,7 +472,7 @@ function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
       });
 
       io.to(`user_${callerId}`).emit('callEnded');
-      await sendCallCancelPush(receiverId, callerId);
+      await sendMissedCallPush(receiverId, callerId, pendingCall.with_video);
 
       console.log('CALL AUTO TIMEOUT:', {
         from: callerId,
