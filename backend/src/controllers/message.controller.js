@@ -122,12 +122,6 @@ async function sendMessagePush({ userId, title, body, data = {} }) {
           android: {
             priority: 'high',
             ttl: 3600 * 1000,
-            notification: {
-              channelId: 'messages',
-              priority: 'high',
-              defaultSound: true,
-              defaultVibrateTimings: true,
-            },
           },
         })
       )
