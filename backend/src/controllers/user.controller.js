@@ -8,6 +8,7 @@ const {
   updateUserHeaderImage,
   getUsersForFollow,
   saveFcmToken,
+  deleteFcmToken,
 } = require('../models/user.model');
 const { getPostsByUser } = require('../models/post.model');
 const { isFollowingUser } = require('../models/follow.model');
@@ -241,6 +242,29 @@ async function saveFcmTokenController(req, res) {
   }
 }
 
+async function deleteFcmTokenController(req, res) {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return res.status(400).json({
+        message: 'FCM token is required',
+      });
+    }
+
+    await deleteFcmToken(token);
+
+    res.json({
+      message: 'FCM token deleted',
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error deleting FCM token',
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   getMyProfile,
   updateMyProfile,
@@ -251,4 +275,5 @@ module.exports = {
   updateMyHeaderImage,
   getWhoToFollow,
   saveFcmTokenController,
+  deleteFcmTokenController,
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth.middleware');
 const { getMyProfile, updateMyProfile, updateMyLanguage, getUserProfile, searchUsersController, 
-    updateMyAvatar, saveFcmTokenController,
+    updateMyAvatar, saveFcmTokenController, deleteFcmTokenController,
     updateMyHeaderImage, getWhoToFollow } = require('../controllers/user.controller');
 const uploadAvatar = require('../middleware/uploadAvatar');
 const uploadHeader = require('../middleware/uploadHeader');
@@ -20,5 +20,10 @@ router.post(
   '/fcm-token',
   authMiddleware,
   saveFcmTokenController
+);
+router.delete(
+  '/fcm-token',
+  authMiddleware,
+  deleteFcmTokenController
 );
 module.exports = router;
