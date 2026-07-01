@@ -163,6 +163,19 @@
   text-overflow: ellipsis;
 }
 
+.chat-preview.call-preview {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #2f80ed;
+}
+
+.chat-preview.call-preview svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+
 .chat-window {
   padding: 10px 10px;
   height: 100vh;
@@ -346,6 +359,96 @@
   border: 1px solid rgba(148, 163, 184, 0.35);
   font-size: 14px;
   line-height: 1;
+}
+
+.call-event-row {
+  align-items: center;
+}
+
+.call-event-bubble {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 190px;
+  max-width: min(68%, 360px);
+  padding: 11px 14px;
+  border-radius: 18px;
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.06);
+}
+
+.message-row.mine .call-event-bubble {
+  background: #d8fdd2;
+  border-bottom-right-radius: 6px;
+}
+
+.message-row.theirs .call-event-bubble {
+  border: 1px solid #e5e7eb;
+  border-bottom-left-radius: 6px;
+}
+
+.call-event-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.call-event-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.call-event-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.call-event-meta svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.call-event-meta span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.call-event-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #2f80ed;
+  font-size: 25px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.call-event-action:hover {
+  background: rgba(47, 128, 237, 0.1);
+}
+
+.call-event-action:active {
+  transform: scale(0.94);
 }
 
 .message-reactions span.mine {

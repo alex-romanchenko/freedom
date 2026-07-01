@@ -973,7 +973,12 @@ useEffect(() => {
                   message={m}
                   isMine={isMine}
                   isGroup={selectedConv?.type === 'group'}
+                  currentUserId={currentUser?.id}
                   onOpenUser={onOpenUser}
+                  onStartCall={(withVideo) =>
+                    selectedConv?.type !== 'group' &&
+                    startCall(selectedConv.user_id, withVideo)
+                  }
                   parseForwardMessage={parseForwardMessage}
                   parseReplyMessage={parseReplyMessage}
                   openMessageMenu={openMessageMenu}

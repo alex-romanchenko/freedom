@@ -1,5 +1,11 @@
 import { getFileUrl } from '../../api/fileUrl';
 import AudioMessagePlayer from './AudioMessagePlayer';
+import {
+  IoArrowDown,
+  IoArrowUp,
+  IoCall,
+  IoVideocam,
+} from 'react-icons/io5';
 
 function MessageStatus({ status }) {
   if (status === 'read') {
@@ -31,10 +37,146 @@ function MessageStatus({ status }) {
   );
 }
 
+function parseCallEvent(text = '') {
+  if (!text.startsWith('CALL_EVENT|')) return null;
+
+  const parts = text.split('|');
+  if (parts.length < 6) return null;
+
+  const callerId = Number(parts[2]);
+  const receiverId = Number(parts[3]);
+
+  if (!Number.isFinite(callerId) || !Number.isFinite(receiverId)) return null;
+
+  return {
+    status: parts[1],
+    callerId,
+    receiverId,
+    durationSeconds: Number(parts[4]) || 0,
+    isVideo: parts[5] === 'video',
+  };
+}
+
+function currentLanguage() {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.language || 'en';
+  } catch (_) {
+    return 'en';
+  }
+}
+
+function callWord(key) {
+  const language = currentLanguage();
+  const words = {
+    en: {
+      incoming: 'Incoming call',
+      outgoing: 'Outgoing call',
+      missed: 'Missed call',
+      canceled: 'Canceled call',
+    },
+    uk: {
+      incoming: 'Вхідний виклик',
+      outgoing: 'Вихідний виклик',
+      missed: 'Пропущений виклик',
+      canceled: 'Скасований виклик',
+    },
+    ru: {
+      incoming: 'Входящий вызов',
+      outgoing: 'Исходящий вызов',
+      missed: 'Пропущенный вызов',
+      canceled: 'Отмененный вызов',
+    },
+  };
+
+  return words[language]?.[key] || words.en[key];
+}
+
+function formatCallDuration(seconds) {
+  const value = Number(seconds) || 0;
+  if (value <= 0) return '';
+
+  const minutes = Math.floor(value / 60);
+  const restSeconds = value % 60;
+
+  return `${minutes}:${String(restSeconds).padStart(2, '0')}`;
+}
+
+function callEventTitle(event, currentUserId) {
+  const isOutgoing = String(event.callerId) === String(currentUserId);
+  const isMissedLike = ['missed', 'rejected', 'canceled'].includes(
+    event.status
+  );
+
+  if (isMissedLike) {
+    return isOutgoing ? callWord('canceled') : callWord('missed');
+  }
+
+  return isOutgoing ? callWord('outgoing') : callWord('incoming');
+}
+
+function callEventAccent(event, currentUserId) {
+  const isOutgoing = String(event.callerId) === String(currentUserId);
+  const isMissedLike = ['missed', 'rejected', 'canceled'].includes(
+    event.status
+  );
+
+  if (isMissedLike && !isOutgoing) return '#ef4444';
+  if (isOutgoing) return '#2f80ed';
+  return '#22c55e';
+}
+
+function CallEventBubble({
+  message,
+  event,
+  isMine,
+  currentUserId,
+  onStartCall,
+}) {
+  const isOutgoing = String(event.callerId) === String(currentUserId);
+  const accent = callEventAccent(event, currentUserId);
+  const duration = formatCallDuration(event.durationSeconds);
+  const time = new Date(message.created_at).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    <div
+      className={`message-row ${isMine ? 'mine' : 'theirs'} call-event-row`}
+    >
+      <div className="call-event-bubble">
+        <div className="call-event-main">
+          <strong>{callEventTitle(event, currentUserId)}</strong>
+
+          <span className="call-event-meta">
+            {isOutgoing ? (
+              <IoArrowUp style={{ color: accent }} />
+            ) : (
+              <IoArrowDown style={{ color: accent }} />
+            )}
+            <span>{duration ? `${time}, ${duration}` : time}</span>
+          </span>
+        </div>
+
+        <button
+          className="call-event-action"
+          type="button"
+          onClick={() => onStartCall?.(event.isVideo)}
+          title={event.isVideo ? 'Video call' : 'Call'}
+        >
+          {event.isVideo ? <IoVideocam /> : <IoCall />}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function MessageBubble({
   message,
   isMine,
   isGroup,
+  currentUserId,
   parseForwardMessage,
   parseReplyMessage,
   openMessageMenu,
@@ -42,7 +184,22 @@ function MessageBubble({
   setOpenedImage,
   setOpenedVideo,
   onOpenUser,
+  onStartCall,
 }) {
+  const callEvent = parseCallEvent(message.text || '');
+
+  if (callEvent && !isGroup) {
+    return (
+      <CallEventBubble
+        message={message}
+        event={callEvent}
+        isMine={isMine}
+        currentUserId={currentUserId}
+        onStartCall={onStartCall}
+      />
+    );
+  }
+
   const forwardedMessage = parseForwardMessage(message.text);
   const replyMessage = parseReplyMessage(message.text);
   const reactions = (message.reactions || []).filter(
