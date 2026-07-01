@@ -72,6 +72,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
       'user',
       JSON.stringify({ ...storedUser, language: nextLanguage })
     );
+    window.dispatchEvent(new Event('languageChanged'));
 
     try {
       await updateLanguageApi(nextLanguage);
@@ -315,6 +316,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
             onPostChanged={loadProfile}
             onPostClick={onPostClick}
             onUserClick={onOpenUser}
+            language={language}
           />
         ))}
       </div>

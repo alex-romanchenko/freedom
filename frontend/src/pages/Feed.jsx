@@ -3,10 +3,11 @@ import socket from '../socket';
 import { getFollowingPostsApi, getMyPostsApi } from '../api/postsApi';
 import CreatePostForm from '../components/CreatePostForm';
 import PostCard from '../components/PostCard';
+import { t } from '../utils/i18n';
 
 const LIMIT = 20;
 
-function Feed({ onOpenUser, onPostClick }) {
+function Feed({ onOpenUser, onPostClick, language }) {
   const [activeTab, setActiveTab] = useState('following');
   const [posts, setPosts] = useState([]);
   const [offset, setOffset] = useState(0);
@@ -99,24 +100,27 @@ function Feed({ onOpenUser, onPostClick }) {
           className={activeTab === 'my' ? 'active' : ''}
           onClick={() => setActiveTab('my')}
         >
-          My posts
+          {t('my_posts', language)}
         </button>
 
         <button
           className={activeTab === 'following' ? 'active' : ''}
           onClick={() => setActiveTab('following')}
         >
-          Following
+          {t('following_posts', language)}
         </button>
       </div>
 
-      <CreatePostForm onPostCreated={() => fetchPosts(true)} />
+      <CreatePostForm
+        language={language}
+        onPostCreated={() => fetchPosts(true)}
+      />
 
       {posts.length === 0 && !loading && (
         <p className="empty-text">
           {activeTab === 'my'
-            ? 'You have no posts yet'
-            : 'No posts from people you follow yet'}
+            ? t('you_have_no_posts', language)
+            : t('no_following_posts', language)}
         </p>
       )}
 
@@ -127,14 +131,15 @@ function Feed({ onOpenUser, onPostClick }) {
           onUserClick={onOpenUser}
           onPostClick={onPostClick}
           canManage={activeTab === 'my'}
+          language={language}
           onPostChanged={() => fetchPosts(true)}
         />
       ))}
 
-      {loading && <p className="empty-text">Loading...</p>}
+      {loading && <p className="empty-text">{t('loading', language)}</p>}
 
       {!hasMore && posts.length > 0 && (
-        <p className="empty-text">No more posts</p>
+        <p className="empty-text">{t('no_more_posts', language)}</p>
       )}
     </div>
   );

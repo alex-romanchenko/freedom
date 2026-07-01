@@ -7,6 +7,7 @@ import {
 } from '../api/postsApi';
 import { getFileUrl } from '../api/fileUrl';
 import { IoHeartOutline, IoHeart } from 'react-icons/io5';
+import { t } from '../utils/i18n';
 
 function PostCard({
   post,
@@ -14,6 +15,7 @@ function PostCard({
   onPostClick,
   canManage = false,
   onPostChanged,
+  language,
 }) {
   const [liked, setLiked] = useState(Boolean(post.is_liked));
   const [likesCount, setLikesCount] = useState(Number(post.likes_count) || 0);
@@ -83,14 +85,14 @@ function PostCard({
               onClick={(e) => e.stopPropagation()}
             >
               <button onClick={() => setIsEditing((prev) => !prev)}>
-                {isEditing ? 'Cancel' : 'Edit'}
+                {isEditing ? t('cancel', language) : t('edit', language)}
               </button>
 
               <button
                 className="danger-btn"
                 onClick={() => setShowDeleteConfirm(true)}
               >
-                Delete
+                {t('delete', language)}
               </button>
             </div>
           )}
@@ -106,7 +108,7 @@ function PostCard({
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
               maxLength={280}
-              placeholder="Edit your post..."
+              placeholder={t('edit_post_placeholder', language)}
             />
 
             <div className="post-edit-footer">
@@ -115,7 +117,7 @@ function PostCard({
               </span>
 
               <button className="primary-btn" onClick={savePost}>
-                Save
+                {t('save', language)}
               </button>
             </div>
           </div>
@@ -162,10 +164,10 @@ function PostCard({
       {showDeleteConfirm && (
         <div className="modal-overlay">
           <div className="delete-post-popup">
-            <h3>Delete post?</h3>
+            <h3>{t('delete_post_question', language)}</h3>
 
             <p>
-              Do you want to remove this post?
+              {t('remove_post_confirm', language)}
             </p>
 
             <div className="modal-actions">
@@ -173,14 +175,14 @@ function PostCard({
                 className="secondary-btn"
                 onClick={() => setShowDeleteConfirm(false)}
               >
-                Cancel
+                {t('cancel', language)}
               </button>
 
               <button
                 className="danger-confirm-btn"
                 onClick={removePost}
               >
-                Delete
+                {t('delete', language)}
               </button>
             </div>
           </div>

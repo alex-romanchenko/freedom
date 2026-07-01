@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { followUserApi, unfollowUserApi } from '../api/followApi';
+import { t } from '../utils/i18n';
 
-function FollowButton({ userId, initialIsFollowing = false }) {
+function FollowButton({ userId, initialIsFollowing = false, language }) {
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
 
   const handleClick = async () => {
@@ -23,7 +24,7 @@ function FollowButton({ userId, initialIsFollowing = false }) {
       className={`follow-btn ${isFollowing ? 'following' : ''}`}
       onClick={handleClick}
     >
-      {isFollowing ? 'Following' : 'Follow'}
+      {isFollowing ? t('following', language) : t('follow', language)}
     </button>
   );
 }

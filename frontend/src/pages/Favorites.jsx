@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getFavoritePostsApi } from '../api/postsApi';
 import PostCard from '../components/PostCard';
+import { t } from '../utils/i18n';
 
-function Favorites({ onOpenUser, onPostClick }) {
+function Favorites({ onOpenUser, onPostClick, language }) {
   const [posts, setPosts] = useState([]);
 
   const loadFavorites = async () => {
@@ -20,10 +21,10 @@ function Favorites({ onOpenUser, onPostClick }) {
 
   return (
     <div className="page">
-      <h1>Favorites</h1>
+      <h1>{t('favorites', language)}</h1>
 
       {posts.length === 0 && (
-        <p className="username">You have no favorite posts yet</p>
+        <p className="username">{t('no_favorite_posts', language)}</p>
       )}
 
       {posts.map((post) => (
@@ -33,6 +34,7 @@ function Favorites({ onOpenUser, onPostClick }) {
           onUserClick={onOpenUser}
           onPostClick={onPostClick}
           onPostChanged={loadFavorites}
+          language={language}
         />
       ))}
     </div>

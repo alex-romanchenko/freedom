@@ -9,12 +9,14 @@ import {
 } from '../api/postsApi';
 import { getFileUrl } from '../api/fileUrl';
 import { IoHeartOutline, IoHeart, IoArrowBack } from 'react-icons/io5';
+import { t } from '../utils/i18n';
 
 export default function PostDetails({
   post,
   onBack,
   onUserClick,
   onPostChanged,
+  language,
 }) {
   const [comments, setComments] = useState([]);
   const [text, setText] = useState('');
@@ -81,7 +83,7 @@ export default function PostDetails({
   };
 
   const removePost = async () => {
-    if (!window.confirm('Delete this post?')) return;
+    if (!window.confirm(t('delete_post_question', language))) return;
 
     await deletePostApi(post.id);
     onBack();
@@ -112,7 +114,7 @@ export default function PostDetails({
           <IoArrowBack />
         </button>
 
-        <h3>Post</h3>
+        <h3>{t('post', language)}</h3>
       </div>
 
       <div className="post-header">
@@ -127,11 +129,11 @@ export default function PostDetails({
         {isOwner && (
           <div className="post-actions">
             <button onClick={() => setIsEditing((prev) => !prev)}>
-              Edit
+              {t('edit', language)}
             </button>
 
             <button className="danger-btn" onClick={removePost}>
-              Delete
+              {t('delete', language)}
             </button>
           </div>
         )}
@@ -146,7 +148,7 @@ export default function PostDetails({
           />
 
           <button className="primary-btn" onClick={savePost}>
-            Save
+            {t('save', language)}
           </button>
         </div>
       ) : (
@@ -179,7 +181,7 @@ export default function PostDetails({
         </button>
 
         <button className="likes-count" onClick={loadLikes}>
-          {likesCount} likes
+          {likesCount} {t('likes', language)}
         </button>
 
         <span className="photo-comments-count">
@@ -189,7 +191,7 @@ export default function PostDetails({
 
       <div className="post-comments">
         {comments.length === 0 && (
-          <p className="username">No comments yet</p>
+          <p className="username">{t('no_comments', language)}</p>
         )}
 
         {comments.map((comment) => (
@@ -227,7 +229,7 @@ export default function PostDetails({
           className="comment-textarea"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Add a comment..."
+          placeholder={t('add_comment', language)}
           rows={1}
         />
 
@@ -244,7 +246,7 @@ export default function PostDetails({
           </button>
 
           <button className="primary-btn" onClick={addComment}>
-            Comment
+            {t('comment', language)}
           </button>
         </div>
 
@@ -278,10 +280,10 @@ export default function PostDetails({
       {likesOpen && (
         <div className="modal-overlay">
           <div className="likes-popup">
-            <h3>Liked by</h3>
+            <h3>{t('liked_by', language)}</h3>
 
             {likesUsers.length === 0 && (
-              <p className="username">No likes yet</p>
+              <p className="username">{t('no_likes', language)}</p>
             )}
 
             {likesUsers.map((user) => (
@@ -308,7 +310,7 @@ export default function PostDetails({
               className="secondary-btn"
               onClick={() => setLikesOpen(false)}
             >
-              Close
+              {t('close', language)}
             </button>
           </div>
         </div>

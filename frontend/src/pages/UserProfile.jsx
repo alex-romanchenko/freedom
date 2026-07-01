@@ -7,6 +7,7 @@ import { createConversationApi } from '../api/messagesApi';
 import PostCard from '../components/PostCard';
 import PhotoModal from '../components/PhotoModal';
 import { getFileUrl } from '../api/fileUrl';
+import { t } from '../utils/i18n';
 
 function UserProfile({
   username,
@@ -15,6 +16,7 @@ function UserProfile({
   onOpenPhotos,
   onOpenFriends,
   onPostClick,
+  language,
 }) {
   const [profile, setProfile] = useState(null);
   const [friends, setFriends] = useState([]);
@@ -50,7 +52,7 @@ function UserProfile({
     onMessage(profile.user.id);
   };
 
-  if (!profile) return <p className="page">Loading...</p>;
+  if (!profile) return <p className="page">{t('loading', language)}</p>;
 
   const user = profile.user;
 
@@ -102,42 +104,43 @@ function UserProfile({
             <FollowButton
               userId={user.id}
               initialIsFollowing={user.is_following}
+              language={language}
             />
 
             <button className="primary-btn" onClick={handleMessage}>
-              Message
+              {t('message', language)}
             </button>
           </div>
         </div>
 
         <div className="profile-details">
-          <p><strong>First name:</strong> {firstName || 'Not specified'}</p>
-          <p><strong>Last name:</strong> {lastName || 'Not specified'}</p>
+          <p><strong>{t('first_name', language)}:</strong> {firstName || t('not_specified', language)}</p>
+          <p><strong>{t('last_name', language)}:</strong> {lastName || t('not_specified', language)}</p>
           <p>
-            <strong>Birthday:</strong>{' '}
-            {birthDate ? String(birthDate).slice(0, 10) : 'Not specified'}
+            <strong>{t('birthday', language)}:</strong>{' '}
+            {birthDate ? String(birthDate).slice(0, 10) : t('not_specified', language)}
           </p>
-          <p><strong>City:</strong> {user.city || 'Not specified'}</p>
-          <p><strong>Country:</strong> {user.country || 'Not specified'}</p>
-          <p><strong>Gender:</strong> {user.gender || 'Not specified'}</p>
+          <p><strong>{t('city', language)}:</strong> {user.city || t('not_specified', language)}</p>
+          <p><strong>{t('country', language)}:</strong> {user.country || t('not_specified', language)}</p>
+          <p><strong>{t('gender', language)}:</strong> {user.gender ? t(user.gender, language) : t('not_specified', language)}</p>
         </div>
       </div>
 
       <section className="profile-section">
         <div className="profile-section-header">
-          <h3>Friends</h3>
+          <h3>{t('friends', language)}</h3>
 
           <button
             className="link-btn"
             onClick={() => onOpenFriends(user.username)}
           >
-            Show all friends
+            {t('show_all_friends', language)}
           </button>
         </div>
 
         <div className="profile-friends-preview">
           {friends.length === 0 && (
-            <p className="username">No friends yet</p>
+            <p className="username">{t('no_friends', language)}</p>
           )}
 
           {friends.map((friend) => (
@@ -165,19 +168,19 @@ function UserProfile({
 
       <section className="profile-section">
         <div className="profile-section-header">
-          <h3>Photos</h3>
+          <h3>{t('photos', language)}</h3>
 
           <button
             className="link-btn"
             onClick={() => onOpenPhotos(user.id)}
           >
-            Show all photos
+            {t('show_all_photos', language)}
           </button>
         </div>
 
         <div className="profile-photos-preview">
           {photos.length === 0 && (
-            <p className="username">No photos yet</p>
+            <p className="username">{t('no_photos', language)}</p>
           )}
 
           {photos.map((photo) => (
@@ -192,11 +195,11 @@ function UserProfile({
       </section>
 
       <div className="profile-tabs">
-        <strong>Posts</strong>
+        <strong>{t('posts', language)}</strong>
       </div>
 
       <div className="profile-posts">
-        {profile.posts.length === 0 && <p>No posts yet</p>}
+        {profile.posts.length === 0 && <p>{t('no_posts', language)}</p>}
 
         {profile.posts.map((post) => (
           <PostCard
@@ -205,6 +208,7 @@ function UserProfile({
             canManage={false}
             onPostClick={onPostClick}
             onUserClick={onOpenUser}
+            language={language}
           />
         ))}
       </div>

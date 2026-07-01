@@ -10,8 +10,9 @@ import {
 } from '../api/followApi';
 import { createConversationApi } from '../api/messagesApi';
 import { getFileUrl } from '../api/fileUrl';
+import { t } from '../utils/i18n';
 
-function Friends({ username, onOpenChat, onOpenUser, onRequestsSeen, requestSignal }) {
+function Friends({ username, onOpenChat, onOpenUser, onRequestsSeen, requestSignal, language }) {
   const [activeTab, setActiveTab] = useState('friends');
   const [query, setQuery] = useState('');
   const [friends, setFriends] = useState([]);
@@ -149,20 +150,20 @@ useEffect(() => {
               className="secondary-btn"
               onClick={() => addFriend(user)}
             >
-              Add
+              {t('add', language)}
             </button>
         ) : isFriendList || user.is_following ? (
           <button className="secondary-btn" onClick={() => removeFriend(user.id)}>
-            Remove
+            {t('remove', language)}
           </button>
         ) : (
           <button className="secondary-btn" onClick={() => addFriend(user)}>
-            Add
+            {t('add', language)}
           </button>
         )}
 
         <button className="primary-btn" onClick={() => writeMessage(user.id)}>
-          Message
+          {t('message', language)}
         </button>
       </div>
     </div>
@@ -175,14 +176,14 @@ useEffect(() => {
           className={activeTab === 'friends' ? 'active' : ''}
           onClick={() => setActiveTab('friends')}
         >
-          Friends
+          {t('friends', language)}
         </button>
 
         <button
           className={activeTab === 'requests' ? 'active' : ''}
           onClick={openRequestsTab}
         >
-          Friends requests
+          {t('friends_requests_tab', language)}
           {requestsBadgeCount > 0 && (
             <span className="friend-request-badge">
               {requestsBadgeCount}
@@ -193,7 +194,7 @@ useEffect(() => {
 
       {activeTab === 'friends' && (
         <>
-          <h3>Find new friends</h3>
+          <h3>{t('find_new_friends', language)}</h3>
 
           <div className="friends-search">
             <input
@@ -204,11 +205,11 @@ useEffect(() => {
                   searchUsers();
                 }
               }}
-              placeholder="Find user by name or username..."
+              placeholder={t('find_user_placeholder', language)}
             />
 
             <button className="primary-btn" onClick={searchUsers}>
-              Search
+              {t('search', language)}
             </button>
           </div>
 
@@ -218,11 +219,11 @@ useEffect(() => {
 
           <hr />
 
-          <h3>Your friends</h3>
+          <h3>{t('your_friends', language)}</h3>
 
           <div className="friends-list">
             {friends.length === 0 && (
-              <p className="username">You have no friends yet</p>
+              <p className="username">{t('no_friends', language)}</p>
             )}
 
             {friends.map((user) => renderUserCard(user, true))}
@@ -232,11 +233,11 @@ useEffect(() => {
 
       {activeTab === 'requests' && (
         <>
-          <h3>Friend requests</h3>
+          <h3>{t('friend_requests', language)}</h3>
 
           <div className="friends-list">
             {incomingRequests.length === 0 && (
-              <p className="username">No friend requests yet</p>
+              <p className="username">{t('no_friend_requests', language)}</p>
             )}
 
             {incomingRequests.map((user) =>

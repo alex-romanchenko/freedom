@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { getWhoToFollowApi } from '../api/usersApi';
 import FollowButton from './FollowButton';
 import { getFileUrl } from '../api/fileUrl';
+import { t } from '../utils/i18n';
 
-function WhoToFollow({ onOpenUser }) {
+function WhoToFollow({ onOpenUser, language }) {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
@@ -21,7 +22,7 @@ function WhoToFollow({ onOpenUser }) {
 
   return (
     <div className="side-card">
-      <h3>Who to follow</h3>
+      <h3>{t('who_to_follow', language)}</h3>
 
       {users.map((user) => (
         <div key={user.id} className="follow-user">
@@ -46,7 +47,8 @@ function WhoToFollow({ onOpenUser }) {
           <FollowButton
             userId={user.id}
             initialIsFollowing={user.is_following}
-            />
+            language={language}
+          />
         </div>
       ))}
     </div>

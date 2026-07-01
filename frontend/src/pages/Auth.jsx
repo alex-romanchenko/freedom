@@ -23,6 +23,7 @@ function Auth({ onLoginSuccess }) {
   const changeLanguage = (nextLanguage) => {
     setLanguage(nextLanguage);
     localStorage.setItem('language', nextLanguage);
+    window.dispatchEvent(new Event('languageChanged'));
     setAuthError('');
     setErrors({});
   };
@@ -134,6 +135,7 @@ function Auth({ onLoginSuccess }) {
         sessionStorage.removeItem('token');
         localStorage.setItem('language', user.language);
         localStorage.setItem('user', JSON.stringify(user));
+        window.dispatchEvent(new Event('languageChanged'));
 
         onLoginSuccess();
       } else {

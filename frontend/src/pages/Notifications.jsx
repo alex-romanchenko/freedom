@@ -6,10 +6,11 @@ import {
   deleteNotificationApi,
 } from '../api/notificationsApi';
 import { getFileUrl } from '../api/fileUrl';
+import { t } from '../utils/i18n';
 
 const LIMIT = 20;
 
-function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat }) {
+function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat, language }) {
   const [notifications, setNotifications] = useState([]);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -97,34 +98,34 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat })
     const now = new Date();
     const diff = Math.floor((now - new Date(date)) / 1000);
 
-    if (diff < 60) return `${diff}s ago`;
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 60) return `${diff}${t('seconds_ago', language)}`;
+    if (diff < 3600) return `${Math.floor(diff / 60)}${t('minutes_ago', language)}`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}${t('hours_ago', language)}`;
 
-    return `${Math.floor(diff / 86400)}d ago`;
+    return `${Math.floor(diff / 86400)}${t('days_ago', language)}`;
   };
 
   const getText = (item) => {
-    if (item.type === 'friend_request') return 'sent you a friend request';
+    if (item.type === 'friend_request') return t('sent_friend_request', language);
 
     if (item.type === 'friend_request_accepted') {
-      return 'accepted your friend request';
+      return t('accepted_friend_request', language);
     }
 
-    if (item.type === 'new_post') return `added a new post: ${item.text}`;
-    if (item.type === 'like_post') return 'liked your post';
-    if (item.type === 'like_photo') return 'liked your photo';
+    if (item.type === 'new_post') return `${t('added_new_post', language)}: ${item.text}`;
+    if (item.type === 'like_post') return t('liked_your_post', language);
+    if (item.type === 'like_photo') return t('liked_your_photo', language);
     if (item.type === 'comment_post') {
-      return `commented on your post: ${item.text}`;
+      return `${t('commented_on_post', language)}: ${item.text}`;
     }
     if (item.type === 'comment_photo') {
-      return `commented on your photo: ${item.text}`;
+      return `${t('commented_on_photo', language)}: ${item.text}`;
     }
 
-    if (item.type === 'group_added') return 'added you to a group chat';
-    if (item.type === 'group_removed') return 'removed you from a group chat';
+    if (item.type === 'group_added') return t('added_to_group', language);
+    if (item.type === 'group_removed') return t('removed_from_group', language);
 
-    return 'sent you a notification';
+    return t('sent_notification', language);
   };
 
   const openNotification = (item) => {
@@ -165,10 +166,10 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat })
 
   return (
     <div className="page">
-      <h2>Notifications</h2>
+      <h2>{t('notifications', language)}</h2>
 
       {notifications.length === 0 && !loading && (
-        <p className="username">No notifications yet</p>
+        <p className="username">{t('no_notifications', language)}</p>
       )}
 
       <div className="notifications-list">
@@ -220,17 +221,17 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat })
                 className="notification-remove"
                 onClick={() => removeNotification(item.id)}
               >
-                ×
+                ?
               </button>
             </div>
           );
         })}
       </div>
 
-      {loading && <p className="username">Loading...</p>}
+      {loading && <p className="username">{t('loading', language)}</p>}
 
       {!hasMore && notifications.length > 0 && (
-        <p className="username">No more notifications</p>
+        <p className="username">{t('no_more_notifications', language)}</p>
       )}
     </div>
   );

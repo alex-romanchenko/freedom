@@ -24,6 +24,7 @@ import { getPhotoByIdApi } from './api/photosApi';
 import VerifyEmail from "./pages/VerifyEmail";
 import { useAudioCall } from './hooks/useAudioCall';
 import { getFileUrl } from './api/fileUrl';
+import { getStoredLanguage, t } from './utils/i18n';
 
 
 import {
@@ -109,6 +110,7 @@ const setPage = (nextPage) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [activePost, setActivePost] = useState(null);
   const [photosUserId, setPhotosUserId] = useState(null);
+  const [language, setLanguage] = useState(getStoredLanguage());
   const joinedSocketRef = useRef(null);
   const videoCallBoxRef = useRef(null);
 
@@ -355,6 +357,18 @@ useEffect(() => {
       setShowLogoutConfirm(false);
     }
   }, [isAuth]);
+
+  useEffect(() => {
+    const handleLanguageChanged = () => {
+      setLanguage(getStoredLanguage());
+    };
+
+    window.addEventListener('languageChanged', handleLanguageChanged);
+
+    return () => {
+      window.removeEventListener('languageChanged', handleLanguageChanged);
+    };
+  }, []);
   
 
   const handleLogout = () => {
@@ -441,7 +455,7 @@ if (isVerifyEmailPage) {
           }}
         >
           {page === 'feed' ? <IoHome /> : <IoHomeOutline />}
-          <span>Home</span>
+          <span>{t('home', language)}</span>
         </button>
 
         <button
@@ -454,7 +468,7 @@ if (isVerifyEmailPage) {
           }}
         >
           {page === 'friends' ? <IoPeople /> : <IoPeopleOutline />}
-          <span>Friends</span>
+          <span>{t('friends', language)}</span>
           {friendRequestsCount > 0 && (
             <span className="nav-badge">{friendRequestsCount}</span>
           )}
@@ -468,7 +482,7 @@ if (isVerifyEmailPage) {
           }}
         >
           {page === 'chat' ? <IoChatbubbleEllipses /> : <IoChatbubbleEllipsesOutline />}
-          <span>Chats</span>
+          <span>{t('chats', language)}</span>
           {unreadMessagesCount > 0 && (
             <span className="nav-badge">{unreadMessagesCount}</span>
           )}
@@ -483,7 +497,7 @@ if (isVerifyEmailPage) {
           }}
         >
           {page === 'notifications' ? <IoNotifications /> : <IoNotificationsOutline />}
-          <span>Actions</span>
+          <span>{t('actions', language)}</span>
           {notificationsCount > 0 && (
             <span className="nav-badge">{notificationsCount}</span>
           )}
@@ -497,7 +511,7 @@ if (isVerifyEmailPage) {
           }}
         >
           {page === 'favorites' ? <IoHeart /> : <IoHeartOutline />}
-          <span>Favorites</span>
+          <span>{t('favorites', language)}</span>
         </button>
 
         <button
@@ -508,7 +522,7 @@ if (isVerifyEmailPage) {
           }}
         >
           {page === 'profile' ? <IoPerson /> : <IoPersonOutline />}
-          <span>Profile</span>
+          <span>{t('profile', language)}</span>
         </button>
 
         <button
@@ -516,7 +530,7 @@ if (isVerifyEmailPage) {
           onClick={() => setShowLogoutConfirm(true)}
         >
           <IoLogOutOutline />
-          <span>Logout</span>
+          <span>{t('logout', language)}</span>
         </button>
       </aside>
           
@@ -524,6 +538,7 @@ if (isVerifyEmailPage) {
         {activePost && (
           <PostDetails
             post={activePost}
+            language={language}
             onBack={() => setActivePost(null)}
             onUserClick={(username) => {
               setActivePost(null);
@@ -536,6 +551,7 @@ if (isVerifyEmailPage) {
 
         {!activePost && page === 'feed' && (
           <Feed
+            language={language}
             onOpenUser={(username) => {
               setViewUsername(username);
               setPage('userProfile');
@@ -546,6 +562,7 @@ if (isVerifyEmailPage) {
 
         {!activePost && page === 'friends' && (
         <Friends
+          language={language}
           username={friendsUsername}
           onOpenChat={(userId) => {
             setSelectedUserId(userId);
@@ -562,6 +579,7 @@ if (isVerifyEmailPage) {
 
         {!activePost && page === 'notifications' && (
           <Notifications
+            language={language}
             onOpenUser={(username) => {
               setViewUsername(username);
               setPage('userProfile');
@@ -585,6 +603,7 @@ if (isVerifyEmailPage) {
         
         {!activePost && page === 'favorites' && (
           <Favorites
+            language={language}
             onOpenUser={(username) => {
               setViewUsername(username);
               setPage('userProfile');
@@ -599,6 +618,7 @@ if (isVerifyEmailPage) {
 
         {!activePost && page === 'userProfile' && (
           <UserProfile
+            language={language}
             username={viewUsername}
             onMessage={(userId) => {
               setSelectedUserId(userId);
@@ -657,6 +677,7 @@ if (isVerifyEmailPage) {
         <aside className="right-sidebar">
           {page !== 'friends' && (
             <UserSearch
+              language={language}
               onOpenUser={(username) => {
                 setActivePost(null);
                 setViewUsername(username);
@@ -666,6 +687,7 @@ if (isVerifyEmailPage) {
           )}
 
           <WhoToFollow
+            language={language}
             onOpenUser={(username) => {
               setActivePost(null);
               setViewUsername(username);
@@ -674,6 +696,7 @@ if (isVerifyEmailPage) {
           />
 
           <PopularPosts
+            language={language}
             onOpenUser={(username) => {
               setActivePost(null);
               setViewUsername(username);
@@ -686,19 +709,19 @@ if (isVerifyEmailPage) {
       {showLogoutConfirm && (
         <div className="modal-overlay">
           <div className="logout-popup">
-            <h3>Are you sure?</h3>
-            <p>Do you really want to logout?</p>
+            <h3>{t('are_you_sure', language)}</h3>
+            {t('logout_question', language) && <p>{t('logout_question', language)}</p>}
 
             <div className="modal-actions">
               <button
                 className="secondary-btn"
                 onClick={() => setShowLogoutConfirm(false)}
               >
-                Cancel
+                {t('cancel', language)}
               </button>
 
               <button className="primary-btn" onClick={handleLogout}>
-                Logout
+                {t('logout', language)}
               </button>
             </div>
           </div>
@@ -744,7 +767,7 @@ if (isVerifyEmailPage) {
             avatar: likePopup.likedBy.avatar,
             subtitle: `@${likePopup.likedBy.username}`,
           }}
-          text={`liked your ${likePopup.type}`}
+          text={`${t(likePopup.type === 'post' ? 'liked_your_post' : 'liked_your_photo', language)}`}
           onClose={() => setLikePopup(null)}
           onClick={() => {
             setLikePopup(null);
@@ -765,7 +788,7 @@ if (isVerifyEmailPage) {
             avatar: commentPopup.commentedBy.avatar,
             subtitle: `@${commentPopup.commentedBy.username}`,
           }}
-          text={`commented on your ${commentPopup.type}: ${commentPopup.comment.text}`}
+          text={`${t(commentPopup.type === 'post' ? 'commented_on_post' : 'commented_on_photo', language)}: ${commentPopup.comment.text}`}
           onClose={() => setCommentPopup(null)}
           onClick={() => {
             setCommentPopup(null);
@@ -785,7 +808,7 @@ if (isVerifyEmailPage) {
               avatar: friendAcceptedPopup.avatar,
               subtitle: `@${friendAcceptedPopup.username}`,
             }}
-            text="accepted your friend request"
+            text={t('accepted_friend_request', language)}
             onClose={() => setFriendAcceptedPopup(null)}
             onClick={() => {
               setFriendAcceptedPopup(null);
@@ -802,7 +825,7 @@ if (isVerifyEmailPage) {
             avatar: friendPopup.avatar,
             subtitle: `@${friendPopup.username}`,
           }}
-          text="sent you a friend request"
+          text={t('sent_friend_request', language)}
           onClose={() => setFriendPopup(null)}
           onClick={() => {
             setFriendPopup(null);
@@ -823,7 +846,7 @@ if (isVerifyEmailPage) {
       {incomingCall && (
   <div className="call-popup">
     <h3>
-      {incomingCall.withVideo ? 'Incoming video call' : 'Incoming audio call'}
+      {incomingCall.withVideo ? t('incoming_video_call', language) : t('incoming_audio_call', language)}
     </h3>
 
 <div className="call-popup-user">
@@ -842,7 +865,7 @@ if (isVerifyEmailPage) {
   )}
 
   <p>
-    {incomingCall.caller?.username || `User ${incomingCall.from}`} is calling you
+    {incomingCall.caller?.username || `User ${incomingCall.from}`} {t('is_calling_you', language)}
   </p>
 </div>
 
@@ -851,14 +874,14 @@ if (isVerifyEmailPage) {
       className="accept-call-btn"
       onClick={handleAcceptCall}
     >
-      Accept
+      {t('accept', language)}
     </button>
 
       <button
         className="reject-call-btn"
         onClick={rejectCall}
       >
-        Reject
+        {t('reject', language)}
       </button>
     </div>
   </div>

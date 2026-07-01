@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getPopularPostsApi } from '../api/postsApi';
 import { getFileUrl } from '../api/fileUrl';
+import { t } from '../utils/i18n';
 
-function PopularPosts({ onOpenUser }) {
+function PopularPosts({ onOpenUser, language }) {
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
@@ -20,7 +21,7 @@ function PopularPosts({ onOpenUser }) {
 
   return (
     <div className="side-card">
-      <h3>Popular posts</h3>
+      <h3>{t('popular_posts', language)}</h3>
 
       {posts.map((post) => (
         <div key={post.id} className="popular-post">

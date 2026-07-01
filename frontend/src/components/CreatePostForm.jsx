@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPostApi } from '../api/postsApi';
 import EmojiPicker from 'emoji-picker-react';
+import { t } from '../utils/i18n';
 
-function CreatePostForm({ onPostCreated }) {
+function CreatePostForm({ onPostCreated, language }) {
   const [text, setText] = useState('');
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -75,14 +76,14 @@ function CreatePostForm({ onPostCreated }) {
       onPostCreated && onPostCreated();
     } catch (err) {
       console.error(err);
-      alert('Error creating post');
+      alert(t('error_creating_post', language));
     }
   };
 
   return (
     <div className="post-composer">
       <textarea
-        placeholder="What’s happening?"
+        placeholder={t('whats_happening', language)}
         value={text}
         maxLength={280}
         onChange={(e) => setText(e.target.value)}
@@ -101,21 +102,21 @@ function CreatePostForm({ onPostCreated }) {
             <img src={imagePreview} alt="Preview" />
           )}
 
-        <button
-          type="button"
-          className="remove-selected-image-btn"
-          onClick={() => {
-            setImage(null);
-            setImagePreview(null);
+          <button
+            type="button"
+            className="remove-selected-image-btn"
+            onClick={() => {
+              setImage(null);
+              setImagePreview(null);
 
-            if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
-          }}
-        >
-          ×
-        </button>
-      </div>
+              if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+              }
+            }}
+          >
+            ×
+          </button>
+        </div>
       )}
 
       <div className="composer-actions">
@@ -150,7 +151,7 @@ function CreatePostForm({ onPostCreated }) {
           className="primary-btn composer-post-btn"
           onClick={handleSubmit}
         >
-          Post
+          {t('post', language)}
         </button>
       </div>
 

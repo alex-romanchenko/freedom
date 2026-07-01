@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { FiSearch, FiX } from 'react-icons/fi';
 import { searchUsersApi } from '../api/usersApi';
 import { getFileUrl } from '../api/fileUrl';
+import { t } from '../utils/i18n';
 
-function UserSearch({ onOpenUser }) {
+function UserSearch({ onOpenUser, language }) {
   const [query, setQuery] = useState('');
   const [users, setUsers] = useState([]);
   const [searched, setSearched] = useState(false);
@@ -64,7 +65,7 @@ function UserSearch({ onOpenUser }) {
           onFocus={() => {
             if (searched) setIsOpen(true);
           }}
-          placeholder="Search"
+          placeholder={t('search', language)}
         />
 
         {query && (
@@ -82,7 +83,7 @@ function UserSearch({ onOpenUser }) {
         <div className="twitter-search-dropdown">
           {users.length === 0 && searched && (
             <div className="search-empty">
-              No users found
+              {t('no_users_found', language)}
             </div>
           )}
 
