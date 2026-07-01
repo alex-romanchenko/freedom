@@ -116,3 +116,101 @@
 .desktop-layout.chat-mode .chat-back-sidebar-btn:hover {
   background: #e5e7eb;
 }
+
+@media (max-width: 768px) {
+  .left-sidebar .sidebar-link,
+  .desktop-layout.chat-mode .left-sidebar .sidebar-link {
+    position: relative;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    height: 58px;
+    margin: 0;
+    padding: 7px 2px;
+    border-radius: 16px;
+    box-sizing: border-box;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    overflow: visible;
+    font-size: 10px;
+  }
+
+  .left-sidebar .sidebar-link.active,
+  .desktop-layout.chat-mode .left-sidebar .sidebar-link.active {
+    background: #e5e7eb;
+    border-radius: 16px;
+  }
+
+  .left-sidebar .sidebar-link svg,
+  .desktop-layout.chat-mode .left-sidebar .sidebar-link svg {
+    margin-right: 0;
+    font-size: 22px;
+  }
+
+  .left-sidebar .sidebar-link span:not(.nav-badge),
+  .desktop-layout.chat-mode .left-sidebar .sidebar-link span:not(.nav-badge) {
+    display: block !important;
+    max-width: 100%;
+    font-size: 9px;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .left-sidebar .nav-badge,
+  .desktop-layout.chat-mode .left-sidebar .nav-badge {
+    position: absolute;
+    top: 5px;
+    left: calc(50% + 9px);
+    right: auto;
+    margin: 0;
+    transform: none;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 5px;
+    font-size: 10px;
+    line-height: 1;
+    z-index: 2;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {
+  .left-sidebar .sidebar-link,
+  .desktop-layout.chat-mode .left-sidebar .sidebar-link {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    height: 62px;
+    margin: 0;
+    padding: 7px 2px;
+    border-radius: 16px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .left-sidebar .sidebar-link.active,
+  .desktop-layout.chat-mode .left-sidebar .sidebar-link.active {
+    border-radius: 16px;
+  }
+
+  .left-sidebar .sidebar-link svg,
+  .desktop-layout.chat-mode .left-sidebar .sidebar-link svg {
+    margin-right: 0;
+  }
+
+  .left-sidebar .nav-badge,
+  .desktop-layout.chat-mode .left-sidebar .nav-badge {
+    position: absolute;
+    top: 6px;
+    left: calc(50% + 8px);
+    right: auto;
+    margin: 0;
+    transform: none;
+  }
+}
