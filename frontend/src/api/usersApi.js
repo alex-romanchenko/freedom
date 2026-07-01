@@ -25,6 +25,11 @@ export async function updateHeaderApi(formData) {
   return res.data;
 }
 
+export async function updateLanguageApi(language) {
+  const res = await api.put('/users/me/language', { language });
+  return res.data;
+}
+
 export async function searchUsersApi(query) {
   const res = await api.get(`/users/search?q=${encodeURIComponent(query)}`);
   return res.data;

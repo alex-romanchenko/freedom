@@ -1294,7 +1294,6 @@
   align-items: center;
   justify-content: center;
   margin-top: 2px;
-  transform: scaleX(-1);
 }
 .call-btn,
 .mute-btn,

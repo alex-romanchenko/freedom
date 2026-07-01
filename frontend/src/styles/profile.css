@@ -198,6 +198,16 @@
   font-size: 14px;
 }
 
+.profile-language-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px 0;
+}
+
+.profile-language-switcher {
+  justify-content: flex-end;
+}
+
 .profile-actions {
   display: flex;
   gap: 10px;

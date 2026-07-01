@@ -5,11 +5,13 @@ import {
   updateMyProfileApi,
   updateAvatarApi,
   updateHeaderApi,
+  updateLanguageApi,
 } from '../api/usersApi';
 import { getFriendsApi } from '../api/followApi';
 import PostCard from '../components/PostCard';
 import PhotoModal from '../components/PhotoModal';
 import { getFileUrl } from '../api/fileUrl';
+import { getStoredLanguage, t } from '../utils/i18n';
 
 function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
   const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -21,6 +23,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
 
   const [isEditing, setIsEditing] = useState(false);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+  const [language, setLanguage] = useState(getStoredLanguage());
 
   const [form, setForm] = useState({
     username: '',
@@ -60,6 +63,23 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
     await loadPhotos(data.user.id);
   };
 
+  const changeLanguage = async (nextLanguage) => {
+    setLanguage(nextLanguage);
+    localStorage.setItem('language', nextLanguage);
+
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    localStorage.setItem(
+      'user',
+      JSON.stringify({ ...storedUser, language: nextLanguage })
+    );
+
+    try {
+      await updateLanguageApi(nextLanguage);
+    } catch (err) {
+      console.error(t('language_update_error', nextLanguage), err);
+    }
+  };
+
   const loadFriends = async () => {
     const data = await getFriendsApi();
     setFriends(data.slice(0, 4));
@@ -82,10 +102,12 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
 
     await updateMyProfileApi(payload);
 
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+
     localStorage.setItem(
       'user',
       JSON.stringify({
-        ...currentUser,
+        ...storedUser,
         username: payload.username,
         displayName: payload.displayName,
       })
@@ -115,7 +137,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
     loadProfile();
   };
 
-  if (!profile) return <p className="page">Loading...</p>;
+  if (!profile) return <p className="page">{t('loading', language)}</p>;
 
   const user = profile.user;
 
@@ -137,7 +159,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
         )}
 
         <label className="cover-upload">
-          Change cover
+          {t('change_cover', language)}
           <input
             type="file"
             hidden
@@ -181,35 +203,50 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
             className="secondary-btn profile-edit-btn"
             onClick={() => setIsEditing(true)}
           >
-            Edit profile
+            {t('edit_profile', language)}
           </button>
         </div>
 
         <div className="profile-details">
-          <p><strong>First name:</strong> {firstName || 'Not specified'}</p>
-          <p><strong>Last name:</strong> {lastName || 'Not specified'}</p>
+          <p><strong>{t('first_name', language)}:</strong> {firstName || t('not_specified', language)}</p>
+          <p><strong>{t('last_name', language)}:</strong> {lastName || t('not_specified', language)}</p>
           <p>
-            <strong>Birthday:</strong>{' '}
-            {birthDate ? String(birthDate).slice(0, 10) : 'Not specified'}
+            <strong>{t('birthday', language)}:</strong>{' '}
+            {birthDate ? String(birthDate).slice(0, 10) : t('not_specified', language)}
           </p>
-          <p><strong>City:</strong> {user.city || 'Not specified'}</p>
-          <p><strong>Country:</strong> {user.country || 'Not specified'}</p>
-          <p><strong>Gender:</strong> {user.gender || 'Not specified'}</p>
+          <p><strong>{t('city', language)}:</strong> {user.city || t('not_specified', language)}</p>
+          <p><strong>{t('country', language)}:</strong> {user.country || t('not_specified', language)}</p>
+          <p><strong>{t('gender', language)}:</strong> {user.gender ? t(user.gender, language) : t('not_specified', language)}</p>
+        </div>
+      </div>
+
+      <div className="profile-language-row">
+        <div className="language-switcher profile-language-switcher">
+          {['en', 'uk', 'ru'].map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={language === item ? 'active' : ''}
+              onClick={() => changeLanguage(item)}
+            >
+              {item.toUpperCase()}
+            </button>
+          ))}
         </div>
       </div>
 
       <section className="profile-section">
         <div className="profile-section-header">
-          <h3>Friends</h3>
+          <h3>{t('friends', language)}</h3>
 
           <button className="link-btn" onClick={onOpenFriends}>
-            Show all friends
+            {t('show_all_friends', language)}
           </button>
         </div>
 
         <div className="profile-friends-preview">
           {friends.length === 0 && (
-            <p className="username">No friends yet</p>
+            <p className="username">{t('no_friends', language)}</p>
           )}
 
           {friends.map((friend) => (
@@ -237,19 +274,19 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
 
       <section className="profile-section">
         <div className="profile-section-header">
-          <h3>Photos</h3>
+          <h3>{t('photos', language)}</h3>
 
           <button
             className="link-btn"
             onClick={() => onOpenPhotos(user.id)}
           >
-            Show all photos
+            {t('show_all_photos', language)}
           </button>
         </div>
 
         <div className="profile-photos-preview">
           {photos.length === 0 && (
-            <p className="username">No photos yet</p>
+            <p className="username">{t('no_photos', language)}</p>
           )}
 
           {photos.map((photo) => (
@@ -264,11 +301,11 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
       </section>
 
       <div className="profile-tabs">
-        <strong>Posts</strong>
+        <strong>{t('posts', language)}</strong>
       </div>
 
       <div className="profile-posts">
-        {profile.posts.length === 0 && <p>No posts yet</p>}
+        {profile.posts.length === 0 && <p>{t('no_posts', language)}</p>}
 
         {profile.posts.map((post) => (
           <PostCard
@@ -293,12 +330,12 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
       {isEditing && (
         <div className="modal-overlay">
           <div className="profile-edit-modal">
-            <h2>Edit profile</h2>
+            <h2>{t('edit_profile', language)}</h2>
 
-            <input name="displayName" value={form.displayName} onChange={handleChange} placeholder="Display name" />
-            <input name="username" value={form.username} onChange={handleChange} placeholder="Username" />
-            <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="First name" />
-            <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="Last name" />
+            <input name="displayName" value={form.displayName} onChange={handleChange} placeholder={t('display_name', language)} />
+            <input name="username" value={form.username} onChange={handleChange} placeholder={t('username', language)} />
+            <input name="firstName" value={form.firstName} onChange={handleChange} placeholder={t('first_name', language)} />
+            <input name="lastName" value={form.lastName} onChange={handleChange} placeholder={t('last_name', language)} />
 
             <input
               name="birthDate"
@@ -307,23 +344,23 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
               onChange={handleChange}
             />
 
-            <input name="city" value={form.city} onChange={handleChange} placeholder="City" />
-            <input name="country" value={form.country} onChange={handleChange} placeholder="Country" />
+            <input name="city" value={form.city} onChange={handleChange} placeholder={t('city', language)} />
+            <input name="country" value={form.country} onChange={handleChange} placeholder={t('country', language)} />
 
             <select name="gender" value={form.gender} onChange={handleChange}>
-              <option value="">Gender</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="other">Other</option>
+              <option value="">{t('gender', language)}</option>
+              <option value="female">{t('female', language)}</option>
+              <option value="male">{t('male', language)}</option>
+              <option value="other">{t('other', language)}</option>
             </select>
 
             <div className="modal-actions">
               <button className="secondary-btn" onClick={() => setIsEditing(false)}>
-                Cancel
+                {t('cancel', language)}
               </button>
 
               <button className="primary-btn" onClick={saveProfile}>
-                Save
+                {t('save', language)}
               </button>
             </div>
           </div>
