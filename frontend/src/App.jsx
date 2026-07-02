@@ -504,7 +504,11 @@ if (isVerifyEmailPage) {
         </button>
 
         <button
-          className={page === 'favorites' ? 'sidebar-link active' : 'sidebar-link'}
+          className={
+            page === 'favorites'
+              ? 'sidebar-link favorites-mobile-hidden active'
+              : 'sidebar-link favorites-mobile-hidden'
+          }
           onClick={() => {
             setActivePost(null);
             setPage('favorites');

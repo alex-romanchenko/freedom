@@ -26,3 +26,7 @@ export async function getIncomingRequestsApi() {
 export async function markRequestsSeenApi() {
   await api.put('/follows/requests/seen');
 }
+
+export async function ignoreFollowRequestApi(requesterId) {
+  await api.delete(`/follows/requests/${requesterId}`);
+}

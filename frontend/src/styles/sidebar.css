@@ -176,6 +176,11 @@
     line-height: 1;
     z-index: 2;
   }
+
+  .left-sidebar .sidebar-link.favorites-mobile-hidden,
+  .desktop-layout.chat-mode .left-sidebar .sidebar-link.favorites-mobile-hidden {
+    display: none !important;
+  }
 }
 
 @media (min-width: 769px) and (max-width: 1024px) and (orientation: portrait) {

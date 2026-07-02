@@ -7,8 +7,8 @@ import {
   getUserFriendsApi,
   getIncomingRequestsApi,
   markRequestsSeenApi,
+  ignoreFollowRequestApi,
 } from '../api/followApi';
-import { createConversationApi } from '../api/messagesApi';
 import { getFileUrl } from '../api/fileUrl';
 import { t } from '../utils/i18n';
 
@@ -108,9 +108,10 @@ useEffect(() => {
     loadIncomingRequests();
   };
 
-  const writeMessage = async (userId) => {
-    await createConversationApi(userId);
-    onOpenChat(userId);
+  const ignoreRequest = async (userId) => {
+    await ignoreFollowRequestApi(userId);
+
+    setIncomingRequests((prev) => prev.filter((u) => u.id !== userId));
   };
 
   const renderAvatar = (user) => {
@@ -152,12 +153,20 @@ useEffect(() => {
 
       <div className="friend-actions">
         {isRequest ? (
+          <>
             <button
               className="secondary-btn"
               onClick={() => addFriend(user)}
             >
               {t('add', language)}
             </button>
+            <button
+              className="secondary-btn"
+              onClick={() => ignoreRequest(user.id)}
+            >
+              {t('ignore', language)}
+            </button>
+          </>
         ) : isFriendList || user.is_following ? (
           <button className="secondary-btn" onClick={() => removeFriend(user.id)}>
             {t('remove', language)}
@@ -167,10 +176,6 @@ useEffect(() => {
             {t('add', language)}
           </button>
         )}
-
-        <button className="primary-btn" onClick={() => writeMessage(user.id)}>
-          {t('message', language)}
-        </button>
       </div>
     </div>
   );
