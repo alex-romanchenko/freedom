@@ -37,6 +37,12 @@ function Friends({ username, onOpenChat, onOpenUser, onRequestsSeen, requestSign
 useEffect(() => {
   loadFriends();
 }, [username]);
+
+useEffect(() => {
+  if (!username) {
+    loadIncomingRequests();
+  }
+}, [username]);
   
   useEffect(() => {
   if (requestSignal > 0) {

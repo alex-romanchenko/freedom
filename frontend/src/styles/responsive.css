@@ -475,10 +475,12 @@
   }
 
   .chat-layout.chat-open .chat-header {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 35;
-    flex: 0 0 auto;
+    min-height: 62px;
     background: rgba(255, 255, 255, 0.96);
     -webkit-backdrop-filter: blur(14px);
     backdrop-filter: blur(14px);
@@ -487,6 +489,7 @@
   .chat-layout.chat-open .messages-list {
     flex: 1 1 auto;
     min-height: 0;
+    margin-top: 62px;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
