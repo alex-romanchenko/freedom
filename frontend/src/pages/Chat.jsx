@@ -23,6 +23,7 @@ import {
 } from 'react-icons/io5';
 
 function Chat({
+  language,
   onUnreadCountChange,
   selectedUserId,
   setSelectedUserId,
@@ -1030,6 +1031,7 @@ useEffect(() => {
                 saveEditedMessage={saveEditedMessage}
                 sendMessage={sendMessage}
                 sendAudioMessage={sendAudioMessage}
+                language={language}
               />
 
           <MediaPreviewModal

@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fi';
 import { IoMic, IoStop, IoTrash, IoSend } from 'react-icons/io5';
 import EmojiPicker from 'emoji-picker-react';
+import { t } from '../../utils/i18n';
 
 
 function ChatInput({
@@ -31,6 +32,7 @@ function ChatInput({
   saveEditedMessage,
   sendMessage,
   sendAudioMessage,
+  language,
 }) {
   const emojiTimerRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -262,7 +264,7 @@ const handleSendAudio = async () => {
                   }}
                 >
                   <FiImage />
-                  <span>Gallery</span>
+                  <span>{t('gallery', language)}</span>
                 </button>
                 <button
                   type="button"
@@ -271,7 +273,7 @@ const handleSendAudio = async () => {
                   }}
                 >
                   <FiMusic />
-                  <span>Music</span>
+                  <span>{t('music', language)}</span>
                 </button>
                 <button
                   type="button"
@@ -280,7 +282,7 @@ const handleSendAudio = async () => {
                   }}
                 >
                   <FiFile />
-                  <span>File</span>
+                  <span>{t('file', language)}</span>
                 </button>
               </div>
             )}

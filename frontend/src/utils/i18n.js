@@ -139,6 +139,9 @@ const DICTIONARY = {
     liked_by: 'Liked by',
     no_likes: 'No likes yet',
     close: 'Close',
+    gallery: 'Gallery',
+    music: 'Music',
+    file: 'File',
   },
   uk: {
     login_title: 'Вхід до Freedom',
@@ -280,6 +283,9 @@ const DICTIONARY = {
     liked_by: 'Вподобали',
     no_likes: 'Вподобань ще немає',
     close: 'Закрити',
+    gallery: 'Галерея',
+    music: 'Музика',
+    file: 'Файл',
   },
   ru: {
     login_title: 'Вход в Freedom',
@@ -421,6 +427,9 @@ const DICTIONARY = {
     liked_by: 'Лайкнули',
     no_likes: 'Лайков еще нет',
     close: 'Закрыть',
+    gallery: 'Галерея',
+    music: 'Музыка',
+    file: 'Файл',
   },
 };
 

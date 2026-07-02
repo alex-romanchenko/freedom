@@ -394,6 +394,36 @@ useEffect(() => {
     setSelectedUserId(null);
   };
 
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      handleLogout();
+    };
+
+    window.addEventListener('authExpired', handleAuthExpired);
+
+    return () => {
+      window.removeEventListener('authExpired', handleAuthExpired);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isAuth) return;
+
+    let cancelled = false;
+
+    api.get('/auth/me').catch((error) => {
+      const status = error.response?.status;
+
+      if (!cancelled && (status === 401 || status === 403)) {
+        window.dispatchEvent(new Event('authExpired'));
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuth]);
+
   const openPhotos = (userId) => {
     setActivePost(null);
     setPhotosUserId(userId);
@@ -657,6 +687,7 @@ if (isVerifyEmailPage) {
 
         {!activePost && page === 'chat' && (
       <Chat
+        language={language}
         onUnreadCountChange={setUnreadMessagesCount}
         selectedUserId={selectedUserId}
         setSelectedUserId={setSelectedUserId}
