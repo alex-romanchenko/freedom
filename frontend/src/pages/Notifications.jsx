@@ -220,8 +220,9 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat, l
               <button
                 className="notification-remove"
                 onClick={() => removeNotification(item.id)}
+                aria-label="Remove notification"
               >
-                ?
+                &times;
               </button>
             </div>
           );

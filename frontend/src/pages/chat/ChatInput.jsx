@@ -44,6 +44,24 @@ function ChatInput({
   const [recordDuration, setRecordDuration] = useState(0);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
 
+  const blurChatInput = () => {
+    textareaRef.current?.blur();
+
+    if (
+      document.activeElement instanceof HTMLElement &&
+      typeof document.activeElement.blur === 'function'
+    ) {
+      document.activeElement.blur();
+    }
+  };
+
+  const openFilePicker = (inputRef) => {
+    blurChatInput();
+    setShowChatEmoji(false);
+    inputRef.current?.click();
+    setShowAttachMenu(false);
+  };
+
   const openEmojiWithDelay = () => {
     clearTimeout(emojiTimerRef.current);
 
@@ -220,12 +238,15 @@ const handleSendAudio = async () => {
 
       <div className="chat-input-zone">
         <div className="chat-input-row">
-          <div className="chat-input-box">
+          <div className={`chat-input-box ${showAttachMenu ? 'attach-open' : ''}`}>
             <button
               type="button"
               className="chat-icon-btn"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={(e) => {
                 e.stopPropagation();
+                blurChatInput();
+                setShowChatEmoji(false);
                 setShowAttachMenu((value) => !value);
               }}
             >
@@ -237,8 +258,7 @@ const handleSendAudio = async () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowAttachMenu(false);
-                    chatImageInputRef.current.click();
+                    openFilePicker(chatImageInputRef);
                   }}
                 >
                   <FiImage />
@@ -247,8 +267,7 @@ const handleSendAudio = async () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowAttachMenu(false);
-                    musicInputRef.current.click();
+                    openFilePicker(musicInputRef);
                   }}
                 >
                   <FiMusic />
@@ -257,8 +276,7 @@ const handleSendAudio = async () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setShowAttachMenu(false);
-                    fileInputRef.current.click();
+                    openFilePicker(fileInputRef);
                   }}
                 >
                   <FiFile />
@@ -329,7 +347,17 @@ const handleSendAudio = async () => {
               onMouseEnter={openEmojiWithDelay}
               onMouseLeave={closeEmojiWithDelay}
             >
-              <button type="button" className="chat-icon-btn">
+              <button
+                type="button"
+                className="chat-icon-btn"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  blurChatInput();
+                  setShowAttachMenu(false);
+                  setShowChatEmoji((value) => !value);
+                }}
+              >
                 <FiSmile />
               </button>
             </div>

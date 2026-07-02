@@ -511,5 +511,22 @@
   .chat-layout.chat-open .chat-input-box input:not([type]) {
     font-size: 16px;
   }
+
+  .chat-layout.chat-open .chat-emoji-picker {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 132px;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: min(350px, 44dvh);
+    overflow: hidden;
+    z-index: 1200;
+  }
+
+  .chat-layout.chat-open .chat-attach-menu {
+    z-index: 1200;
+  }
 }
 
