@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FiFile,
   FiImage,
@@ -40,6 +40,7 @@ function ChatInput({
   const recordStartRef = useRef(null);
   const musicInputRef = useRef(null);
   const fileInputRef = useRef(null);
+  const inputBoxRef = useRef(null);
 
   const [isRecording, setIsRecording] = useState(false);
   const [recordedAudio, setRecordedAudio] = useState(null);
@@ -65,6 +66,8 @@ function ChatInput({
   };
 
   const openEmojiWithDelay = () => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
     clearTimeout(emojiTimerRef.current);
 
     emojiTimerRef.current = setTimeout(() => {
@@ -73,6 +76,8 @@ function ChatInput({
   };
 
   const closeEmojiWithDelay = () => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
     clearTimeout(emojiTimerRef.current);
 
     emojiTimerRef.current = setTimeout(() => {
@@ -81,9 +86,27 @@ function ChatInput({
   };
 
   const keepEmojiOpen = () => {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+
     clearTimeout(emojiTimerRef.current);
     setShowChatEmoji(true);
   };
+
+  useEffect(() => {
+    if (!showAttachMenu) return;
+
+    const handlePointerDown = (event) => {
+      if (inputBoxRef.current?.contains(event.target)) return;
+
+      setShowAttachMenu(false);
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
+  }, [showAttachMenu]);
 
   const startRecording = async () => {
   try {
@@ -240,7 +263,10 @@ const handleSendAudio = async () => {
 
       <div className="chat-input-zone">
         <div className="chat-input-row">
-          <div className={`chat-input-box ${showAttachMenu ? 'attach-open' : ''}`}>
+          <div
+            ref={inputBoxRef}
+            className={`chat-input-box ${showAttachMenu ? 'attach-open' : ''}`}
+          >
             <button
               type="button"
               className="chat-icon-btn"
@@ -352,12 +378,18 @@ const handleSendAudio = async () => {
               <button
                 type="button"
                 className="chat-icon-btn"
-                onMouseDown={(e) => e.preventDefault()}
+                tabIndex={-1}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  blurChatInput();
+                }}
                 onClick={(e) => {
                   e.stopPropagation();
                   blurChatInput();
                   setShowAttachMenu(false);
                   setShowChatEmoji((value) => !value);
+                  setTimeout(blurChatInput, 0);
                 }}
               >
                 <FiSmile />
@@ -399,6 +431,10 @@ const handleSendAudio = async () => {
             ref={chatEmojiRef}
             onMouseEnter={keepEmojiOpen}
             onMouseLeave={closeEmojiWithDelay}
+            onPointerDown={(e) => {
+              e.stopPropagation();
+              blurChatInput();
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <EmojiPicker

@@ -855,6 +855,9 @@
 .message-context-menu {
   position: fixed;
   width: 230px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: rgba(255, 255, 255, 0.96);
   backdrop-filter: blur(14px);
   border: 1px solid #e5e7eb;

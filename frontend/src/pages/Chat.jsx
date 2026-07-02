@@ -432,15 +432,29 @@ formData.append(
   const openMessageMenu = (e, message, isMine) => {
     e.preventDefault();
 
-    const screenMiddle = window.innerHeight / 2;
-    const openUp = e.clientY > screenMiddle;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const menuWidth = 230;
+    const estimatedMenuHeight = 360;
+    const margin = 12;
+    const maxX = Math.max(margin, viewportWidth - menuWidth - margin);
+    const shouldOpenUp =
+      e.clientY + estimatedMenuHeight > viewportHeight - margin &&
+      e.clientY > estimatedMenuHeight / 2;
+    const x = Math.min(Math.max(e.clientX, margin), maxX);
+    const y = shouldOpenUp
+      ? Math.min(Math.max(e.clientY, estimatedMenuHeight + margin), viewportHeight - margin)
+      : Math.min(
+          Math.max(e.clientY, margin),
+          Math.max(margin, viewportHeight - estimatedMenuHeight - margin)
+        );
 
     setMessageMenu({
       message,
       isMine,
-      x: e.clientX,
-      y: e.clientY,
-      openUp,
+      x,
+      y,
+      openUp: shouldOpenUp,
     });
   };
 
