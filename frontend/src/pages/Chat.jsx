@@ -91,6 +91,16 @@ const {
   switchCamera,
 } = audioCall;
 
+useEffect(() => {
+  const isCallScreenActive = Boolean(selectedConv && (isInCall || isCalling));
+
+  document.body.classList.toggle('mobile-call-active', isCallScreenActive);
+
+  return () => {
+    document.body.classList.remove('mobile-call-active');
+  };
+}, [selectedConv, isInCall, isCalling]);
+
 const scrollToBottom = () => {
   messagesEndRef.current?.scrollIntoView({
     behavior: 'smooth',

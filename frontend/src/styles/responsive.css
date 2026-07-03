@@ -3,6 +3,11 @@
 }
 
 @media (max-width: 768px) {
+  body.mobile-call-active .left-sidebar,
+  body.mobile-call-active .desktop-layout.chat-mode .left-sidebar {
+    display: none !important;
+  }
+
   .desktop-layout,
   .desktop-layout.chat-mode {
     display: block;
