@@ -1342,6 +1342,19 @@
 .local-video.hidden {
   display: none;
 }
+
+.mobile-audio-call-screen,
+.mobile-video-call-meta {
+  display: none;
+}
+
+.mobile-call-avatar-placeholder {
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
+  color: #ffffff;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
 .call-popup-avatar-placeholder {
   width: 54px;
   height: 54px;

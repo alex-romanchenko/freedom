@@ -389,17 +389,16 @@
     z-index: 1200;
   }
 
-.video-call-box {
-  width: 100%;
-  height: 30vh;
+  .video-call-box {
+    width: 100%;
+    height: 30vh;
 
-  min-height: 220px;
-  max-height: 320px;
+    min-height: 220px;
+    max-height: 320px;
 
-  border-radius: 0;
-  overflow: hidden;
-  
-}
+    border-radius: 0;
+    overflow: hidden;
+  }
 
   .local-video {
     position: absolute;
@@ -527,6 +526,203 @@
 
   .chat-layout.chat-open .chat-attach-menu {
     z-index: 1200;
+  }
+
+  .mobile-audio-call-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #050505;
+    color: #ffffff;
+  }
+
+  .mobile-audio-call-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top, rgba(37, 99, 235, 0.28), transparent 34%),
+      linear-gradient(180deg, #111827 0%, #050505 64%);
+  }
+
+  .mobile-audio-call-content {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 420px);
+    min-height: 100dvh;
+    padding: 86px 24px max(34px, env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .mobile-audio-call-avatar {
+    width: 112px;
+    height: 112px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-top: 32px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.34);
+  }
+
+  .mobile-call-name {
+    margin-top: 18px;
+    font-size: 25px;
+    line-height: 1.15;
+    font-weight: 800;
+    text-align: center;
+    color: #ffffff;
+  }
+
+  .mobile-call-state {
+    margin-top: 8px;
+    font-size: 16px;
+    line-height: 1.3;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .mobile-audio-call-actions {
+    width: 100%;
+    margin-top: auto;
+    display: flex;
+    justify-content: center;
+    gap: 26px;
+  }
+
+  .mobile-call-action {
+    width: 82px;
+    min-height: 104px;
+    border: 0;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mobile-call-action svg {
+    width: 62px;
+    height: 62px;
+    padding: 18px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+  }
+
+  .mobile-call-action.active svg {
+    background: rgba(245, 158, 11, 0.92);
+  }
+
+  .mobile-call-action.end svg {
+    background: #ef4444;
+    transform: rotate(135deg);
+  }
+
+  .chat-layout.chat-open .video-call-box:not(.fake-fullscreen) {
+    position: fixed;
+    inset: 0;
+    z-index: 1400;
+    width: 100vw;
+    height: 100dvh;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    border-radius: 0;
+    background: #000000;
+  }
+
+  .chat-layout.chat-open .video-call-box .remote-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .chat-layout.chat-open .video-call-box .local-video {
+    top: 92px;
+    right: 14px;
+    bottom: auto;
+    width: 116px;
+    height: 154px;
+    border-radius: 18px;
+    border-color: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.38);
+  }
+
+  .chat-layout.chat-open .video-call-box .video-call-controls {
+    left: 0;
+    right: 0;
+    bottom: max(26px, env(safe-area-inset-bottom));
+    transform: none;
+    justify-content: center;
+    gap: 12px;
+    padding: 0 12px;
+  }
+
+  .chat-layout.chat-open .video-call-box .video-control-btn {
+    width: 54px;
+    height: 54px;
+    font-size: 22px;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+  }
+
+  .chat-layout.chat-open .video-call-box .video-control-btn.active {
+    background: rgba(245, 158, 11, 0.95);
+  }
+
+  .chat-layout.chat-open .video-call-box .video-control-btn.end-call-btn {
+    background: #ef4444;
+    color: #ffffff;
+  }
+
+  .mobile-video-call-meta {
+    position: absolute;
+    left: 14px;
+    top: max(16px, env(safe-area-inset-top));
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px 10px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.34);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    max-width: calc(100vw - 150px);
+  }
+
+  .mobile-video-call-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex: 0 0 auto;
+  }
+
+  .mobile-video-call-meta .mobile-call-name {
+    margin: 0;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 16px;
+    text-align: left;
+  }
+
+  .mobile-video-call-meta .mobile-call-state {
+    margin-top: 2px;
+    font-size: 13px;
+    text-align: left;
   }
 }
 

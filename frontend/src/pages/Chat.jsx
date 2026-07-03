@@ -11,6 +11,7 @@ import api from '../api/api';
 import socket from '../socket';
 import { deleteConversationApi } from '../api/messagesApi';
 import GroupInfoPanel from './chat/GroupInfoPanel';
+import { getFileUrl } from '../api/fileUrl';
 import {
   IoMic,
   IoMicOff,
@@ -121,7 +122,7 @@ const handleGroupDeletedOrLeft = async () => {
   setGroupInfo(res.data);
   setShowGroupInfo(true);
 };
-const toggleFullscreen = () => {
+  const toggleFullscreen = () => {
   const el = videoCallBoxRef.current;
 
   if (!el) return;
@@ -551,6 +552,31 @@ const handleDropFile = (e) => {
   setChatFile(file);
 };
 
+const formatCallDuration = (seconds = 0) => {
+  const minutes = Math.floor(seconds / 60);
+  const restSeconds = seconds % 60;
+
+  return `${String(minutes).padStart(2, '0')}:${String(restSeconds).padStart(2, '0')}`;
+};
+
+const renderCallAvatar = (className) => {
+  if (selectedConv?.avatar) {
+    return (
+      <img
+        className={className}
+        src={getFileUrl(selectedConv.avatar)}
+        alt=""
+      />
+    );
+  }
+
+  return (
+    <div className={`${className} mobile-call-avatar-placeholder`}>
+      {selectedConv?.display_name?.[0] || '?'}
+    </div>
+  );
+};
+
   const handlePasteImage = (e) => {
   const items = e.clipboardData?.items;
   if (!items) return;
@@ -856,6 +882,18 @@ useEffect(() => {
       }`}
       ref={videoCallBoxRef}
     >
+      <div className="mobile-video-call-meta">
+        {renderCallAvatar('mobile-video-call-avatar')}
+        <div>
+          <div className="mobile-call-name">
+            {selectedConv?.display_name}
+          </div>
+          <div className="mobile-call-state">
+            {formatCallDuration(callDuration)}
+          </div>
+        </div>
+      </div>
+
       <video
         ref={remoteVideoRef}
         autoPlay
@@ -913,6 +951,47 @@ useEffect(() => {
       </div>
     </div>
   ) : null;
+
+  const audioCallContent =
+    selectedConv &&
+    !isVideoCall &&
+    (isInCall || isCalling) ? (
+      <div className="mobile-audio-call-screen">
+        <div className="mobile-audio-call-bg" />
+
+        <div className="mobile-audio-call-content">
+          {renderCallAvatar('mobile-audio-call-avatar')}
+
+          <div className="mobile-call-name">
+            {selectedConv.display_name}
+          </div>
+
+          <div className="mobile-call-state">
+            {isInCall ? formatCallDuration(callDuration) : callStatus || 'Calling...'}
+          </div>
+
+          <div className="mobile-audio-call-actions">
+            <button
+              className={`mobile-call-action ${isMuted ? 'active' : ''}`}
+              onClick={toggleMute}
+              type="button"
+            >
+              {isMuted ? <IoMicOff /> : <IoMic />}
+              <span>{isMuted ? 'Muted' : 'Mute'}</span>
+            </button>
+
+            <button
+              className="mobile-call-action end"
+              onClick={endCall}
+              type="button"
+            >
+              <IoCall />
+              <span>End</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    ) : null;
   
 
   return (
@@ -945,7 +1024,7 @@ useEffect(() => {
       <div className="chat-window">
         {selectedConv ? (
           <>
-           <ChatHeader
+            <ChatHeader
               selectedConv={selectedConv}
               onOpenUser={onOpenUser}
               onOpenGroupInfo={openGroupInfo}
@@ -962,6 +1041,7 @@ useEffect(() => {
               setSelectedConv={setSelectedConv}
               isVideoCall={isVideoCall}
             />
+            {audioCallContent}
             {!isFakeFullscreen && videoCallContent}
             <div
               className="messages-list custom-scroll"
