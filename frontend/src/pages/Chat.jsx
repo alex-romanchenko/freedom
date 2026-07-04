@@ -118,6 +118,74 @@ const handleGroupDeletedOrLeft = async () => {
   await refreshConversations();
 };
 
+  const appendMessageOnce = (message) => {
+    if (!message?.id) return;
+
+    setMessages((prev) => {
+      if (prev.some((item) => String(item.id) === String(message.id))) {
+        return prev;
+      }
+
+      return [...prev, message];
+    });
+  };
+
+  const compressChatImage = async (file) => {
+    if (
+      !file?.type?.startsWith('image/') ||
+      file.type === 'image/gif' ||
+      file.type === 'image/svg+xml' ||
+      file.type === 'image/heic' ||
+      file.type === 'image/heif' ||
+      file.size < 700 * 1024
+    ) {
+      return file;
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+
+    try {
+      const image = await new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = imageUrl;
+      });
+
+      const maxSide = 1600;
+      const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+      const width = Math.max(1, Math.round(image.width * scale));
+      const height = Math.max(1, Math.round(image.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file;
+
+      ctx.drawImage(image, 0, 0, width, height);
+
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, 'image/jpeg', 0.78);
+      });
+
+      if (!blob || blob.size >= file.size) return file;
+
+      const baseName = file.name.replace(/\.[^.]+$/, '');
+
+      return new File([blob], `${baseName}.jpg`, {
+        type: 'image/jpeg',
+        lastModified: Date.now(),
+      });
+    } catch (error) {
+      console.warn('Image compression skipped:', error);
+      return file;
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+    }
+  };
+
   const playMessageSound = () => {
     const audio = new Audio('/sounds/message.mp3');
     audio.volume = 0.4;
@@ -306,7 +374,11 @@ const handleGroupDeletedOrLeft = async () => {
       chatFile?.type?.startsWith('video/');
 
     if (chatFile) {
-      formData.append(isMediaFile ? 'image' : 'file', chatFile);
+      const uploadFile = chatFile.type?.startsWith('image/')
+        ? await compressChatImage(chatFile)
+        : chatFile;
+
+      formData.append(isMediaFile ? 'image' : 'file', uploadFile);
     }
 
     shouldScrollToBottomRef.current = true;
@@ -320,7 +392,12 @@ const handleGroupDeletedOrLeft = async () => {
         ? `/messages/${selectedConv.user_id}`
         : `/messages/file/${selectedConv.user_id}`;
 
-    await api.post(messageUrl, formData);
+    const response = await api.post(messageUrl, formData);
+    const sentMessage = response.data?.data;
+
+    if (sentMessage) {
+      appendMessageOnce(sentMessage);
+    }
 
     socket.emit('stopTyping', {
       conversationId: selectedConv.id,
@@ -367,7 +444,12 @@ formData.append(
       ? `/messages/group-audio/${selectedConv.id}`
       : `/messages/audio/${selectedConv.user_id}`;
 
-  await api.post(url, formData);
+  const response = await api.post(url, formData);
+  const sentMessage = response.data?.data;
+
+  if (sentMessage) {
+    appendMessageOnce(sentMessage);
+  }
 
   await refreshConversations();
 };
@@ -799,7 +881,7 @@ useEffect(() => {
       if (String(data.conversationId) === String(selectedConv?.id)) {
         shouldScrollToBottomRef.current = true;
 
-        setMessages((prev) => [...prev, data.message]);
+        appendMessageOnce(data.message);
 
         api.post(`/messages/${data.conversationId}/read`).then(() => {
           refreshConversations();

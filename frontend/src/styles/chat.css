@@ -480,26 +480,34 @@
 .image-preview-overlay {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.88);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 500;
+  z-index: 10000;
   cursor: zoom-out;
+  padding: max(16px, env(safe-area-inset-top)) 16px
+    max(16px, env(safe-area-inset-bottom));
+  touch-action: none;
 }
 
 
 .image-preview-overlay img {
-  max-width: 90vw;
-  max-height: 90vh;
+  max-width: 100%;
+  max-height: 100%;
   border-radius: 16px;
+  object-fit: contain;
 }
 
 .image-preview-overlay video {
-  max-width: 90vw;
-  max-height: 90vh;
+  max-width: 100%;
+  max-height: 100%;
   border-radius: 16px;
   background: black;
+  object-fit: contain;
 }
 
 .message-video-wrap {
@@ -868,6 +876,13 @@
   transform: translateY(8px);
 }
 
+.message-context-menu.reactions-expanded {
+  width: min(380px, calc(100vw - 24px));
+  max-height: none;
+  overflow: visible;
+  padding: 8px;
+}
+
 .message-reaction-row {
   display: flex;
   align-items: center;
@@ -889,12 +904,17 @@
 }
 
 .message-reaction-picker {
-  width: 320px;
-  max-width: calc(100vw - 24px);
-  margin: 4px 0 8px;
-  overflow: hidden;
+  width: 100%;
+  margin: 4px 0 0;
+  overflow: visible;
   border-radius: 14px;
   border: 1px solid #e5e7eb;
+}
+
+.message-reaction-picker .EmojiPickerReact {
+  width: 100% !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .message-context-menu.open-up {
