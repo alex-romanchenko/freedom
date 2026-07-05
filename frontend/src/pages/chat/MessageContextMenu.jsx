@@ -21,9 +21,8 @@ function MessageContextMenu({
 }) {
   const [showAllReactions, setShowAllReactions] = useState(false);
 
-  if (!messageMenu) return null;
-
   const menuLeft = useMemo(() => {
+    if (!messageMenu) return 0;
     if (!showAllReactions) return messageMenu.x;
 
     const margin = 12;
@@ -31,7 +30,9 @@ function MessageContextMenu({
     const maxLeft = Math.max(margin, window.innerWidth - pickerWidth - margin);
 
     return Math.min(Math.max(messageMenu.x, margin), maxLeft);
-  }, [messageMenu.x, showAllReactions]);
+  }, [messageMenu, showAllReactions]);
+
+  if (!messageMenu) return null;
 
   return (
     <div
