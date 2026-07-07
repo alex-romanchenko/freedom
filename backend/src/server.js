@@ -406,6 +406,21 @@ function clearPendingCallTimeout(callerId, receiverId) {
   }
 }
 
+async function getPendingCallForUser(userId) {
+  const result = await pool.query(
+    `
+    SELECT *
+    FROM pending_calls
+    WHERE caller_id = $1 OR receiver_id = $1
+    ORDER BY created_at DESC
+    LIMIT 1
+    `,
+    [userId]
+  );
+
+  return result.rows[0];
+}
+
 function callLogKey(userA, userB) {
   const first = Math.min(Number(userA), Number(userB));
   const second = Math.max(Number(userA), Number(userB));
@@ -721,6 +736,33 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
   console.log('CALL USER:', { from, to, withVideo });
   clearPendingCallIceCandidates(from, to);
 
+  try {
+    const [callerPendingCall, receiverPendingCall] = await Promise.all([
+      getPendingCallForUser(from),
+      getPendingCallForUser(to),
+    ]);
+    const blockingPendingCall = callerPendingCall || receiverPendingCall;
+
+    if (blockingPendingCall) {
+      console.log('CALL USER REJECTED, PENDING CALL EXISTS:', {
+        from,
+        to,
+        pendingCaller: blockingPendingCall.caller_id,
+        pendingReceiver: blockingPendingCall.receiver_id,
+      });
+
+      io.to(`user_${from}`).emit('callRejected', {
+        from: to,
+        to: from,
+        reason: 'busy',
+      });
+
+      return;
+    }
+  } catch (error) {
+    console.error('Check pending call conflict error:', error.message);
+  }
+
   let caller = null;
 
   try {
@@ -765,14 +807,11 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
   const targetForeground = targetForegroundSockets.length > 0;
 
   if (targetForeground) {
-    console.log('SKIP FCM CALL PUSH, USER FOREGROUND:', {
+    console.log('SEND FCM CALL PUSH FALLBACK, USER FOREGROUND:', {
       to,
       sockets: targetForegroundSockets,
     });
-    return;
-  }
-
-  if (targetOnline) {
+  } else if (targetOnline) {
     console.log('SEND FCM CALL PUSH, USER ONLINE BUT BACKGROUND:', {
       to,
       sockets: Array.from(targetRoom),
