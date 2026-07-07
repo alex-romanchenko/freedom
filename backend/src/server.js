@@ -144,7 +144,10 @@
   const onlineUsers = new Map();
   const foregroundSockets = new Map();
   const CALL_TIMEOUT_MS = 30000;
+  const ACTIVE_CALL_DISCONNECT_GRACE_MS = 12000;
   const pendingCallTimeouts = new Map();
+  const activeCallsByUser = new Map();
+  const activeCallDisconnectTimers = new Map();
   const recentCallLogEvents = new Map();
   // ICE candidates are normally delivered over Socket.IO. A device woken by FCM
   // Keep every early candidate until the receiver has answered. A socket can
@@ -188,6 +191,119 @@
 
   function getOnlineUserIds() {
       return Array.from(onlineUsers.keys());
+  }
+
+  function hasOnlineSockets(userId) {
+    const sockets = onlineUsers.get(String(userId));
+    return Boolean(sockets && sockets.size > 0);
+  }
+
+  function normalizeCallUserId(userId) {
+    return userId == null ? null : String(userId);
+  }
+
+  function getActiveCallKey(userA, userB) {
+    const ids = [String(userA), String(userB)].sort();
+    return `${ids[0]}:${ids[1]}`;
+  }
+
+  function setActiveCall(userA, userB, withVideo = false) {
+    const firstUserId = normalizeCallUserId(userA);
+    const secondUserId = normalizeCallUserId(userB);
+
+    if (!firstUserId || !secondUserId) return null;
+
+    const call = {
+      key: getActiveCallKey(firstUserId, secondUserId),
+      users: [firstUserId, secondUserId],
+      withVideo: Boolean(withVideo),
+      startedAt: Date.now(),
+    };
+
+    activeCallsByUser.set(firstUserId, call);
+    activeCallsByUser.set(secondUserId, call);
+    clearActiveCallDisconnectTimer(firstUserId);
+    clearActiveCallDisconnectTimer(secondUserId);
+
+    return call;
+  }
+
+  function getActiveCallForUser(userId) {
+    return activeCallsByUser.get(String(userId));
+  }
+
+  function getOtherActiveCallUser(call, userId) {
+    const id = String(userId);
+    return call?.users?.find((item) => item !== id) || null;
+  }
+
+  function clearActiveCall(userA, userB) {
+    const call =
+      getActiveCallForUser(userA) ||
+      getActiveCallForUser(userB);
+
+    const users = call?.users || [userA, userB].filter((item) => item != null);
+
+    users.forEach((userId) => {
+      activeCallsByUser.delete(String(userId));
+      clearActiveCallDisconnectTimer(userId);
+    });
+  }
+
+  function clearActiveCallDisconnectTimer(userId) {
+    const id = String(userId);
+    const timer = activeCallDisconnectTimers.get(id);
+
+    if (timer) {
+      clearTimeout(timer);
+      activeCallDisconnectTimers.delete(id);
+    }
+  }
+
+  function scheduleActiveCallDisconnect(userId) {
+    const id = String(userId);
+    const call = getActiveCallForUser(id);
+    const otherUserId = getOtherActiveCallUser(call, id);
+
+    if (!call || !otherUserId || activeCallDisconnectTimers.has(id)) return;
+
+    io.to(`user_${otherUserId}`).emit('callReconnecting', {
+      from: id,
+      to: otherUserId,
+      timeoutMs: ACTIVE_CALL_DISCONNECT_GRACE_MS,
+    });
+
+    const timer = setTimeout(() => {
+      activeCallDisconnectTimers.delete(id);
+
+      if (hasOnlineSockets(id)) {
+        io.to(`user_${otherUserId}`).emit('callReconnected', {
+          from: id,
+          to: otherUserId,
+        });
+        return;
+      }
+
+      const currentCall = getActiveCallForUser(id);
+      const currentOtherUserId = getOtherActiveCallUser(currentCall, id);
+
+      if (!currentCall || currentOtherUserId !== otherUserId) return;
+
+      console.log('ACTIVE CALL DISCONNECT TIMEOUT:', {
+        from: id,
+        to: otherUserId,
+      });
+
+      io.to(`user_${otherUserId}`).emit('callEnded', {
+        from: id,
+        to: otherUserId,
+        reason: 'disconnect',
+      });
+
+      clearActiveCall(id, otherUserId);
+    }, ACTIVE_CALL_DISCONNECT_GRACE_MS);
+
+    activeCallDisconnectTimers.set(id, timer);
   }
 
   function getForegroundSocketIds(userId) {
@@ -641,6 +757,17 @@ app.post('/api/calls/reject', async (req, res) => {
 
   onlineUsers.get(id).add(socket.id);
   socket.userId = id;
+  clearActiveCallDisconnectTimer(id);
+
+  const activeCall = getActiveCallForUser(id);
+  const otherActiveCallUserId = getOtherActiveCallUser(activeCall, id);
+
+  if (otherActiveCallUserId) {
+    io.to(`user_${otherActiveCallUserId}`).emit('callReconnected', {
+      from: id,
+      to: otherActiveCallUserId,
+    });
+  }
 
   socket.emit('onlineUsers', {
   users: getOnlineUserIds(),
@@ -742,13 +869,16 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
       getPendingCallForUser(to),
     ]);
     const blockingPendingCall = callerPendingCall || receiverPendingCall;
+    const blockingActiveCall =
+      getActiveCallForUser(from) || getActiveCallForUser(to);
 
-    if (blockingPendingCall) {
-      console.log('CALL USER REJECTED, PENDING CALL EXISTS:', {
+    if (blockingPendingCall || blockingActiveCall) {
+      console.log('CALL USER REJECTED, CALL ALREADY EXISTS:', {
         from,
         to,
-        pendingCaller: blockingPendingCall.caller_id,
-        pendingReceiver: blockingPendingCall.receiver_id,
+        pendingCaller: blockingPendingCall?.caller_id,
+        pendingReceiver: blockingPendingCall?.receiver_id,
+        activeUsers: blockingActiveCall?.users,
       });
 
       io.to(`user_${from}`).emit('callRejected', {
@@ -869,9 +999,17 @@ socket.on('answerCall', async ({ to, from, answer }) => {
 
   if (actorId && to) {
     try {
+      const pendingCall =
+        (await getPendingCall(actorId, to)) ||
+        (await getPendingCall(to, actorId));
+
+      setActiveCall(actorId, to, pendingCall?.with_video);
       await deletePendingCall(actorId, to);
+      await deletePendingCall(to, actorId);
       clearPendingCallTimeout(to, actorId);
+      clearPendingCallTimeout(actorId, to);
       clearPendingCallIceCandidates(to, actorId);
+      clearPendingCallIceCandidates(actorId, to);
     } catch (error) {
       console.error('Delete pending answered call error:', error.message);
     }
@@ -963,6 +1101,7 @@ socket.on('endCall', async ({ to, from, durationSeconds, withVideo }) => {
       clearPendingCallTimeout(to, actorId);
       clearPendingCallIceCandidates(actorId, to);
       clearPendingCallIceCandidates(to, actorId);
+      clearActiveCall(actorId, to);
 
       callWithVideo =
         typeof withVideo === 'boolean'
@@ -1002,6 +1141,7 @@ socket.on('disconnect', async () => {
         }
 
         onlineUsers.delete(userId);
+        scheduleActiveCallDisconnect(userId);
 
         const lastSeen = new Date().toISOString();
 
