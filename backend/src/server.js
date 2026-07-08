@@ -922,11 +922,12 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
     offer,
     withVideo,
   });
+  const callCreatedAtMs = getPendingCallCreatedAtMs(pendingCall) || Date.now();
 
   schedulePendingCallTimeout({
     callerId: from,
     receiverId: to,
-    createdAtMs: getPendingCallCreatedAtMs(pendingCall),
+    createdAtMs: callCreatedAtMs,
   });
 
   io.to(`user_${to}`).emit('incomingCall', incomingPayload);
@@ -960,6 +961,8 @@ socket.on('callUser', async ({ to, offer, from, withVideo }) => {
               type: 'incoming_call',
               callerId: String(from),
               withVideo: String(withVideo),
+              callCreatedAtMs: String(callCreatedAtMs),
+              callTimeoutMs: String(CALL_TIMEOUT_MS),
               callerName:
                 caller?.display_name ||
                 caller?.username ||
