@@ -82,10 +82,32 @@
   text-decoration: underline;
 }
 
-.notification-content span {
+.notification-time {
   color: #64748b;
   font-size: 13px;
   font-weight: 600;
+}
+
+.notification-text-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .notification-text-desktop {
+    display: none;
+  }
+
+  .notification-text-mobile {
+    display: inline;
+  }
+
+  .notification-content p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
 }
 
 .notification-remove {

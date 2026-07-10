@@ -128,6 +128,12 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat, l
     return t('sent_notification', language);
   };
 
+  const truncateDesktopText = (text, limit = 100) => {
+    const normalized = String(text || '').trim();
+    if (normalized.length <= limit) return normalized;
+    return `${normalized.slice(0, limit).trimEnd()}…`;
+  };
+
   const openNotification = (item) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n))
@@ -179,6 +185,7 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat, l
           const avatar = isGroup ? item.group_avatar : item.avatar;
           const name = isGroup ? item.group_name : item.display_name;
           const placeholder = name?.[0] || '?';
+          const notificationText = getText(item);
 
           return (
             <div
@@ -210,10 +217,15 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat, l
                     <strong onClick={(e) => handleAvatarClick(e, item)}>
                       {name}
                     </strong>{' '}
-                    {getText(item)}
+                    <span className="notification-text notification-text-desktop">
+                      {truncateDesktopText(notificationText)}
+                    </span>
+                    <span className="notification-text notification-text-mobile">
+                      {notificationText}
+                    </span>
                   </p>
 
-                  <span>{formatTime(item.created_at)}</span>
+                  <span className="notification-time">{formatTime(item.created_at)}</span>
                 </div>
               </div>
 
