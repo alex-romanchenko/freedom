@@ -215,7 +215,7 @@
   }
 
   function getOnlineUserIds() {
-      return Array.from(onlineUsers.keys());
+      return Array.from(foregroundSockets.keys());
   }
 
   function hasOnlineSockets(userId) {
@@ -821,10 +821,6 @@ app.post('/api/calls/reject', async (req, res) => {
     users: getOnlineUserIds(),
   });
 
-  io.emit('userOnline', {
-    userId: id,
-  });
-
   try {
     const deliveredMessages = await markIncomingMessagesAsDelivered(id);
 
@@ -842,9 +838,32 @@ app.post('/api/calls/reject', async (req, res) => {
 });
 
   socket.on('appState', ({ foreground } = {}) => {
+    const userId = socket.userId ? String(socket.userId) : null;
+    const wasOnline = userId ? foregroundSockets.has(userId) : false;
+
     setSocketForeground(socket, foreground === true);
+
+    const isOnline = userId ? foregroundSockets.has(userId) : false;
+
+    if (userId && wasOnline !== isOnline) {
+      if (isOnline) {
+        io.emit('userOnline', { userId });
+      } else {
+        const lastSeen = new Date().toISOString();
+
+        pool.query('UPDATE users SET last_seen = NOW() WHERE id = $1', [userId])
+          .catch((error) => {
+            console.error('Update last_seen on app state error:', error.message);
+          });
+
+        io.emit('userOffline', { userId, lastSeen });
+      }
+
+      io.emit('onlineUsers', { users: getOnlineUserIds() });
+    }
+
     console.log('APP STATE:', {
-      userId: socket.userId,
+      userId,
       socketId: socket.id,
       foreground: foreground === true,
     });
@@ -1283,10 +1302,29 @@ socket.on('endCall', async ({
 
 socket.on('disconnect', async () => {
   const userId = socket.userId;
+  const wasForeground = Boolean(
+    userId && foregroundSockets.get(String(userId))?.has(socket.id)
+  );
 
   if (userId && onlineUsers.has(userId)) {
     onlineUsers.get(userId).delete(socket.id);
     setSocketForeground(socket, false);
+
+    if (wasForeground && !foregroundSockets.has(String(userId))) {
+      const lastSeen = new Date().toISOString();
+
+      try {
+        await pool.query(
+          'UPDATE users SET last_seen = NOW() WHERE id = $1',
+          [userId]
+        );
+      } catch (error) {
+        console.error('Update last_seen on disconnect error:', error.message);
+      }
+
+      io.emit('userOffline', { userId, lastSeen });
+      io.emit('onlineUsers', { users: getOnlineUserIds() });
+    }
 
     if (onlineUsers.get(userId).size === 0) {
       setTimeout(async () => {
@@ -1297,30 +1335,7 @@ socket.on('disconnect', async () => {
         onlineUsers.delete(userId);
         scheduleActiveCallDisconnect(userId);
 
-        const lastSeen = new Date().toISOString();
-
-        try {
-          await pool.query(
-            'UPDATE users SET last_seen = NOW() WHERE id = $1',
-            [userId]
-          );
-        } catch (error) {
-          console.error('Update last_seen error:', error.message);
-        }
-
-        io.emit('userOffline', {
-          userId,
-          lastSeen,
-        });
-
-        io.emit('onlineUsers', {
-          users: getOnlineUserIds(),
-        });
       }, 2000);
-    } else {
-      io.emit('onlineUsers', {
-        users: getOnlineUserIds(),
-      });
     }
   }
 

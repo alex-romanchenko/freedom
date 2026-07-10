@@ -195,6 +195,13 @@ const isVerifyEmailPage = path === '/verify-email';
 
   const userId = String(currentUser.id);
 
+  const emitAppState = () => {
+    if (!socket.connected) return;
+    socket.emit('appState', {
+      foreground: document.visibilityState === 'visible',
+    });
+  };
+
   const join = () => {
     const key = `${userId}:${socket.id}`;
 
@@ -202,6 +209,7 @@ const isVerifyEmailPage = path === '/verify-email';
 
     socket.emit('joinUser', userId);
     joinedSocketRef.current = key;
+    emitAppState();
   };
 
   if (!socket.connected) {
@@ -211,9 +219,11 @@ const isVerifyEmailPage = path === '/verify-email';
   }
 
   socket.on('connect', join);
+  document.addEventListener('visibilitychange', emitAppState);
 
   return () => {
     socket.off('connect', join);
+    document.removeEventListener('visibilitychange', emitAppState);
   };
 }, [isAuth]);
 
