@@ -6,7 +6,7 @@ async function createComment(req, res) {
   try {
     const userId = req.user.id;
     const postId = req.params.postId;
-    const { text } = req.body;
+    const { text, parentCommentId } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ message: 'Comment text is required' });
@@ -15,7 +15,8 @@ async function createComment(req, res) {
     const comment = await PostComment.createComment(
       userId,
       postId,
-      text.trim()
+      text.trim(),
+      parentCommentId
     );
 
     try {
@@ -78,7 +79,7 @@ async function createComment(req, res) {
     res.status(201).json(comment);
   } catch (error) {
     console.error('Create post comment error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(error.statusCode || 500).json({ message: error.message || 'Server error' });
   }
 }
 
