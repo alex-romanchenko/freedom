@@ -8,7 +8,13 @@ import {
   deletePostApi,
 } from '../api/postsApi';
 import { getFileUrl } from '../api/fileUrl';
-import { IoHeartOutline, IoHeart, IoArrowBack } from 'react-icons/io5';
+import {
+  IoHeartOutline,
+  IoHeart,
+  IoArrowBack,
+  IoArrowUndoOutline,
+  IoClose,
+} from 'react-icons/io5';
 import { t } from '../utils/i18n';
 
 export default function PostDetails({
@@ -28,6 +34,7 @@ export default function PostDetails({
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState(post.text);
   const [fullscreen, setFullscreen] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
 
   const emojiRef = useRef(null);
   const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -63,16 +70,19 @@ export default function PostDetails({
 
     await api.post(`/posts/${post.id}/comments`, {
       text: text.trim(),
+      ...(replyingTo ? { parentCommentId: replyingTo.id } : {}),
     });
 
     setText('');
-    loadComments();
+    setReplyingTo(null);
+    await loadComments();
     onPostChanged && onPostChanged();
   };
 
   const deleteComment = async (id) => {
     await api.delete(`/posts/comments/${id}`);
-    loadComments();
+    if (replyingTo?.id === id) setReplyingTo(null);
+    await loadComments();
     onPostChanged && onPostChanged();
   };
 
@@ -195,7 +205,10 @@ export default function PostDetails({
         )}
 
         {comments.map((comment) => (
-          <div className="photo-comment" key={comment.id}>
+          <div
+            className={`photo-comment ${comment.parent_comment_id ? 'comment-reply' : ''}`}
+            key={comment.id}
+          >
             {comment.avatar ? (
               <img
                 src={getFileUrl(comment.avatar)}
@@ -209,7 +222,23 @@ export default function PostDetails({
 
             <div className="photo-comment-body">
               <strong>{comment.display_name}</strong>
+              {comment.parent_comment_id && (
+                <div className="comment-reply-target">
+                  <IoArrowUndoOutline />
+                  <span>
+                    {comment.reply_to_display_name || comment.reply_to_username}
+                  </span>
+                </div>
+              )}
               <p>{comment.text}</p>
+              <button
+                type="button"
+                className="comment-reply-button"
+                onClick={() => setReplyingTo(comment)}
+              >
+                <IoArrowUndoOutline />
+                {t('reply', language)}
+              </button>
             </div>
 
             {Number(currentUser?.id) === Number(comment.user_id) && (
@@ -225,6 +254,23 @@ export default function PostDetails({
       </div>
 
       <div className="comment-form">
+        {replyingTo && (
+          <div className="comment-replying-bar">
+            <span>
+              {t('replying_to', language).replace(
+                '{name}',
+                replyingTo.display_name || replyingTo.username || '',
+              )}
+            </span>
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              aria-label={t('cancel', language)}
+            >
+              <IoClose />
+            </button>
+          </div>
+        )}
         <textarea
           className="comment-textarea"
           value={text}

@@ -2,15 +2,27 @@ import { useEffect, useState } from 'react';
 import api from '../api/api';
 import EmojiPicker from 'emoji-picker-react';
 import { getFileUrl } from '../api/fileUrl';
-import { IoHeartOutline, IoHeart } from 'react-icons/io5';
+import {
+  IoHeartOutline,
+  IoHeart,
+  IoArrowUndoOutline,
+  IoClose,
+} from 'react-icons/io5';
+import { getStoredLanguage, t } from '../utils/i18n';
 
-export default function PhotoModal({ photo, onClose, onPhotoChanged }) {
+export default function PhotoModal({
+  photo,
+  onClose,
+  onPhotoChanged,
+  language = getStoredLanguage(),
+}) {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [modalPhoto, setModalPhoto] = useState(photo);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null);
   const [likesOpen, setLikesOpen] = useState(false);
   const [likesUsers, setLikesUsers] = useState([]);
 
@@ -78,9 +90,11 @@ const loadLikes = async () => {
   try {
     await api.post(`/photos/${modalPhoto.id}/comments`, {
       text: commentText.trim(),
+      ...(replyingTo ? { parentCommentId: replyingTo.id } : {}),
     });
 
     setCommentText('');
+    setReplyingTo(null);
 
     setModalPhoto((prev) => ({
       ...prev,
@@ -97,6 +111,7 @@ const loadLikes = async () => {
   const deleteComment = async (commentId) => {
     try {
       await api.delete(`/photos/comments/${commentId}`);
+      if (replyingTo?.id === commentId) setReplyingTo(null);
 
       setModalPhoto((prev) => ({
         ...prev,
@@ -249,7 +264,10 @@ useEffect(() => {
             )}
 
             {comments.map((comment) => (
-              <div className="photo-comment" key={comment.id}>
+              <div
+                className={`photo-comment ${comment.parent_comment_id ? 'comment-reply' : ''}`}
+                key={comment.id}
+              >
                 {comment.avatar ? (
                   <img
                     src={getFileUrl(comment.avatar)}
@@ -263,7 +281,23 @@ useEffect(() => {
 
                 <div className="photo-comment-body">
                   <strong>{comment.display_name}</strong>
+                  {comment.parent_comment_id && (
+                    <div className="comment-reply-target">
+                      <IoArrowUndoOutline />
+                      <span>
+                        {comment.reply_to_display_name || comment.reply_to_username}
+                      </span>
+                    </div>
+                  )}
                   <p>{comment.text}</p>
+                  <button
+                    type="button"
+                    className="comment-reply-button"
+                    onClick={() => setReplyingTo(comment)}
+                  >
+                    <IoArrowUndoOutline />
+                    {t('reply', language)}
+                  </button>
                 </div>
 
                 {Number(currentUser?.id) === Number(comment.user_id) && (
@@ -296,11 +330,28 @@ useEffect(() => {
           </div>
 
           <div className="comment-form">
+                {replyingTo && (
+                  <div className="comment-replying-bar">
+                    <span>
+                      {t('replying_to', language).replace(
+                        '{name}',
+                        replyingTo.display_name || replyingTo.username || '',
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setReplyingTo(null)}
+                      aria-label={t('cancel', language)}
+                    >
+                      <IoClose />
+                    </button>
+                  </div>
+                )}
                 <textarea
                     className="comment-textarea"
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
-                    placeholder="Add a comment..."
+                    placeholder={t('add_comment', language)}
                     rows={1}
                 />
 
@@ -320,7 +371,7 @@ useEffect(() => {
                     className="primary-btn"
                     onClick={addComment}
                     >
-                    Comment
+                    {t('comment', language)}
                     </button>
                 </div>
 

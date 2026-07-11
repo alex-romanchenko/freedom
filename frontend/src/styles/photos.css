@@ -229,6 +229,10 @@
   align-items: flex-start;
 }
 
+.photo-comment.comment-reply {
+  margin-left: 34px;
+}
+
 .photo-comment img,
 .photo-comment-avatar {
   width: 36px;
@@ -250,6 +254,84 @@
   margin: 4px 0 0;
   text-align: left;
   word-break: break-word;
+}
+
+.comment-reply-target {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 3px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.comment-reply-target svg {
+  width: 14px;
+  height: 14px;
+}
+
+.comment-reply-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.comment-reply-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.comment-replying-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 7px 8px 7px 12px;
+  box-sizing: border-box;
+  border-left: 3px solid #2563eb;
+  border-radius: 8px;
+  background: var(--code-bg);
+  color: var(--text-h);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.comment-replying-bar span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comment-replying-bar button {
+  display: grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  .photo-comment.comment-reply {
+    margin-left: 24px;
+  }
 }
 
 .photo-comment-delete {
