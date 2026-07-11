@@ -22,7 +22,8 @@ async function getAllPosts() {
       users.username,
       users.display_name,
       users.avatar,
-      COUNT(likes.id) AS likes_count
+      COUNT(likes.id) AS likes_count,
+      (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = posts.id)::int AS comments_count
     FROM posts
     JOIN users ON posts.user_id = users.id
     LEFT JOIN likes ON likes.post_id = posts.id
@@ -62,7 +63,8 @@ async function getLikedPosts(userId) {
       users.display_name,
       users.avatar,
       true AS is_liked,
-      COUNT(all_likes.id)::int AS likes_count
+      COUNT(all_likes.id)::int AS likes_count,
+      (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = posts.id)::int AS comments_count
     FROM likes
     JOIN posts ON likes.post_id = posts.id
     JOIN users ON posts.user_id = users.id
@@ -90,7 +92,8 @@ async function getFeedByFollowing(userId, limit = 20, offset = 0) {
         WHEN my_likes.user_id IS NOT NULL THEN true
         ELSE false
       END AS is_liked,
-      COUNT(all_likes.id) AS likes_count
+      COUNT(all_likes.id) AS likes_count,
+      (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = posts.id)::int AS comments_count
     FROM posts
     JOIN users ON posts.user_id = users.id
     JOIN follows ON follows.following_id = users.id
@@ -122,7 +125,8 @@ async function getPostsByUser(username, currentUserId) {
         WHEN my_likes.user_id IS NOT NULL THEN true
         ELSE false
       END AS is_liked,
-      COUNT(all_likes.id) AS likes_count
+      COUNT(all_likes.id) AS likes_count,
+      (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = posts.id)::int AS comments_count
     FROM posts
     JOIN users ON posts.user_id = users.id
     LEFT JOIN likes AS my_likes 
@@ -172,7 +176,8 @@ async function getMyPosts(userId, limit = 20, offset = 0) {
         WHEN my_likes.user_id IS NOT NULL THEN true
         ELSE false
       END AS is_liked,
-      COUNT(all_likes.id) AS likes_count
+      COUNT(all_likes.id) AS likes_count,
+      (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = posts.id)::int AS comments_count
     FROM posts
     JOIN users ON posts.user_id = users.id
     LEFT JOIN likes AS my_likes 
@@ -199,7 +204,8 @@ async function getPopularPosts() {
       users.username,
       users.display_name,
       users.avatar,
-      COUNT(likes.id) AS likes_count
+      COUNT(likes.id) AS likes_count,
+      (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = posts.id)::int AS comments_count
     FROM posts
     JOIN users ON posts.user_id = users.id
     LEFT JOIN likes ON likes.post_id = posts.id
@@ -243,7 +249,8 @@ async function getPostById(postId) {
       users.username,
       users.display_name,
       users.avatar,
-      COUNT(likes.id) AS likes_count
+      COUNT(likes.id) AS likes_count,
+      (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = posts.id)::int AS comments_count
     FROM posts
     JOIN users ON users.id = posts.user_id
     LEFT JOIN likes ON likes.post_id = posts.id
@@ -273,7 +280,8 @@ async function getPostByIdFull(postId, currentUserId) {
         WHEN my_likes.user_id IS NOT NULL THEN true
         ELSE false
       END AS is_liked,
-      COUNT(all_likes.id) AS likes_count
+      COUNT(all_likes.id) AS likes_count,
+      (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = posts.id)::int AS comments_count
     FROM posts
     JOIN users ON posts.user_id = users.id
     LEFT JOIN likes AS my_likes 
