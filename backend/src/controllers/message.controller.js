@@ -421,13 +421,14 @@ async function getConversations(req, res) {
 async function getMessages(req, res) {
   try {
     const { conversationId } = req.params;
-    const { before, limit } = req.query;
+    const { before, after, limit } = req.query;
 
     const messages = await getMessagesByConversation(
       conversationId,
       before || null,
       Number(limit) || 30,
-      req.user.id
+      req.user.id,
+      after || null
     );
 
     res.json(messages);

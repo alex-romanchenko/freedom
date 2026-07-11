@@ -405,14 +405,20 @@ async function getMessagesByConversation(
   conversationId,
   before = null,
   limit = 30,
-  currentUserId = null
+  currentUserId = null,
+  after = null
 ) {
   const params = [conversationId];
-  let beforeCondition = '';
+  let dateCondition = '';
+  let innerOrder = 'DESC';
 
   if (before) {
     params.push(before);
-    beforeCondition = `AND messages.created_at < $${params.length}`;
+    dateCondition = `AND messages.created_at < $${params.length}`;
+  } else if (after) {
+    params.push(after);
+    dateCondition = `AND messages.created_at > $${params.length}`;
+    innerOrder = 'ASC';
   }
 
   params.push(limit);
@@ -441,8 +447,8 @@ async function getMessagesByConversation(
       JOIN users ON messages.sender_id = users.id
       WHERE messages.conversation_id = $1
         AND messages.is_deleted = false
-        ${beforeCondition}
-      ORDER BY messages.created_at DESC
+        ${dateCondition}
+      ORDER BY messages.created_at ${innerOrder}
       LIMIT $${params.length}
     ) AS latest_messages
     ORDER BY created_at ASC
