@@ -402,12 +402,16 @@ async function sendCallCancelPush(
     const caller = showMissedNotification
       ? await getCallUserSummary(callerId)
       : null;
+    const recipient = showMissedNotification
+      ? await getCallUserSummary(userId)
+      : null;
     const callerName =
       caller?.display_name || caller?.username || `User ${callerId}`;
-    const title = 'Missed call';
-    const body = withVideo
-      ? `Missed video call from ${callerName}`
-      : `Missed audio call from ${callerName}`;
+    const { title, body } = missedCallCopy(
+      recipient?.language,
+      withVideo,
+      callerName
+    );
 
     const sent = await sendFcmToTokens(
       tokens,
@@ -435,6 +439,7 @@ async function sendCallCancelPush(
         },
         android: {
           priority: 'high',
+          ttl: showMissedNotification ? 24 * 60 * 60 * 1000 : 60 * 1000,
           ...(showMissedNotification
             ? {
                 notification: {
@@ -461,7 +466,7 @@ async function sendCallCancelPush(
 async function getCallUserSummary(userId) {
   try {
     const result = await pool.query(
-      'SELECT id, username, avatar, display_name FROM users WHERE id = $1',
+      'SELECT id, username, avatar, display_name, language FROM users WHERE id = $1',
       [userId]
     );
 
@@ -472,6 +477,34 @@ async function getCallUserSummary(userId) {
   }
 }
 
+function missedCallCopy(language, withVideo, callerName) {
+  const normalizedLanguage = language === 'uk' || language === 'ru'
+    ? language
+    : 'en';
+  const copy = {
+    en: {
+      title: 'Missed call',
+      audio: 'Missed audio call from',
+      video: 'Missed video call from',
+    },
+    uk: {
+      title: 'Пропущений виклик',
+      audio: 'Пропущений аудіовиклик від',
+      video: 'Пропущений відеовиклик від',
+    },
+    ru: {
+      title: 'Пропущенный вызов',
+      audio: 'Пропущенный аудиовызов от',
+      video: 'Пропущенный видеовызов от',
+    },
+  }[normalizedLanguage];
+
+  return {
+    title: copy.title,
+    body: `${withVideo ? copy.video : copy.audio} ${callerName}`,
+  };
+}
+
 async function sendMissedCallPush(userId, callerId, withVideo = false) {
   try {
     const tokens = await getFcmTokensByUserId(userId);
@@ -479,12 +512,14 @@ async function sendMissedCallPush(userId, callerId, withVideo = false) {
     if (tokens.length === 0) return;
 
     const caller = await getCallUserSummary(callerId);
+    const recipient = await getCallUserSummary(userId);
     const callerName =
       caller?.display_name || caller?.username || `User ${callerId}`;
-    const title = 'Missed call';
-    const body = withVideo
-      ? `Missed video call from ${callerName}`
-      : `Missed audio call from ${callerName}`;
+    const { title, body } = missedCallCopy(
+      recipient?.language,
+      withVideo,
+      callerName
+    );
 
     const sent = await sendFcmToTokens(
       tokens,
@@ -1047,6 +1082,8 @@ socket.on('callUser', async ({ to, offer, from, withVideo, callSessionId }) => {
             },
             android: {
               priority: 'high',
+              ttl: CALL_TIMEOUT_MS + 5000,
+              collapseKey: `incoming_call_${to}`,
             },
           }),
         'FCM CALL PUSH'
