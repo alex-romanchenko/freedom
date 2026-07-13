@@ -417,14 +417,6 @@ async function sendCallCancelPush(
       tokens,
       (token) => ({
         token,
-        ...(showMissedNotification
-          ? {
-              notification: {
-                title,
-                body,
-              },
-            }
-          : {}),
         data: {
           type: 'call_cancel',
           callerId: callerId ? String(callerId) : '',
@@ -440,14 +432,6 @@ async function sendCallCancelPush(
         android: {
           priority: 'high',
           ttl: showMissedNotification ? 24 * 60 * 60 * 1000 : 60 * 1000,
-          ...(showMissedNotification
-            ? {
-                notification: {
-                  channelId: 'missed_calls',
-                  tag: `missed_call_${callerId || 'unknown'}`,
-                },
-              }
-            : {}),
         },
       }),
       'FCM CALL CANCEL'
@@ -525,10 +509,6 @@ async function sendMissedCallPush(userId, callerId, withVideo = false) {
       tokens,
       (token) => ({
         token,
-        notification: {
-          title,
-          body,
-        },
         data: {
           type: 'missed_call',
           callerId: callerId ? String(callerId) : '',
@@ -538,10 +518,7 @@ async function sendMissedCallPush(userId, callerId, withVideo = false) {
         },
         android: {
           priority: 'high',
-          notification: {
-            channelId: 'missed_calls',
-            tag: `missed_call_${callerId || 'unknown'}`,
-          },
+          ttl: 24 * 60 * 60 * 1000,
         },
       }),
       'FCM MISSED CALL'
