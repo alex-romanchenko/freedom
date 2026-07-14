@@ -16,7 +16,7 @@ const {
   markMessageAsDelivered,
   getConversationById,
 } = require('../models/message.model');
-const { getFcmTokensByUserId } = require('../models/user.model');
+const { getFcmTokensByUserId, getUserById } = require('../models/user.model');
 const { messaging } = require('../utils/firebaseAdmin');
 
 function notificationText(message) {
@@ -107,6 +107,16 @@ async function sendMessagePush({ userId, title, body, data = {} }) {
 
     if (!tokens.length) return;
 
+    // Resolve the sender directly from users, just like missed-call pushes do.
+    // This keeps the current avatar for every message type, including media.
+    const sender = data.senderId ? await getUserById(data.senderId) : null;
+    const resolvedData = {
+      ...data,
+      senderName:
+        sender?.display_name || sender?.username || data.senderName || title,
+      senderAvatar: sender?.avatar || data.senderAvatar || '',
+    };
+
     await Promise.all(
       tokens.map((token) =>
         messaging.send({
@@ -116,7 +126,10 @@ async function sendMessagePush({ userId, title, body, data = {} }) {
             title,
             body,
             ...Object.fromEntries(
-              Object.entries(data).map(([key, value]) => [key, String(value)])
+              Object.entries(resolvedData).map(([key, value]) => [
+                key,
+                String(value),
+              ])
             ),
           },
           android: {
