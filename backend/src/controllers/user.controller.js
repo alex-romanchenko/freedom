@@ -13,6 +13,23 @@ const {
 const { getPostsByUser } = require('../models/post.model');
 const { isFollowingUser } = require('../models/follow.model');
 const Photo = require('../models/photo.model');
+const fs = require('fs/promises');
+const path = require('path');
+
+async function removePreviousAvatar(avatar) {
+  if (!avatar || !avatar.startsWith('/uploads/avatars/')) return;
+
+  const avatarDirectory = path.resolve(__dirname, '../../public/uploads/avatars');
+  const avatarFile = path.join(avatarDirectory, path.basename(avatar));
+
+  try {
+    await fs.unlink(avatarFile);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.error('Delete previous avatar error:', error);
+    }
+  }
+}
 
 async function getMyProfile(req, res) {
   try {
@@ -158,9 +175,11 @@ async function updateMyAvatar(req, res) {
     }
 
     const avatarPath = `/uploads/avatars/${req.file.filename}`;
+    const previousUser = await getUserById(userId);
 
     const updatedUser = await updateUserAvatar(userId, avatarPath);
-    const avatarPhoto = await Photo.createPhoto(userId, avatarPath, '');
+    const avatarPhoto = await Photo.upsertAvatarPhoto(userId, avatarPath);
+    await removePreviousAvatar(previousUser?.avatar);
 
     res.json({
       message: 'Avatar updated successfully',

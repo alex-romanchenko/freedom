@@ -7,6 +7,7 @@ const photoController = require('../controllers/photo.controller');
 
 router.post('/', auth, uploadPhoto.single('photo'), photoController.createPhoto);
 
+router.get('/user/:userId/avatar', auth, photoController.getAvatarPhoto);
 router.get('/user/:userId', auth, photoController.getUserPhotos);
 router.get('/:id', auth, photoController.getPhoto);
 

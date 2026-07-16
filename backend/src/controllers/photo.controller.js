@@ -34,6 +34,23 @@ async function getUserPhotos(req, res) {
   }
 }
 
+async function getAvatarPhoto(req, res) {
+  try {
+    const userId = req.params.userId;
+    const currentUserId = req.user.id;
+    const photo = await Photo.getAvatarPhotoByUserId(userId, currentUserId);
+
+    if (!photo) {
+      return res.status(404).json({ message: 'Avatar photo not found' });
+    }
+
+    res.json(photo);
+  } catch (error) {
+    console.error('Get avatar photo error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+}
+
 async function updatePhoto(req, res) {
   try {
     const photoId = req.params.id;
@@ -92,6 +109,7 @@ async function getPhoto(req, res) {
 module.exports = {
   createPhoto,
   getUserPhotos,
+  getAvatarPhoto,
   updatePhoto,
   deletePhoto,
   getPhoto,
