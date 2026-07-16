@@ -12,6 +12,7 @@ const {
 } = require('../models/user.model');
 const { getPostsByUser } = require('../models/post.model');
 const { isFollowingUser } = require('../models/follow.model');
+const Photo = require('../models/photo.model');
 
 async function getMyProfile(req, res) {
   try {
@@ -159,10 +160,12 @@ async function updateMyAvatar(req, res) {
     const avatarPath = `/uploads/avatars/${req.file.filename}`;
 
     const updatedUser = await updateUserAvatar(userId, avatarPath);
+    const avatarPhoto = await Photo.createPhoto(userId, avatarPath, '');
 
     res.json({
       message: 'Avatar updated successfully',
       user: updatedUser,
+      photo: avatarPhoto,
     });
   } catch (error) {
     res.status(500).json({
