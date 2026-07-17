@@ -828,10 +828,21 @@ app.post('/api/calls/reject', async (req, res) => {
   const otherActiveCallUserId = getOtherActiveCallUser(activeCall, id);
 
   if (otherActiveCallUserId) {
-    io.to(`user_${otherActiveCallUserId}`).emit('callReconnected', {
+    const reconnectPayload = {
       from: id,
       to: otherActiveCallUserId,
-    });
+      reconnectedUserId: id,
+      callerId: activeCall?.callerId,
+      callSessionId: activeCall?.callSessionId,
+    };
+
+    io.to(`user_${otherActiveCallUserId}`).emit(
+      'callReconnected',
+      reconnectPayload
+    );
+    socket.emit('callReconnected', reconnectPayload);
+
+    console.log('ACTIVE CALL USER RECONNECTED:', reconnectPayload);
   }
 
   socket.emit('onlineUsers', {
@@ -1217,7 +1228,16 @@ socket.on('restartIce', ({ to, from, offer, callSessionId }) => {
   const activeCall = getActiveCallForUser(actorId);
   const otherUserId = getOtherActiveCallUser(activeCall, actorId);
 
-  if (!actorId || !to || !offer || String(otherUserId) !== String(to)) return;
+  if (!actorId || !to || !offer || String(otherUserId) !== String(to)) {
+    console.log('ICE RESTART OFFER IGNORED:', {
+      from: actorId,
+      to,
+      hasOffer: Boolean(offer),
+      activeOtherUserId: otherUserId,
+      callSessionId,
+    });
+    return;
+  }
   if (
     callSessionId &&
     activeCall?.callSessionId &&
@@ -1232,6 +1252,11 @@ socket.on('restartIce', ({ to, from, offer, callSessionId }) => {
     offer,
     callSessionId: activeCall?.callSessionId || callSessionId,
   });
+  console.log('ICE RESTART OFFER FORWARDED:', {
+    from: actorId,
+    to,
+    callSessionId: activeCall?.callSessionId || callSessionId,
+  });
 });
 
 socket.on('answerIceRestart', ({ to, from, answer, callSessionId }) => {
@@ -1239,7 +1264,16 @@ socket.on('answerIceRestart', ({ to, from, answer, callSessionId }) => {
   const activeCall = getActiveCallForUser(actorId);
   const otherUserId = getOtherActiveCallUser(activeCall, actorId);
 
-  if (!actorId || !to || !answer || String(otherUserId) !== String(to)) return;
+  if (!actorId || !to || !answer || String(otherUserId) !== String(to)) {
+    console.log('ICE RESTART ANSWER IGNORED:', {
+      from: actorId,
+      to,
+      hasAnswer: Boolean(answer),
+      activeOtherUserId: otherUserId,
+      callSessionId,
+    });
+    return;
+  }
   if (
     callSessionId &&
     activeCall?.callSessionId &&
@@ -1252,6 +1286,11 @@ socket.on('answerIceRestart', ({ to, from, answer, callSessionId }) => {
     from: actorId,
     to,
     answer,
+    callSessionId: activeCall?.callSessionId || callSessionId,
+  });
+  console.log('ICE RESTART ANSWER FORWARDED:', {
+    from: actorId,
+    to,
     callSessionId: activeCall?.callSessionId || callSessionId,
   });
 });
