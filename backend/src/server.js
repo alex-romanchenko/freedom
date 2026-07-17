@@ -401,7 +401,11 @@ async function sendFcmToTokens(tokens, buildMessage, label) {
 async function sendCallCancelPush(
   userId,
   callerId,
-  { showMissedNotification = false, withVideo = false } = {}
+  {
+    showMissedNotification = false,
+    withVideo = false,
+    callSessionId = null,
+  } = {}
 ) {
   try {
     const tokens = await getFcmTokensByUserId(userId);
@@ -429,6 +433,7 @@ async function sendCallCancelPush(
         data: {
           type: 'call_cancel',
           callerId: callerId ? String(callerId) : '',
+          callSessionId: callSessionId ? String(callSessionId) : '',
           ...(showMissedNotification
             ? {
                 missedNotification: 'true',
@@ -498,7 +503,12 @@ function missedCallCopy(language, withVideo, callerName) {
   };
 }
 
-async function sendMissedCallPush(userId, callerId, withVideo = false) {
+async function sendMissedCallPush(
+  userId,
+  callerId,
+  withVideo = false,
+  callSessionId = null
+) {
   try {
     const tokens = await getFcmTokensByUserId(userId);
 
@@ -521,6 +531,7 @@ async function sendMissedCallPush(userId, callerId, withVideo = false) {
         data: {
           type: 'missed_call',
           callerId: callerId ? String(callerId) : '',
+          callSessionId: callSessionId ? String(callSessionId) : '',
           callerName,
           callerAvatar: caller?.avatar || '',
           withVideo: String(Boolean(withVideo)),
@@ -669,6 +680,10 @@ function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
       if (!pendingCall) return;
 
       const pendingCreatedAtMs = getPendingCallCreatedAtMs(pendingCall);
+      const pendingCallSessionId = getPendingCallSessionId(
+        callerId,
+        receiverId
+      );
 
       if (pendingCreatedAtMs !== createdAtMs) {
         console.log('CALL AUTO TIMEOUT SKIPPED STALE TIMER:', {
@@ -688,8 +703,17 @@ function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
         status: 'missed',
       });
 
-      io.to(`user_${callerId}`).emit('callEnded');
-      await sendMissedCallPush(receiverId, callerId, pendingCall.with_video);
+      io.to(`user_${callerId}`).emit('callEnded', {
+        from: receiverId,
+        to: callerId,
+        callSessionId: pendingCallSessionId,
+      });
+      await sendMissedCallPush(
+        receiverId,
+        callerId,
+        pendingCall.with_video,
+        pendingCallSessionId
+      );
 
       console.log('CALL AUTO TIMEOUT:', {
         from: callerId,
@@ -760,7 +784,7 @@ app.post('/api/calls/reject', async (req, res) => {
       console.error('Delete pending HTTP rejected call error:', error.message);
     }
 
-    await sendCallCancelPush(callerId, receiverId);
+    await sendCallCancelPush(callerId, receiverId, { callSessionId });
 
     res.json({ message: 'Call rejected' });
   } catch (error) {
@@ -1198,7 +1222,7 @@ socket.on('rejectCall', async ({ to, from, callSessionId }) => {
   }
 
   if (to && from) {
-    await sendCallCancelPush(to, from);
+    await sendCallCancelPush(to, from, { callSessionId });
   }
 });
 
@@ -1208,18 +1232,45 @@ socket.on('acceptCallOnDevice', ({ from }) => {
   }
 });
 
-socket.on('iceCandidate', ({ to, candidate }) => {
-  const from = socket.userId;
+socket.on('iceCandidate', ({ to, candidate, from, callSessionId }) => {
+  const actorId = from || socket.userId;
+  const activeCall = actorId ? getActiveCallForUser(actorId) : null;
+  const activeOtherUserId = getOtherActiveCallUser(activeCall, actorId);
+  const pendingSessionId = actorId && to
+    ? getPendingCallSessionId(actorId, to) ||
+      getPendingCallSessionId(to, actorId)
+    : null;
+  const expectedSessionId =
+    activeCall && String(activeOtherUserId) === String(to)
+      ? activeCall.callSessionId
+      : pendingSessionId;
 
-  if (from && to && candidate) {
-    const stored = storePendingCallIceCandidate(from, to, candidate);
+  if (
+    callSessionId &&
+    expectedSessionId &&
+    String(callSessionId) !== String(expectedSessionId)
+  ) {
+    console.log('ICE CANDIDATE IGNORED STALE SESSION:', {
+      from: actorId,
+      to,
+      callSessionId,
+      expectedSessionId,
+    });
+    return;
+  }
+
+  if (actorId && to && candidate) {
+    const stored = storePendingCallIceCandidate(actorId, to, candidate);
     if (stored) {
-      console.log('STORED PENDING ICE CANDIDATE:', { from, to });
+      console.log('STORED PENDING ICE CANDIDATE:', { from: actorId, to });
     }
   }
 
   io.to(`user_${to}`).emit('iceCandidate', {
     candidate,
+    from: actorId,
+    to,
+    callSessionId: expectedSessionId || callSessionId,
   });
 });
 
@@ -1310,6 +1361,7 @@ socket.on('endCall', async ({
     let pendingOutgoingCall = null;
     let pendingCall = null;
     let callWithVideo = Boolean(withVideo);
+    let resolvedCallSessionId = callSessionId;
 
     try {
       pendingOutgoingCall = await getPendingCall(to, actorId);
@@ -1327,6 +1379,7 @@ socket.on('endCall', async ({
           ? activeCall.callSessionId
           : null;
       const expectedSessionId = activeSessionId || pendingSessionId;
+      resolvedCallSessionId = expectedSessionId || callSessionId;
 
       if (
         callSessionId &&
@@ -1404,6 +1457,7 @@ socket.on('endCall', async ({
     await sendCallCancelPush(to, actorId, {
       showMissedNotification: Boolean(pendingOutgoingCall),
       withVideo: callWithVideo,
+      callSessionId: resolvedCallSessionId,
     });
   }
 });
