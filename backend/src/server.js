@@ -149,7 +149,7 @@
   const onlineUsers = new Map();
   const foregroundSockets = new Map();
   const CALL_TIMEOUT_MS = 30000;
-  const ACTIVE_CALL_DISCONNECT_GRACE_MS = 12000;
+  const ACTIVE_CALL_DISCONNECT_GRACE_MS = 15000;
   const pendingCallTimeouts = new Map();
   const pendingCallSessionIds = new Map();
   const activeCallsByUser = new Map();
@@ -232,7 +232,14 @@
     return `${ids[0]}:${ids[1]}`;
   }
 
-  function setActiveCall(userA, userB, withVideo = false, callSessionId = null) {
+  function setActiveCall(
+    userA,
+    userB,
+    withVideo = false,
+    callSessionId = null,
+    callerId = null,
+    receiverId = null
+  ) {
     const firstUserId = normalizeCallUserId(userA);
     const secondUserId = normalizeCallUserId(userB);
 
@@ -243,6 +250,8 @@
       users: [firstUserId, secondUserId],
       withVideo: Boolean(withVideo),
       callSessionId: callSessionId ? String(callSessionId) : null,
+      callerId: normalizeCallUserId(callerId),
+      receiverId: normalizeCallUserId(receiverId),
       startedAt: Date.now(),
     };
 
@@ -1111,7 +1120,9 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
         actorId,
         to,
         pendingCall?.with_video,
-        pendingSessionId || callSessionId
+        pendingSessionId || callSessionId,
+        pendingCall?.caller_id || to,
+        pendingCall?.receiver_id || actorId
       );
       await deletePendingCall(actorId, to);
       await deletePendingCall(to, actorId);
@@ -1201,6 +1212,50 @@ socket.on('iceCandidate', ({ to, candidate }) => {
   });
 });
 
+socket.on('restartIce', ({ to, from, offer, callSessionId }) => {
+  const actorId = from || socket.userId;
+  const activeCall = getActiveCallForUser(actorId);
+  const otherUserId = getOtherActiveCallUser(activeCall, actorId);
+
+  if (!actorId || !to || !offer || String(otherUserId) !== String(to)) return;
+  if (
+    callSessionId &&
+    activeCall?.callSessionId &&
+    String(callSessionId) !== String(activeCall.callSessionId)
+  ) {
+    return;
+  }
+
+  io.to(`user_${to}`).emit('iceRestartOffer', {
+    from: actorId,
+    to,
+    offer,
+    callSessionId: activeCall?.callSessionId || callSessionId,
+  });
+});
+
+socket.on('answerIceRestart', ({ to, from, answer, callSessionId }) => {
+  const actorId = from || socket.userId;
+  const activeCall = getActiveCallForUser(actorId);
+  const otherUserId = getOtherActiveCallUser(activeCall, actorId);
+
+  if (!actorId || !to || !answer || String(otherUserId) !== String(to)) return;
+  if (
+    callSessionId &&
+    activeCall?.callSessionId &&
+    String(callSessionId) !== String(activeCall.callSessionId)
+  ) {
+    return;
+  }
+
+  io.to(`user_${to}`).emit('iceRestartAnswer', {
+    from: actorId,
+    to,
+    answer,
+    callSessionId: activeCall?.callSessionId || callSessionId,
+  });
+});
+
 socket.on('endCall', async ({
   to,
   from,
@@ -1272,12 +1327,12 @@ socket.on('endCall', async ({
         ? actorId
         : pendingIncomingCall
         ? to
-        : actorId;
+        : activeCall?.callerId || actorId;
       const receiverId = pendingOutgoingCall
         ? to
         : pendingIncomingCall
         ? actorId
-        : to;
+        : activeCall?.receiverId || to;
       const callWasAnswered = !pendingCall;
 
       await deletePendingCall(to, actorId);
