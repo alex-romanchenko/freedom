@@ -152,6 +152,7 @@
   const ACTIVE_CALL_DISCONNECT_GRACE_MS = 15000;
   const pendingCallTimeouts = new Map();
   const pendingCallSessionIds = new Map();
+  const incomingCallDeliveryStates = new Map();
   const activeCallsByUser = new Map();
   const activeCallDisconnectTimers = new Map();
   const recentCallLogEvents = new Map();
@@ -159,6 +160,17 @@
   // Keep every early candidate until the receiver has answered. A socket can
   // already be connected while Flutter is still navigating to CallScreen.
   const pendingCallIceCandidates = new Map();
+
+  function clearIncomingCallDelivery(callSessionId) {
+    if (!callSessionId) return;
+
+    const key = String(callSessionId);
+    const state = incomingCallDeliveryStates.get(key);
+    if (state?.timers) {
+      state.timers.forEach((timer) => clearTimeout(timer));
+    }
+    incomingCallDeliveryStates.delete(key);
+  }
 
   function getPendingCallIceKey(callerId, receiverId) {
     return `${callerId}:${receiverId}`;
@@ -396,6 +408,103 @@ async function sendFcmToTokens(tokens, buildMessage, label) {
   );
 
   return sent;
+}
+
+async function sendIncomingCallPush({
+  receiverId,
+  callerId,
+  withVideo,
+  callCreatedAtMs,
+  callSessionId,
+  caller,
+  attempt = 1,
+}) {
+  const tokens = await getFcmTokensByUserId(receiverId);
+  if (tokens.length === 0) {
+    console.log('NO FCM TOKENS FOR USER:', receiverId);
+    return 0;
+  }
+
+  const sent = await sendFcmToTokens(
+    tokens,
+    (token) => ({
+      token,
+      data: {
+        type: 'incoming_call',
+        callerId: String(callerId),
+        withVideo: String(withVideo),
+        callCreatedAtMs: String(callCreatedAtMs),
+        callTimeoutMs: String(CALL_TIMEOUT_MS),
+        callSessionId: String(callSessionId),
+        callerName:
+          caller?.display_name || caller?.username || `User ${callerId}`,
+        callerAvatar: caller?.avatar || '',
+      },
+      android: {
+        priority: 'high',
+        ttl: CALL_TIMEOUT_MS + 5000,
+        // A session-specific key prevents a newer call from replacing an older
+        // call that Android has not delivered yet.
+        collapseKey: `incoming_call_${callSessionId}`,
+      },
+    }),
+    attempt === 1 ? 'FCM CALL PUSH' : `FCM CALL PUSH RETRY ${attempt}`
+  );
+
+  console.log(attempt === 1 ? 'FCM CALL PUSH SENT:' : 'FCM CALL PUSH RETRY SENT:', {
+    to: receiverId,
+    tokens: tokens.length,
+    sent,
+    attempt,
+    callSessionId: String(callSessionId),
+  });
+  return sent;
+}
+
+function scheduleIncomingCallPushRetries(payload) {
+  const sessionId = String(payload.callSessionId);
+  clearIncomingCallDelivery(sessionId);
+
+  const state = { acknowledged: false, timers: [] };
+  incomingCallDeliveryStates.set(sessionId, state);
+
+  [4000, 10000].forEach((delayMs, index) => {
+    const timer = setTimeout(async () => {
+      const currentState = incomingCallDeliveryStates.get(sessionId);
+      if (!currentState || currentState.acknowledged) return;
+
+      try {
+        const pendingCall = await getPendingCall(
+          payload.receiverId,
+          payload.callerId
+        );
+        const pendingSessionId = getPendingCallSessionId(
+          payload.callerId,
+          payload.receiverId
+        );
+
+        if (
+          !pendingCall ||
+          !pendingSessionId ||
+          String(pendingSessionId) !== sessionId
+        ) {
+          clearIncomingCallDelivery(sessionId);
+          return;
+        }
+
+        await sendIncomingCallPush({ ...payload, attempt: index + 2 });
+      } catch (error) {
+        console.error('FCM CALL PUSH RETRY ERROR:', {
+          to: payload.receiverId,
+          attempt: index + 2,
+          callSessionId: sessionId,
+          error: error.message,
+        });
+      }
+    }, delayMs);
+
+    state.timers.push(timer);
+  });
 }
 
 async function sendCallCancelPush(
@@ -695,6 +804,7 @@ function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
 
       await deletePendingCall(receiverId, callerId);
       clearPendingCallIceCandidates(callerId, receiverId);
+      clearIncomingCallDelivery(pendingCallSessionId);
       clearPendingCallSessionId(callerId, receiverId);
       await emitCallLogMessage({
         callerId,
@@ -726,6 +836,54 @@ function schedulePendingCallTimeout({ callerId, receiverId, createdAtMs }) {
 
   pendingCallTimeouts.set(key, timeout);
 }
+
+app.post('/api/calls/incoming-received', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.replace('Bearer ', '');
+    if (!token) return res.status(401).json({ message: 'Unauthorized' });
+
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const receiverId = decoded.id;
+    const { callerId, callSessionId } = req.body;
+
+    if (!callerId || !callSessionId) {
+      return res.status(400).json({ message: 'Call identifiers are required' });
+    }
+
+    const pendingSessionId = getPendingCallSessionId(callerId, receiverId);
+    if (
+      pendingSessionId &&
+      String(pendingSessionId) !== String(callSessionId)
+    ) {
+      console.log('INCOMING CALL DELIVERY ACK IGNORED STALE SESSION:', {
+        callerId,
+        receiverId,
+        callSessionId,
+        pendingSessionId,
+      });
+      return res.json({ message: 'Stale call ignored' });
+    }
+
+    const state = incomingCallDeliveryStates.get(String(callSessionId));
+    if (state) {
+      state.acknowledged = true;
+      state.timers.forEach((timer) => clearTimeout(timer));
+      state.timers = [];
+    }
+
+    console.log('INCOMING CALL DELIVERY ACK:', {
+      callerId,
+      receiverId,
+      callSessionId: String(callSessionId),
+    });
+    return res.json({ message: 'Incoming call received' });
+  } catch (error) {
+    console.error('INCOMING CALL DELIVERY ACK ERROR:', error.message);
+    return res.status(500).json({ message: 'Error acknowledging incoming call' });
+  }
+});
 
 app.post('/api/calls/reject', async (req, res) => {
   try {
@@ -1080,44 +1238,18 @@ socket.on('callUser', async ({ to, offer, from, withVideo, callSessionId }) => {
     });
   }
 
+  const incomingPushPayload = {
+    receiverId: to,
+    callerId: from,
+    withVideo,
+    callCreatedAtMs,
+    callSessionId: normalizedCallSessionId,
+    caller,
+  };
+  scheduleIncomingCallPushRetries(incomingPushPayload);
+
   try {
-    const tokens = await getFcmTokensByUserId(to);
-
-    if (tokens.length > 0) {
-      const sent = await sendFcmToTokens(
-        tokens,
-        (token) => ({
-            token,
-            data: {
-              type: 'incoming_call',
-              callerId: String(from),
-              withVideo: String(withVideo),
-              callCreatedAtMs: String(callCreatedAtMs),
-              callTimeoutMs: String(CALL_TIMEOUT_MS),
-              callSessionId: String(normalizedCallSessionId),
-              callerName:
-                caller?.display_name ||
-                caller?.username ||
-                `User ${from}`,
-              callerAvatar: caller?.avatar || '',
-            },
-            android: {
-              priority: 'high',
-              ttl: CALL_TIMEOUT_MS + 5000,
-              collapseKey: `incoming_call_${to}`,
-            },
-          }),
-        'FCM CALL PUSH'
-      );
-
-      console.log('FCM CALL PUSH SENT:', {
-        to,
-        tokens: tokens.length,
-        sent,
-      });
-    } else {
-      console.log('NO FCM TOKENS FOR USER:', to);
-    }
+    await sendIncomingCallPush(incomingPushPayload);
   } catch (error) {
     console.error('FCM CALL PUSH ERROR:', error.message);
   }
@@ -1159,6 +1291,7 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
         pendingCall?.caller_id || to,
         pendingCall?.receiver_id || actorId
       );
+      clearIncomingCallDelivery(pendingSessionId || callSessionId);
       await deletePendingCall(actorId, to);
       await deletePendingCall(to, actorId);
       clearPendingCallTimeout(to, actorId);
@@ -1433,6 +1566,7 @@ socket.on('endCall', async ({
       clearPendingCallTimeout(to, actorId);
       clearPendingCallIceCandidates(actorId, to);
       clearPendingCallIceCandidates(to, actorId);
+      clearIncomingCallDelivery(resolvedCallSessionId);
       clearPendingCallSessionId(actorId, to);
       clearPendingCallSessionId(to, actorId);
       clearActiveCall(actorId, to);
