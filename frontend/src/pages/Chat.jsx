@@ -357,7 +357,7 @@ const handleGroupDeletedOrLeft = async () => {
     };
   };
 
-  const revealReplyTarget = async (reply) => {
+  const revealReplyTarget = async (reply, sourceMessage) => {
     let messageId = Number(reply?.messageId);
     let createdAtMs = Number(reply?.createdAtMs);
 
@@ -369,12 +369,29 @@ const handleGroupDeletedOrLeft = async () => {
         const response = await api.get(
           `/messages/search?q=${encodeURIComponent(preview)}&limit=50&offset=0`
         );
-        const match = response.data.find(
-          (result) =>
-            String(result.conversationId) === String(selectedConv.id) &&
-            String(result.text || '').includes(preview) &&
-            (!result.senderName || result.senderName === reply.name)
-        );
+        const sourceId = Number(sourceMessage?.id);
+        const sourceTime = new Date(sourceMessage?.created_at || 0).getTime();
+        const matches = response.data
+          .filter((result) => {
+            const resultTime = new Date(result.createdAt).getTime();
+            return (
+              Number(result.messageId) !== sourceId &&
+              String(result.conversationId) === String(selectedConv.id) &&
+              (!Number.isFinite(sourceTime) || resultTime <= sourceTime) &&
+              String(result.text || '').includes(preview) &&
+              (!result.senderName || result.senderName === reply.name)
+            );
+          })
+          .sort((left, right) => {
+            const leftExact = String(left.text || '').trim() === preview;
+            const rightExact = String(right.text || '').trim() === preview;
+            if (leftExact !== rightExact) return leftExact ? -1 : 1;
+            return (
+              new Date(right.createdAt).getTime() -
+              new Date(left.createdAt).getTime()
+            );
+          });
+        const match = matches[0];
         if (!match) return;
 
         messageId = Number(match.messageId);

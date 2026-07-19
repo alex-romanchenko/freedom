@@ -263,7 +263,7 @@ function MessageBubble({
           <button
             type="button"
             className="message-reply-box"
-            onClick={() => onReplyTargetClick?.(replyMessage)}
+            onClick={() => onReplyTargetClick?.(replyMessage, message)}
           >
             <strong>
               {t('replying_to', language).replace('{name}', replyMessage.name)}
