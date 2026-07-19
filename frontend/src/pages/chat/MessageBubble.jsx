@@ -1,5 +1,6 @@
 import { getFileUrl } from '../../api/fileUrl';
 import AudioMessagePlayer from './AudioMessagePlayer';
+import { t } from '../../utils/i18n';
 import {
   IoArrowDown,
   IoArrowUp,
@@ -185,6 +186,9 @@ function MessageBubble({
   setOpenedVideo,
   onOpenUser,
   onStartCall,
+  language,
+  highlightedMessageId,
+  onReplyTargetClick,
 }) {
   const callEvent = parseCallEvent(message.text || '');
 
@@ -208,7 +212,14 @@ function MessageBubble({
   
 
   return (
-  <div className={`message-row ${isMine ? 'mine' : 'theirs'}`}>
+  <div
+    className={`message-row ${isMine ? 'mine' : 'theirs'} ${
+      String(message.id) === String(highlightedMessageId)
+        ? 'message-highlighted'
+        : ''
+    }`}
+    data-message-id={message.id}
+  >
     {isGroup && !isMine && (
       <button
           className="group-message-avatar"
@@ -240,7 +251,7 @@ function MessageBubble({
         <>
           <div className="message-forward-box">
             <div>
-              <span className="forward-gap">Forwarded from</span>
+              <span className="forward-gap">{t('forwarded_from', language)}</span>
               <strong>{forwardedMessage.name}</strong>
             </div>
           </div>
@@ -249,10 +260,16 @@ function MessageBubble({
         </>
       ) : replyMessage ? (
         <>
-          <div className="message-reply-box">
-            <strong>{replyMessage.name}</strong>
+          <button
+            type="button"
+            className="message-reply-box"
+            onClick={() => onReplyTargetClick?.(replyMessage)}
+          >
+            <strong>
+              {t('replying_to', language).replace('{name}', replyMessage.name)}
+            </strong>
             <span>{replyMessage.preview}</span>
-          </div>
+          </button>
 
           <p>{replyMessage.text}</p>
         </>

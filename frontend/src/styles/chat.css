@@ -978,6 +978,12 @@
 }
 
 .message-reply-box {
+  display: block;
+  width: auto;
+  font: inherit;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
   border-left: 4px solid #0ed471;
   background: #dbeafe;
   color: #111827;
@@ -986,6 +992,7 @@
   border-radius: 10px;
   margin-bottom: 7px;
   max-width: 100%;
+  cursor: pointer;
 }
 
 .message-reply-box strong {
@@ -1005,7 +1012,7 @@
 }
 
 .message-forward-box {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   gap: 2px;
   text-align: left;
@@ -1321,6 +1328,21 @@
   align-items: center;
   justify-content: center;
   margin-top: 2px;
+}
+
+.message-row.message-highlighted .message-bubble {
+  animation: message-target-highlight 900ms ease-out;
+}
+
+@keyframes message-target-highlight {
+  0%, 35% {
+    box-shadow: 0 0 0 4px rgb(47 128 237 / 28%);
+    filter: brightness(1.05);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(47 128 237 / 0%);
+    filter: brightness(1);
+  }
 }
 .call-btn,
 .mute-btn,

@@ -39,6 +39,7 @@ function Chat({
   const [selectedConv, setSelectedConv] = useState(null);
   const [isFakeFullscreen, setIsFakeFullscreen] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [highlightedMessageId, setHighlightedMessageId] = useState(null);
   const [messageMenu, setMessageMenu] = useState(null);
   const [showChatEmoji, setShowChatEmoji] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
@@ -338,8 +339,11 @@ const handleGroupDeletedOrLeft = async () => {
     const lines = messageText.split('\n');
     const firstLine = lines[0];
     const realText = lines.slice(1).join('\n');
+    const markerPattern = /\s+\[\[reply:(\d+):(\d+)\]\]$/;
+    const marker = firstLine.match(markerPattern);
+    const visibleFirstLine = firstLine.replace(markerPattern, '');
 
-    const withoutPrefix = firstLine.replace('Reply to ', '');
+    const withoutPrefix = visibleFirstLine.replace('Reply to ', '');
     const colonIndex = withoutPrefix.indexOf(':');
 
     if (colonIndex === -1) return null;
@@ -348,7 +352,90 @@ const handleGroupDeletedOrLeft = async () => {
       name: withoutPrefix.slice(0, colonIndex),
       preview: withoutPrefix.slice(colonIndex + 1).trim(),
       text: realText,
+      messageId: marker?.[1] || null,
+      createdAtMs: marker?.[2] || null,
     };
+  };
+
+  const revealReplyTarget = async (reply) => {
+    let messageId = Number(reply?.messageId);
+    let createdAtMs = Number(reply?.createdAtMs);
+
+    try {
+      if (!Number.isFinite(messageId) || messageId <= 0) {
+        const preview = String(reply?.preview || '').trim();
+        if (preview.length < 2 || !selectedConv) return;
+
+        const response = await api.get(
+          `/messages/search?q=${encodeURIComponent(preview)}&limit=50&offset=0`
+        );
+        const match = response.data.find(
+          (result) =>
+            String(result.conversationId) === String(selectedConv.id) &&
+            String(result.text || '').includes(preview) &&
+            (!result.senderName || result.senderName === reply.name)
+        );
+        if (!match) return;
+
+        messageId = Number(match.messageId);
+        createdAtMs = new Date(match.createdAt).getTime();
+      }
+
+      if (!messages.some((message) => Number(message.id) === messageId)) {
+        if (!selectedConv || !Number.isFinite(createdAtMs)) return;
+
+        const targetDate = new Date(createdAtMs);
+        const [olderResponse, newerResponse] = await Promise.all([
+          api.get(
+            `/messages/${selectedConv.id}?before=${encodeURIComponent(
+              new Date(createdAtMs + 1).toISOString()
+            )}&limit=30`
+          ),
+          api.get(
+            `/messages/${selectedConv.id}?after=${encodeURIComponent(
+              targetDate.toISOString()
+            )}&limit=30`
+          ),
+        ]);
+
+        const seen = new Set();
+        const targetMessages = [
+          ...olderResponse.data,
+          ...newerResponse.data,
+          ...messages,
+        ]
+          .filter((message) => {
+            const key = String(message.id);
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          })
+          .sort(
+            (left, right) =>
+              new Date(left.created_at).getTime() -
+              new Date(right.created_at).getTime()
+          );
+        setMessages(targetMessages);
+        setHasMoreMessages(olderResponse.data.length === 30);
+      }
+
+      setHighlightedMessageId(messageId);
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          document
+            .querySelector(`[data-message-id="${messageId}"]`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      });
+
+      window.setTimeout(() => {
+        setHighlightedMessageId((current) =>
+          Number(current) === messageId ? null : current
+        );
+      }, 900);
+    } catch (error) {
+      console.error('Cannot reveal reply target:', error);
+    }
   };
 
   const sendMessage = async () => {
@@ -363,7 +450,7 @@ const handleGroupDeletedOrLeft = async () => {
       finalText = `Reply to ${replyTo.display_name}: ${cleanPreview.slice(
         0,
         80
-      )}\n${text}`;
+      )} [[reply:${replyTo.id}:${new Date(replyTo.created_at).getTime()}]]\n${text}`;
     }
 
     const formData = new FormData();
@@ -1172,6 +1259,9 @@ useEffect(() => {
                   setMessageReaction={setMessageReaction}
                   setOpenedImage={setOpenedImage}
                   setOpenedVideo={setOpenedVideo}
+                  language={language}
+                  highlightedMessageId={highlightedMessageId}
+                  onReplyTargetClick={revealReplyTarget}
                 />
               );
             })}
