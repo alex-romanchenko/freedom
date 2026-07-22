@@ -662,17 +662,32 @@ formData.append(
   const sendForwardMessage = async (conversation) => {
     if (!forwardMessageData) return;
 
-    await api.post(`/messages/${conversation.user_id}`, {
-      text: `FORWARDED|${forwardMessageData.display_name}|${forwardMessageData.text}`,
+    const isGroup =
+      conversation.type === 'group' ||
+      conversation.is_group === true ||
+      Boolean(conversation.group_id || conversation.group_name);
+
+    const response = await api.post('/messages/forward', {
+      messageId: forwardMessageData.id,
+      isGroup,
+      ...(isGroup
+        ? { conversationId: conversation.id }
+        : { userId: conversation.user_id }),
     });
+
+    const forwardedMessage = response.data?.data;
 
     setForwardMessageData(null);
 
-    await refreshConversations();
-
     if (selectedConv?.id === conversation.id) {
-      await loadMessages(conversation.id);
+      if (forwardedMessage) {
+        appendMessageOnce(forwardedMessage);
+      } else {
+        await loadMessages(conversation.id);
+      }
     }
+
+    await refreshConversations();
   };
 
   const copyMessageText = async () => {
