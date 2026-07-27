@@ -218,7 +218,7 @@ const jwt = require('jsonwebtoken');
 
 async function login(req, res) {
   try {
-    const { login, password, rememberMe } = req.body;
+    const { login, password } = req.body;
 
     if (!login || !password) {
       return res.status(400).json({
@@ -253,7 +253,7 @@ async function login(req, res) {
     const token = jwt.sign(
       { id: user.id, username: user.username },
       process.env.JWT_SECRET,
-      { expiresIn: rememberMe ? '30d' : '7d' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '3650d' }
     );
 
     res.json({

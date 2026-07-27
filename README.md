@@ -342,8 +342,24 @@ Production URLs
 
 Frontend:
 
-https://freedom.viktorromanchenko.netxi.in
+https://myfreedomchat.org
 
 API:
 
-https://freedom.viktorromanchenko.netxi.in/api
+https://myfreedomchat.org/api
+
+Production backend environment:
+
+```env
+CLIENT_URL=https://myfreedomchat.org
+```
+
+Production frontend environment:
+
+```env
+VITE_API_URL=https://myfreedomchat.org/api
+VITE_SERVER_URL=https://myfreedomchat.org
+```
+
+Keep `freedom.viktorromanchenko.netxi.in` configured in Nginx while older
+Android releases still use it for API, Socket.IO, and TURN connections.

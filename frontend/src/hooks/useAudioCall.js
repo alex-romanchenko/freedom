@@ -8,8 +8,8 @@ const peerConfig = {
     },
     {
       urls: [
-        'turn:freedom.viktorromanchenko.netxi.in:3478?transport=udp',
-        'turn:freedom.viktorromanchenko.netxi.in:3478?transport=tcp',
+        'turn:myfreedomchat.org:3478?transport=udp',
+        'turn:myfreedomchat.org:3478?transport=tcp',
       ],
       username: 'freedom',
       credential: 'FreedomSecret123',
