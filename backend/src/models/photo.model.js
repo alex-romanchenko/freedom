@@ -42,6 +42,12 @@ async function upsertAvatarPhoto(userId, image) {
       photo = inserted.rows[0];
     } else {
       const primaryId = existing.rows[0].id;
+      await client.query('DELETE FROM photo_likes WHERE photo_id = $1', [
+        primaryId,
+      ]);
+      await client.query('DELETE FROM photo_comments WHERE photo_id = $1', [
+        primaryId,
+      ]);
       const updated = await client.query(
         `
         UPDATE photos
