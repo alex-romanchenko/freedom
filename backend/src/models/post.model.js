@@ -102,6 +102,12 @@ async function getFeedByFollowing(userId, limit = 20, offset = 0) {
     LEFT JOIN likes AS all_likes 
       ON all_likes.post_id = posts.id
     WHERE follows.follower_id = $1
+      AND NOT EXISTS (
+        SELECT 1
+        FROM user_blocks ub
+        WHERE (ub.blocker_id = $1 AND ub.blocked_id = posts.user_id)
+           OR (ub.blocker_id = posts.user_id AND ub.blocked_id = $1)
+      )
     GROUP BY posts.id, users.id, my_likes.user_id
     ORDER BY posts.created_at DESC
     LIMIT $2 OFFSET $3

@@ -94,7 +94,7 @@ async function resetPassword(req, res) {
 
 async function register(req, res) {
   try {
-    const { username, email, password, displayName, language = 'en' } = req.body;
+    const { username, email, password, displayName, language = 'en', acceptTerms } = req.body;
 
     const usernameRegex = /^[A-Za-z]{2,10}$/;
     const displayNameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/;
@@ -102,6 +102,10 @@ async function register(req, res) {
 
     if (!['en', 'uk', 'ru'].includes(language)) {
       return res.status(400).json({ message: 'Unsupported language' });
+    }
+
+    if (acceptTerms !== true) {
+      return res.status(400).json({ message: 'You must accept the Terms of Use and Privacy Policy' });
     }
 
     if (!username || !email || !password) {
@@ -162,6 +166,7 @@ async function register(req, res) {
       password: hashedPassword,
       displayName: displayName || username,
       language,
+      termsAccepted: true,
     });
 
     const token = crypto.randomBytes(32).toString('hex');

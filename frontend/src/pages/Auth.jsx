@@ -12,6 +12,7 @@ function Auth({ onLoginSuccess }) {
   const [authError, setAuthError] = useState('');
   const [errors, setErrors] = useState({});
   const [language, setLanguage] = useState(getStoredLanguage());
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const [form, setForm] = useState({
     username: '',
@@ -97,6 +98,11 @@ function Auth({ onLoginSuccess }) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!isLogin) {
+      if (!acceptedTerms) {
+        setAuthError(t('accept_terms_required', language));
+        return;
+      }
+
       if (!usernameRegex.test(form.username)) {
         setAuthError(t('username_invalid', language));
         return;
@@ -139,7 +145,11 @@ function Auth({ onLoginSuccess }) {
 
         onLoginSuccess();
       } else {
-        await api.post('/auth/register', { ...form, language });
+        await api.post('/auth/register', {
+          ...form,
+          language,
+          acceptTerms: acceptedTerms,
+        });
 
         setAuthError(t('registered_confirm_email', language));
         setIsLogin(true);
@@ -184,7 +194,8 @@ function Auth({ onLoginSuccess }) {
     : form.username.trim().length > 0 &&
       form.displayName.trim().length > 0 &&
       form.email.trim().length > 0 &&
-      form.password.length >= 6;
+      form.password.length >= 6 &&
+      acceptedTerms;
 
   return (
     <div className="auth-layout">
@@ -274,6 +285,29 @@ function Auth({ onLoginSuccess }) {
               </button>
             </div>
             {errors.password && <p className="input-error">{errors.password}</p>}
+
+            {!isLogin && (
+              <label className="auth-legal-consent">
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(event) => {
+                    setAcceptedTerms(event.target.checked);
+                    setAuthError('');
+                  }}
+                />
+                <span>
+                  {t('agree_to', language)}{' '}
+                  <a href="/terms.html" target="_blank" rel="noreferrer">
+                    {t('terms_of_use', language)}
+                  </a>{' '}
+                  {t('and', language)}{' '}
+                  <a href="/privacy.html" target="_blank" rel="noreferrer">
+                    {t('privacy_policy', language)}
+                  </a>
+                </span>
+              </label>
+            )}
 
             {isLogin && (
               <div className="auth-row">

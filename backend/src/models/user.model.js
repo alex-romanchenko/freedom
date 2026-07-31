@@ -1,11 +1,11 @@
 const pool = require('../db');
 
-async function createUser({ username, email, password, displayName, language = 'en' }) {
+async function createUser({ username, email, password, displayName, language = 'en', termsAccepted = false }) {
   const result = await pool.query(
-    `INSERT INTO users (username, email, password, display_name, language)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO users (username, email, password, display_name, language, terms_accepted_at)
+     VALUES ($1, $2, $3, $4, $5, CASE WHEN $6 THEN NOW() ELSE NULL END)
      RETURNING id, username, email, display_name, language, created_at`,
-    [username, email, password, displayName, language]
+    [username, email, password, displayName, language, termsAccepted]
   );
 
   return result.rows[0];
@@ -164,6 +164,11 @@ async function searchUsers(query, currentUserId) {
      WHERE 
        (users.username ILIKE $1 OR users.display_name ILIKE $1)
        AND users.id <> $2
+       AND NOT EXISTS (
+         SELECT 1 FROM user_blocks b
+         WHERE (b.blocker_id = $2 AND b.blocked_id = users.id)
+            OR (b.blocker_id = users.id AND b.blocked_id = $2)
+       )
      ORDER BY users.username
      LIMIT 20`,
     [`%${query}%`, currentUserId]

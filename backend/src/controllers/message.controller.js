@@ -16,6 +16,7 @@ const {
   markMessageAsDelivered,
   getConversationById,
 } = require('../models/message.model');
+const { areUsersBlocked } = require('../models/safety.model');
 const { getFcmTokensByUserId, getUserById } = require('../models/user.model');
 const { messaging } = require('../utils/firebaseAdmin');
 
@@ -183,6 +184,10 @@ async function sendMessage(req, res) {
       return res.status(400).json({
         message: 'Message text, image, video, audio or file is required',
       });
+    }
+
+    if (await areUsersBlocked(senderId, userId)) {
+      return res.status(403).json({ message: 'Messaging is unavailable' });
     }
 
     const conversation = await findOrCreateConversation(senderId, userId);
@@ -517,6 +522,10 @@ async function forwardMessage(req, res) {
         return res.status(400).json({
           message: 'You cannot send message to yourself',
         });
+      }
+
+      if (await areUsersBlocked(senderId, userId)) {
+        return res.status(403).json({ message: 'Messaging is unavailable' });
       }
 
       targetConversation = await findOrCreateConversation(senderId, userId);

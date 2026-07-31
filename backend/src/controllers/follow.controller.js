@@ -12,6 +12,7 @@ const {
 
 const { createNotification } = require('../models/notification.model');
 const db = require('../db');
+const { areUsersBlocked } = require('../models/safety.model');
 
 async function follow(req, res) {
   try {
@@ -22,6 +23,10 @@ async function follow(req, res) {
       return res.status(400).json({
         message: 'You cannot follow yourself',
       });
+    }
+
+    if (await areUsersBlocked(followerId, userId)) {
+      return res.status(403).json({ message: 'Friend request is unavailable' });
     }
 
     const alreadyFollowing = await isFollowingUser(followerId, userId);

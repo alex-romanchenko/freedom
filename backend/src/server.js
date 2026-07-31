@@ -15,6 +15,8 @@
   const postCommentRoutes = require('./routes/postComment.routes');
   const notificationRoutes = require('./routes/notification.routes');
   const groupChatRoutes = require('./routes/groupChat.routes');
+  const safetyRoutes = require('./routes/safety.routes');
+  const { areUsersBlocked } = require('./models/safety.model');
   const {
     markIncomingMessagesAsDelivered,
     ensureMessageReactionsTable,
@@ -49,6 +51,7 @@
   app.use('/api/photos', photoCommentRoutes);
   app.use('/api/messages', messageRoutes);
   app.use('/api/group-chats', groupChatRoutes);
+  app.use('/api/safety', safetyRoutes);
   app.use('/api/posts', postCommentRoutes);
   app.use('/api/posts', postRoutes);
   app.get('/', (req, res) => {
@@ -1141,6 +1144,14 @@ socket.on('callUser', async ({ to, offer, from, withVideo, callSessionId }) => {
   clearPendingCallIceCandidates(from, to);
 
   try {
+    if (await areUsersBlocked(from, to)) {
+      io.to(`user_${from}`).emit('callRejected', {
+        from: to,
+        to: from,
+        reason: 'blocked',
+      });
+      return;
+    }
     const [callerPendingCall, receiverPendingCall] = await Promise.all([
       getPendingCallForUser(from),
       getPendingCallForUser(to),

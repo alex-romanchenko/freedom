@@ -140,6 +140,34 @@
   opacity: 1;
 }
 
+.auth-legal-consent {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: start;
+  gap: 10px;
+  margin: 12px 0 20px;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.auth-legal-consent input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: #2563eb;
+}
+
+.auth-legal-consent a {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-legal-consent a:hover {
+  text-decoration: underline;
+}
+
 .auth-card .secondary-btn {
   width: 100%;
   height: 52px;

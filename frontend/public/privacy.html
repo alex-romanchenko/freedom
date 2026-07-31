@@ -1,122 +1,48 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
-    <title>Freedom Privacy Policy</title>
-    <style>
-      :root {
-        font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        color: #171717;
-        background: #f5f6f8;
-      }
-      body { margin: 0; }
-      main {
-        width: min(760px, calc(100% - 32px));
-        margin: 32px auto;
-        padding: 32px;
-        box-sizing: border-box;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-      }
-      h1 { margin-top: 0; font-size: 30px; }
-      h2 { margin-top: 28px; font-size: 20px; }
-      p, li { line-height: 1.6; color: #4b5563; }
-      nav { display: flex; gap: 8px; margin-bottom: 28px; }
-      button {
-        border: 0;
-        border-radius: 999px;
-        padding: 9px 15px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      button.active { background: #2875e8; color: #fff; }
-      section[hidden] { display: none; }
-      @media (max-width: 560px) {
-        main { margin: 0; width: 100%; min-height: 100vh; padding: 24px 20px; border: 0; }
-      }
-      @media (prefers-color-scheme: dark) {
-        :root { color: #f5f5f5; background: #000; }
-        main { background: #171717; border-color: #2f2f2f; }
-        p, li { color: #c4c4c4; }
-        button { background: #2a2a2a; color: #f5f5f5; }
-      }
-    </style>
-  </head>
-  <body>
-    <main>
-      <nav aria-label="Language">
-        <button class="active" data-language="en">EN</button>
-        <button data-language="uk">UA</button>
-        <button data-language="ru">RU</button>
-      </nav>
-
-      <section data-policy="en">
-        <h1>Freedom Privacy Policy</h1>
-        <p>Last updated: July 27, 2026</p>
-        <h2>Information we process</h2>
-        <p>Freedom processes account details, profile information, content you publish or send, device notification tokens and technical data needed to provide the service.</p>
-        <h2>How information is used</h2>
-        <p>We use this information to authenticate users, deliver messages and calls, show posts, protect accounts, send notifications and improve reliability.</p>
-        <h2>Permissions</h2>
-        <p>Camera, microphone, photos, files and notification access are requested only for features that need them. You can change permissions in Android settings.</p>
-        <h2>Storage and security</h2>
-        <p>Data is transmitted over HTTPS. Passwords are stored as secure hashes. We retain information while your account is active or as required for security and legal obligations.</p>
-        <h2>Delete your account</h2>
-        <p>In Freedom open Profile, then Account options, then Delete account. After password confirmation, your account and associated content are permanently deleted.</p>
-        <h2>Contact</h2>
-        <p>Privacy questions can be sent to support@myfreedomchat.org.</p>
-      </section>
-
-      <section data-policy="uk" hidden>
-        <h1>Політика конфіденційності Freedom</h1>
-        <p>Оновлено: 27 липня 2026 року</p>
-        <h2>Які дані ми обробляємо</h2>
-        <p>Freedom обробляє дані акаунта, інформацію профілю, опублікований і надісланий контент, токени сповіщень та технічні дані, необхідні для роботи сервісу.</p>
-        <h2>Як використовуються дані</h2>
-        <p>Дані потрібні для авторизації, доставки повідомлень і дзвінків, показу дописів, захисту акаунта, сповіщень та стабільної роботи сервісу.</p>
-        <h2>Дозволи</h2>
-        <p>Доступ до камери, мікрофона, фото, файлів і сповіщень запитується лише для відповідних функцій. Дозволи можна змінити в налаштуваннях Android.</p>
-        <h2>Зберігання та безпека</h2>
-        <p>Дані передаються через HTTPS. Паролі зберігаються у вигляді захищених хешів. Дані зберігаються, поки акаунт активний, або протягом строку, необхідного для безпеки та виконання вимог закону.</p>
-        <h2>Видалення акаунта</h2>
-        <p>У Freedom відкрийте Профіль, потім Опції акаунта та Видалити акаунт. Після підтвердження паролем акаунт і пов’язаний контент буде видалено назавжди.</p>
-        <h2>Контакти</h2>
-        <p>Питання щодо конфіденційності можна надіслати на support@myfreedomchat.org.</p>
-      </section>
-
-      <section data-policy="ru" hidden>
-        <h1>Политика конфиденциальности Freedom</h1>
-        <p>Обновлено: 27 июля 2026 года</p>
-        <h2>Какие данные мы обрабатываем</h2>
-        <p>Freedom обрабатывает данные аккаунта, информацию профиля, опубликованный и отправленный контент, токены уведомлений и технические данные, необходимые для работы сервиса.</p>
-        <h2>Как используются данные</h2>
-        <p>Данные нужны для авторизации, доставки сообщений и звонков, показа публикаций, защиты аккаунта, уведомлений и стабильной работы сервиса.</p>
-        <h2>Разрешения</h2>
-        <p>Доступ к камере, микрофону, фото, файлам и уведомлениям запрашивается только для соответствующих функций. Разрешения можно изменить в настройках Android.</p>
-        <h2>Хранение и безопасность</h2>
-        <p>Данные передаются через HTTPS. Пароли хранятся как защищённые хеши. Данные хранятся, пока аккаунт активен, либо в течение срока, необходимого для безопасности и выполнения требований закона.</p>
-        <h2>Удаление аккаунта</h2>
-        <p>В Freedom откройте Профиль, затем Опции аккаунта и Удалить аккаунт. После подтверждения паролем аккаунт и связанный контент будут удалены навсегда.</p>
-        <h2>Контакты</h2>
-        <p>Вопросы о конфиденциальности можно отправить на support@myfreedomchat.org.</p>
-      </section>
-    </main>
-    <script>
-      const buttons = document.querySelectorAll("[data-language]");
-      const policies = document.querySelectorAll("[data-policy]");
-      buttons.forEach((button) => {
-        button.addEventListener("click", () => {
-          const language = button.dataset.language;
-          buttons.forEach((item) => item.classList.toggle("active", item === button));
-          policies.forEach((policy) => {
-            policy.hidden = policy.dataset.policy !== language;
-          });
-          document.documentElement.lang = language;
-        });
-      });
-    </script>
-  </body>
-</html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Freedom Privacy Policy</title>
+  <style>
+    body{margin:0;background:#f5f7fa;color:#182230;font:16px/1.65 Arial,sans-serif}main{max-width:860px;margin:auto;padding:32px 20px 64px}.card{background:#fff;border:1px solid #e4e7ec;border-radius:8px;padding:28px}h1{margin:0 0 6px}h2{margin-top:28px;font-size:20px}a{color:#1565c0}.langs{display:flex;gap:8px;margin:18px 0}.langs button{border:0;border-radius:50%;width:44px;height:44px;font-weight:700;cursor:pointer}.langs button.active{background:#1976d2;color:white}.muted{color:#667085}.legal-links{display:flex;gap:18px;flex-wrap:wrap;margin-top:30px}.lang{display:none}.lang.active{display:block}@media(max-width:560px){.card{padding:20px}main{padding:16px 12px 40px}}
+  </style>
+</head>
+<body><main><div class="card">
+  <h1>Freedom</h1><div class="muted">Privacy Policy · Effective 1 August 2026</div>
+  <div class="langs"><button data-lang="en">EN</button><button data-lang="uk">UA</button><button data-lang="ru">RU</button></div>
+  <section class="lang" data-copy="en">
+    <h2>1. Who we are</h2><p>Freedom is a communication and social networking service operated through myfreedomchat.org. Privacy questions can be sent to <a href="mailto:support@myfreedomchat.org">support@myfreedomchat.org</a>.</p>
+    <h2>2. Data we process</h2><p>We process account data (email, username, display name, language and optional profile details), content you submit (messages, posts, comments, reactions, photos, videos, audio and files), contacts and social connections created inside Freedom, device and push tokens, IP address, basic diagnostics, call signalling and call history. Passwords are stored as secure hashes. Audio and video calls are transported through WebRTC and are not recorded by Freedom.</p>
+    <h2>3. Why we use data</h2><p>We use data to create and secure accounts, deliver messages and calls, show requested social content, send notifications, synchronize devices, prevent spam and abuse, investigate reports, comply with law and provide support.</p>
+    <h2>4. Permissions</h2><p>Microphone and camera are used only for calls, voice messages and media you choose to create. Notifications are used for messages and calls. Media or document access is used only when you choose files to upload. You can change permissions in Android settings.</p>
+    <h2>5. Sharing and processors</h2><p>We do not sell personal data. Data may be processed by hosting and infrastructure providers, Google Firebase for push delivery, email delivery providers, and authorities when legally required. Public profile data and content are visible according to the features you use.</p>
+    <h2>6. Retention and security</h2><p>We use HTTPS, access controls and password hashing. Data remains while your account is active or as needed for security and legal obligations. Deleted content may remain briefly in backups before scheduled removal.</p>
+    <h2>7. Your choices</h2><p>You may edit your profile, delete content, block users, report content, revoke permissions, sign out and delete your account in Profile → menu → Delete account. You may also submit a request at <a href="/account-deletion.html">Account deletion</a>.</p>
+    <h2>8. Children</h2><p>Freedom is not directed to children under 13. Users must meet the minimum digital-consent age applicable in their country. Contact us if a child provided data without valid consent.</p>
+    <h2>9. Changes</h2><p>Material changes will be reflected on this page and, where appropriate, communicated in the service.</p>
+  </section>
+  <section class="lang" data-copy="uk">
+    <h2>1. Хто ми</h2><p>Freedom — сервіс спілкування та соціальна мережа, що працює через myfreedomchat.org. Питання щодо приватності: <a href="mailto:support@myfreedomchat.org">support@myfreedomchat.org</a>.</p>
+    <h2>2. Які дані ми обробляємо</h2><p>Дані акаунта (email, нікнейм, відображуване ім'я, мова й необов'язкові дані профілю), створений вами контент (повідомлення, дописи, коментарі, реакції, фото, відео, аудіо та файли), зв'язки між користувачами, токени пристрою і push, IP-адресу, базову діагностику, сигналізацію дзвінків та історію викликів. Паролі зберігаються як захищені хеші. Аудіо- та відеодзвінки передаються через WebRTC і не записуються Freedom.</p>
+    <h2>3. Навіщо потрібні дані</h2><p>Для створення і захисту акаунта, доставки повідомлень та дзвінків, показу контенту, сповіщень, синхронізації, боротьби зі спамом і зловживаннями, розгляду скарг, виконання закону та підтримки.</p>
+    <h2>4. Дозволи</h2><p>Мікрофон і камера використовуються лише для дзвінків, голосових повідомлень і медіа, які ви вирішили створити. Доступ до медіа чи документів використовується лише після вашого вибору файлу. Дозволи можна змінити в налаштуваннях Android.</p>
+    <h2>5. Передача даних</h2><p>Ми не продаємо персональні дані. Їх можуть обробляти постачальники хостингу, Google Firebase для push-сповіщень, сервіси доставки email та державні органи за законною вимогою.</p>
+    <h2>6. Зберігання і безпека</h2><p>Ми використовуємо HTTPS, контроль доступу та хешування паролів. Дані зберігаються, поки акаунт активний, або протягом строку, потрібного для безпеки й закону. Видалені дані можуть короткий час залишатися в резервних копіях.</p>
+    <h2>7. Ваші права</h2><p>Ви можете редагувати профіль, видаляти контент, блокувати користувачів, надсилати скарги, відкликати дозволи, вийти або видалити акаунт через Профіль → меню → Видалити акаунт. Запит також доступний на сторінці <a href="/account-deletion.html">Видалення акаунта</a>.</p>
+    <h2>8. Діти</h2><p>Freedom не призначений для дітей молодше 13 років. Користувач повинен досягти мінімального віку цифрової згоди у своїй країні.</p>
+    <h2>9. Зміни</h2><p>Суттєві зміни будуть опубліковані на цій сторінці та, за потреби, повідомлені у сервісі.</p>
+  </section>
+  <section class="lang" data-copy="ru">
+    <h2>1. Кто мы</h2><p>Freedom — сервис общения и социальная сеть, работающая через myfreedomchat.org. Вопросы о конфиденциальности: <a href="mailto:support@myfreedomchat.org">support@myfreedomchat.org</a>.</p>
+    <h2>2. Какие данные мы обрабатываем</h2><p>Данные аккаунта, созданный вами контент, связи между пользователями, токены устройства и push, IP-адрес, базовую диагностику, сигнализацию и историю звонков. Пароли хранятся как защищенные хеши. Аудио- и видеозвонки передаются через WebRTC и не записываются Freedom.</p>
+    <h2>3. Для чего нужны данные</h2><p>Для создания и защиты аккаунта, доставки сообщений и звонков, показа контента, уведомлений, синхронизации, борьбы со спамом и нарушениями, рассмотрения жалоб, выполнения закона и поддержки.</p>
+    <h2>4. Разрешения</h2><p>Микрофон и камера используются только для звонков, голосовых сообщений и выбранного вами медиа. Доступ к файлам используется только после вашего действия. Разрешения можно изменить в настройках Android.</p>
+    <h2>5. Передача данных</h2><p>Мы не продаем персональные данные. Их могут обрабатывать хостинг-провайдеры, Google Firebase, сервисы email и государственные органы по законному требованию.</p>
+    <h2>6. Хранение и безопасность</h2><p>Мы используем HTTPS, контроль доступа и хеширование паролей. Данные хранятся, пока аккаунт активен, либо в течение срока, необходимого для безопасности и закона.</p>
+    <h2>7. Ваши права</h2><p>Вы можете редактировать профиль, удалять контент, блокировать пользователей, отправлять жалобы, отозвать разрешения, выйти или удалить аккаунт через Профиль → меню → Удалить аккаунт. Запрос также доступен на странице <a href="/account-deletion.html">Удаление аккаунта</a>.</p>
+    <h2>8. Дети</h2><p>Freedom не предназначен для детей младше 13 лет. Пользователь должен достичь минимального возраста цифрового согласия в своей стране.</p>
+    <h2>9. Изменения</h2><p>Существенные изменения будут опубликованы на этой странице и при необходимости сообщены в сервисе.</p>
+  </section>
+  <div class="legal-links"><a href="/terms.html">Terms of Use</a><a href="/account-deletion.html">Account deletion</a></div>
+</div></main><script>const buttons=[...document.querySelectorAll('[data-lang]')],copies=[...document.querySelectorAll('[data-copy]')];function setLang(l){buttons.forEach(b=>b.classList.toggle('active',b.dataset.lang===l));copies.forEach(c=>c.classList.toggle('active',c.dataset.copy===l));document.documentElement.lang=l}buttons.forEach(b=>b.onclick=()=>setLang(b.dataset.lang));setLang((navigator.language||'en').startsWith('uk')?'uk':(navigator.language||'en').startsWith('ru')?'ru':'en');</script></body></html>
