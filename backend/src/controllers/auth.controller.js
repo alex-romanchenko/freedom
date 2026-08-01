@@ -268,9 +268,9 @@ async function login(req, res) {
         id: user.id,
         username: user.username,
         email: user.email,
-        displayName: user.display_name,
+        displayName: user.display_name || user.displayName,
         avatar: user.avatar,
-        headerImage: user.header_image,
+        headerImage: user.header_image || user.headerImage,
         language: user.language || 'en',
       },
     });

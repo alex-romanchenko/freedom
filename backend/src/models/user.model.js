@@ -36,7 +36,8 @@ async function findUserByUsername(username) {
        city,
        country,
        gender,
-       language
+       language,
+       is_verified
      FROM users
      WHERE username = $1`,
     [username]
