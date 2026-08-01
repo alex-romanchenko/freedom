@@ -7,6 +7,7 @@ const {
   blockUserController,
   unblockUserController,
   listBlockedUsers,
+  getBlockStatus,
   requestAccountDeletion,
 } = require('../controllers/safety.controller');
 
@@ -17,6 +18,7 @@ router.get('/terms-status', authMiddleware, getTermsStatus);
 router.post('/terms/accept', authMiddleware, acceptTermsController);
 router.post('/reports', authMiddleware, reportContent);
 router.get('/blocks', authMiddleware, listBlockedUsers);
+router.get('/blocks/:userId/status', authMiddleware, getBlockStatus);
 router.post('/blocks/:userId', authMiddleware, blockUserController);
 router.delete('/blocks/:userId', authMiddleware, unblockUserController);
 

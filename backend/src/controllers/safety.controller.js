@@ -4,6 +4,7 @@ const {
   blockUser,
   unblockUser,
   getBlockedUsers,
+  getBlockRelationship,
   createReport,
   createAccountDeletionRequest,
 } = require('../models/safety.model');
@@ -99,6 +100,18 @@ async function listBlockedUsers(req, res) {
   }
 }
 
+async function getBlockStatus(req, res) {
+  try {
+    const otherUserId = Number(req.params.userId);
+    if (!otherUserId || otherUserId === Number(req.user.id)) {
+      return res.status(400).json({ message: 'Invalid user' });
+    }
+    res.json(await getBlockRelationship(req.user.id, otherUserId));
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to load block status' });
+  }
+}
+
 async function requestAccountDeletion(req, res) {
   try {
     const email = String(req.body.email || '').trim();
@@ -124,5 +137,6 @@ module.exports = {
   blockUserController,
   unblockUserController,
   listBlockedUsers,
+  getBlockStatus,
   requestAccountDeletion,
 };

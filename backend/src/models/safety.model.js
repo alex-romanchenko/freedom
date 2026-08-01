@@ -31,6 +31,25 @@ async function areUsersBlocked(firstUserId, secondUserId) {
   return result.rowCount > 0;
 }
 
+async function getBlockRelationship(currentUserId, otherUserId) {
+  const result = await pool.query(
+    `SELECT
+       EXISTS (
+         SELECT 1 FROM user_blocks
+         WHERE blocker_id = $1 AND blocked_id = $2
+       ) AS blocked_by_me,
+       EXISTS (
+         SELECT 1 FROM user_blocks
+         WHERE blocker_id = $2 AND blocked_id = $1
+       ) AS blocked_me`,
+    [currentUserId, otherUserId]
+  );
+  return {
+    blockedByMe: result.rows[0]?.blocked_by_me === true,
+    blockedMe: result.rows[0]?.blocked_me === true,
+  };
+}
+
 async function blockUser(blockerId, blockedId) {
   const client = await pool.connect();
   try {
@@ -126,6 +145,7 @@ module.exports = {
   hasAcceptedTerms,
   acceptTerms,
   areUsersBlocked,
+  getBlockRelationship,
   blockUser,
   unblockUser,
   getBlockedUsers,
