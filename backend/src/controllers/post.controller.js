@@ -265,8 +265,19 @@ async function getPopular(req, res) {
 async function getLikes(req, res) {
   try {
     const { postId } = req.params;
+    const search = String(req.query.search || '').trim().slice(0, 80);
+    const limit = req.query.limit == null
+      ? null
+      : Math.min(Math.max(Number(req.query.limit) || 20, 1), 50);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
 
-    const users = await getPostLikes(postId);
+    const users = await getPostLikes(
+      postId,
+      req.user.id,
+      search,
+      limit,
+      offset
+    );
 
     res.json(users);
   } catch (error) {

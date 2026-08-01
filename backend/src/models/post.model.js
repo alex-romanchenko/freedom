@@ -223,20 +223,31 @@ async function getPopularPosts() {
   return result.rows;
 }
 
-async function getPostLikes(postId) {
+async function getPostLikes(postId, currentUserId, search = '', limit = 20, offset = 0) {
   const result = await pool.query(
     `
     SELECT 
       u.id,
       u.username,
       u.display_name,
-      u.avatar
+      u.avatar,
+      EXISTS (
+        SELECT 1
+        FROM follows f
+        WHERE f.follower_id = $2 AND f.following_id = u.id
+      ) AS is_following
     FROM likes l
     JOIN users u ON u.id = l.user_id
     WHERE l.post_id = $1
-    ORDER BY u.display_name ASC
+      AND (
+        $3 = '' OR
+        u.username ILIKE '%' || $3 || '%' OR
+        u.display_name ILIKE '%' || $3 || '%'
+      )
+    ORDER BY u.display_name ASC, u.id ASC
+    LIMIT $4 OFFSET $5
     `,
-    [postId]
+    [postId, currentUserId, search, limit, offset]
   );
 
   return result.rows;
