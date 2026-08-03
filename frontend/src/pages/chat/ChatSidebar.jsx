@@ -28,7 +28,7 @@ function currentLanguage() {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.language || 'en';
-  } catch (_) {
+  } catch {
     return 'en';
   }
 }
@@ -103,11 +103,7 @@ function ChatSidebar({
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
-          const identityColors = getIdentityColors(
-            c.user_id || c.id || c.username || c.display_name
-          );
-
-          return (
+  return (
     <div className="chat-sidebar">
       {showCreateGroup && (
         <CreateGroupPanel
@@ -140,8 +136,13 @@ function ChatSidebar({
           <p className="username">No conversations yet</p>
         )}
 
-        {conversations.map((c) => (
-          <div
+        {conversations.map((c) => {
+          const identityColors = getIdentityColors(
+            c.user_id || c.id || c.username || c.display_name
+          );
+
+          return (
+            <div
             key={c.id}
             onClick={async () => {
               setSelectedUserId?.(null);
@@ -225,8 +226,9 @@ function ChatSidebar({
                 ×
               </button>
             )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
