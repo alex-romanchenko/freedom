@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { IoClose } from 'react-icons/io5';
 import api from '../../api/api';
 import { getFileUrl } from '../../api/fileUrl';
+import { getIdentityColors } from '../../utils/identityColors';
 
 function AddGroupMembersPanel({
   groupInfo,
@@ -83,7 +84,13 @@ function AddGroupMembersPanel({
             {user.avatar ? (
               <img src={getFileUrl(user.avatar)} alt="" />
             ) : (
-              <span className="selected-user-avatar-placeholder">
+              <span
+                className="selected-user-avatar-placeholder"
+                style={{
+                  backgroundColor: getIdentityColors(user.id || user.username).background,
+                  color: getIdentityColors(user.id || user.username).foreground,
+                }}
+              >
                 {user.display_name?.[0] || '?'}
               </span>
             )}
@@ -130,7 +137,13 @@ function AddGroupMembersPanel({
               {user.avatar ? (
                 <img src={getFileUrl(user.avatar)} alt="" />
               ) : (
-                <div className="create-group-user-placeholder">
+                <div
+                  className="create-group-user-placeholder"
+                  style={{
+                    backgroundColor: getIdentityColors(user.id || user.username).background,
+                    color: getIdentityColors(user.id || user.username).foreground,
+                  }}
+                >
                   {user.display_name?.[0] || '?'}
                 </div>
               )}

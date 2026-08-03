@@ -1,12 +1,76 @@
+import { useRef, useState } from 'react';
 import { getFileUrl } from '../../api/fileUrl';
 import AudioMessagePlayer from './AudioMessagePlayer';
 import { t } from '../../utils/i18n';
+import { getIdentityColors } from '../../utils/identityColors';
 import {
+  IoArrowUndo,
   IoArrowDown,
   IoArrowUp,
   IoCall,
   IoVideocam,
 } from 'react-icons/io5';
+
+function SwipeReplyBubble({ children, enabled, onReply }) {
+  const startPoint = useRef(null);
+  const direction = useRef(null);
+  const [offset, setOffset] = useState(0);
+
+  const reset = () => {
+    startPoint.current = null;
+    direction.current = null;
+    setOffset(0);
+  };
+
+  return (
+    <div
+      className="message-swipe-shell"
+      style={{ transform: `translateX(${offset}px)` }}
+      onTouchStart={(event) => {
+        if (!enabled || event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        startPoint.current = { x: touch.clientX, y: touch.clientY };
+        direction.current = null;
+      }}
+      onTouchMove={(event) => {
+        if (!enabled || !startPoint.current || event.touches.length !== 1) {
+          return;
+        }
+
+        const touch = event.touches[0];
+        const dx = touch.clientX - startPoint.current.x;
+        const dy = touch.clientY - startPoint.current.y;
+
+        if (!direction.current && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+          direction.current =
+            dx < 0 && Math.abs(dx) > Math.abs(dy) * 1.8
+              ? 'reply'
+              : 'scroll';
+        }
+
+        if (direction.current !== 'reply') return;
+        event.preventDefault();
+        setOffset(Math.max(-64, Math.min(0, dx)));
+      }}
+      onTouchEnd={() => {
+        if (enabled && direction.current === 'reply' && offset <= -46) {
+          navigator.vibrate?.(18);
+          onReply?.();
+        }
+        reset();
+      }}
+      onTouchCancel={reset}
+    >
+      {children}
+      <span
+        className={`message-swipe-reply-icon ${offset <= -24 ? 'visible' : ''}`}
+        aria-hidden="true"
+      >
+        <IoArrowUndo />
+      </span>
+    </div>
+  );
+}
 
 function MessageStatus({ status }) {
   if (status === 'read') {
@@ -211,6 +275,7 @@ function MessageBubble({
   language,
   highlightedMessageId,
   onReplyTargetClick,
+  onReply,
 }) {
   const memberAdded = parseGroupMemberAdded(message.text || '');
 
@@ -247,6 +312,9 @@ function MessageBubble({
   const reactions = (message.reactions || []).filter(
     (item) => item.reaction && Number(item.count || 0) > 0
   );
+  const identityColors = getIdentityColors(
+    message.sender_id || message.username || message.display_name
+  );
   
 
   return (
@@ -266,11 +334,14 @@ function MessageBubble({
           {message.avatar ? (
             <img src={getFileUrl(message.avatar)} alt="" />
           ) : (
-            <span>{message.display_name?.[0] || '?'}</span>
+            <span style={{ backgroundColor: identityColors.background }}>
+              {message.display_name?.[0] || message.username?.[0] || '?'}
+            </span>
           )}
         </button>
     )}
 
+    <SwipeReplyBubble enabled={isGroup} onReply={onReply}>
     <div
       className="message-bubble"
       onContextMenu={(e) => openMessageMenu(e, message, isMine)}
@@ -279,6 +350,7 @@ function MessageBubble({
       {isGroup && !isMine && (
         <button
           className="group-message-author"
+          style={{ color: identityColors.background }}
           onClick={() => onOpenUser?.(message.username)}
         >
           {message.display_name || message.username}
@@ -404,6 +476,7 @@ function MessageBubble({
         </div>
       )}
     </div>
+    </SwipeReplyBubble>
   </div>
 );
 }

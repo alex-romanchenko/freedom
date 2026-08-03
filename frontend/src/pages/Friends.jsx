@@ -11,6 +11,7 @@ import {
 } from '../api/followApi';
 import { getFileUrl } from '../api/fileUrl';
 import { t } from '../utils/i18n';
+import { getIdentityColors } from '../utils/identityColors';
 
 function Friends({ username, onOpenChat, onOpenUser, onRequestsSeen, requestSignal, language }) {
   const [activeTab, setActiveTab] = useState('friends');
@@ -127,11 +128,17 @@ useEffect(() => {
       );
     }
 
+    const colors = getIdentityColors(user.id || user.username);
+
     return (
       <div
         className="friend-avatar friend-placeholder"
         onClick={() => onOpenUser(user.username)}
-        style={{ cursor: 'pointer' }}
+        style={{
+          cursor: 'pointer',
+          backgroundColor: colors.background,
+          color: colors.foreground,
+        }}
       >
         {user.display_name?.[0] || '?'}
       </div>

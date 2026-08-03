@@ -12,6 +12,7 @@ import socket from '../socket';
 import { deleteConversationApi } from '../api/messagesApi';
 import GroupInfoPanel from './chat/GroupInfoPanel';
 import { getFileUrl } from '../api/fileUrl';
+import { t } from '../utils/i18n';
 import {
   IoMic,
   IoMicOff,
@@ -51,6 +52,7 @@ function Chat({
   const [showGroupInfo, setShowGroupInfo] = useState(false);
 
   const [typingUserId, setTypingUserId] = useState(null);
+  const [typingUserName, setTypingUserName] = useState('');
   const typingTimeoutRef = useRef(null);
 
   const [onlineUsers, setOnlineUsers] = useState([]);
@@ -612,14 +614,17 @@ formData.append(
     onUnreadCountChange(totalUnread);
   };
 
-  const startReply = () => {
-    setReplyTo(messageMenu.message);
+  const beginReply = (message) => {
+    if (!message) return;
+    setReplyTo(message);
     closeMessageMenu();
 
     setTimeout(() => {
       textareaRef.current?.focus();
     }, 0);
   };
+
+  const startReply = () => beginReply(messageMenu?.message);
 
   const forwardMessage = () => {
     setForwardMessageData(messageMenu.message);
@@ -813,6 +818,7 @@ const renderCallAvatar = (className) => {
     socket.emit('typing', {
       conversationId: selectedConv.id,
       userId: currentUser.id,
+      displayName: currentUser.display_name || currentUser.username || '',
     });
 
     clearTimeout(typingTimeoutRef.current);
@@ -859,6 +865,20 @@ const renderCallAvatar = (className) => {
     }
 
     return formatLastSeen(lastSeenMap[userId] || selectedConv.last_seen);
+  };
+
+  const getGroupTypingStatus = () => {
+    if (selectedConv?.type !== 'group' || !typingUserId) return '';
+
+    const member = groupInfo?.members?.find(
+      (item) => String(item.id) === String(typingUserId)
+    );
+    const name =
+      typingUserName || member?.display_name || member?.username || '';
+
+    return name
+      ? t('group_user_typing', language).replace('{name}', name)
+      : t('typing', language);
   };
 
 useEffect(() => {
@@ -923,12 +943,13 @@ useEffect(() => {
   }, [showChatEmoji]);
 
   useEffect(() => {
-    const handleTyping = ({ conversationId, userId }) => {
+    const handleTyping = ({ conversationId, userId, displayName }) => {
       if (
         String(conversationId) === String(selectedConv?.id) &&
         String(userId) !== String(currentUser?.id)
       ) {
         setTypingUserId(String(userId));
+        setTypingUserName(String(displayName || ''));
       }
     };
 
@@ -938,6 +959,7 @@ useEffect(() => {
         String(userId) !== String(currentUser?.id)
       ) {
         setTypingUserId(null);
+        setTypingUserName('');
       }
     };
 
@@ -1240,6 +1262,8 @@ useEffect(() => {
               onOpenUser={onOpenUser}
               onOpenGroupInfo={openGroupInfo}
               getChatStatus={getChatStatus}
+              groupTypingStatus={getGroupTypingStatus()}
+              language={language}
               isInCall={isInCall}
               isCalling={isCalling}
               endCall={endCall}
@@ -1294,6 +1318,7 @@ useEffect(() => {
                   language={language}
                   highlightedMessageId={highlightedMessageId}
                   onReplyTargetClick={revealReplyTarget}
+                  onReply={() => beginReply(m)}
                 />
               );
             })}
@@ -1396,6 +1421,7 @@ useEffect(() => {
           onClose={() => setShowGroupInfo(false)}
           onOpenUser={onOpenUser}
           onGroupDeletedOrLeft={handleGroupDeletedOrLeft}
+          language={language}
         />
       )}
       {isFakeFullscreen && videoCallContent &&

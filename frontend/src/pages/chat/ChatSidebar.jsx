@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import CreateGroupPanel from './CreateGroupPanel';
 import { getFileUrl } from '../../api/fileUrl';
+import { getIdentityColors } from '../../utils/identityColors';
 import { IoArrowBack, IoCallOutline, IoVideocamOutline } from 'react-icons/io5';
 
 function parseCallEvent(text = '') {
@@ -102,7 +103,11 @@ function ChatSidebar({
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
-  return (
+          const identityColors = getIdentityColors(
+            c.user_id || c.id || c.username || c.display_name
+          );
+
+          return (
     <div className="chat-sidebar">
       {showCreateGroup && (
         <CreateGroupPanel
@@ -162,7 +167,13 @@ function ChatSidebar({
                   alt=""
                 />
               ) : (
-                <div className="chat-avatar-placeholder">
+                <div
+                  className="chat-avatar-placeholder"
+                  style={{
+                    backgroundColor: identityColors.background,
+                    color: identityColors.foreground,
+                  }}
+                >
                   {c.display_name?.[0] || '?'}
                 </div>
               )}

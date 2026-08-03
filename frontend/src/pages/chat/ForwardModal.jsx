@@ -1,4 +1,5 @@
 import { getFileUrl } from '../../api/fileUrl';
+import { getIdentityColors } from '../../utils/identityColors';
 
 function ForwardModal({
   forwardMessageData,
@@ -34,7 +35,17 @@ function ForwardModal({
                       alt=""
                     />
                   ) : (
-                    <div className="forward-avatar-placeholder">
+                    <div
+                      className="forward-avatar-placeholder"
+                      style={{
+                        backgroundColor: getIdentityColors(
+                          conversation.user_id || conversation.id || conversation.username
+                        ).background,
+                        color: getIdentityColors(
+                          conversation.user_id || conversation.id || conversation.username
+                        ).foreground,
+                      }}
+                    >
                       {conversation.display_name?.[0] || '?'}
                     </div>
                   )}

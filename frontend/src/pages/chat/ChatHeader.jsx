@@ -9,12 +9,16 @@ import {
   
 } from 'react-icons/io5';
 import { getFileUrl } from '../../api/fileUrl';
+import { getIdentityColors } from '../../utils/identityColors';
+import { t } from '../../utils/i18n';
 
 function ChatHeader({
   selectedConv,
   onOpenUser,
   onOpenGroupInfo,
   getChatStatus,
+  groupTypingStatus,
+  language,
   isInCall,
   isCalling,
   isVideoCall,
@@ -28,6 +32,12 @@ function ChatHeader({
   setSelectedConv,
 }) {
   const isGroup = selectedConv?.type === 'group';
+  const identity = getIdentityColors(
+    selectedConv?.username || selectedConv?.display_name || selectedConv?.id
+  );
+  const status = isGroup
+    ? groupTypingStatus || t('group_chat', language)
+    : getChatStatus();
   return (
     <div className="chat-header">
       <button
@@ -51,7 +61,13 @@ function ChatHeader({
             alt=""
           />
         ) : (
-          <div className="chat-header-avatar-placeholder">
+          <div
+            className="chat-header-avatar-placeholder"
+            style={{
+              backgroundColor: identity.background,
+              color: identity.foreground,
+            }}
+          >
             {selectedConv.display_name?.[0] || '?'}
           </div>
         )}
@@ -71,10 +87,10 @@ function ChatHeader({
 
         <span
           className={`chat-header-status ${
-            !isGroup && getChatStatus() === 'online' ? 'online' : ''
-          }`}
+            !isGroup && status === 'online' ? 'online' : ''
+          } ${isGroup && groupTypingStatus ? 'typing' : ''}`}
         >
-          {isGroup ? 'group chat' : getChatStatus()}
+          {status}
         </span>
       </div>
 

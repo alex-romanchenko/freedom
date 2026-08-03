@@ -1086,20 +1086,24 @@ app.post('/api/calls/reject', async (req, res) => {
     });
   });
 
-    socket.on('joinConversation', (conversationId) => {
-      socket.join(`conversation_${conversationId}`);
-      console.log(`Socket ${socket.id} joined conversation_${conversationId}`);
-    });
+  socket.on('joinConversation', (conversationId) => {
+    socket.join(`conversation_${conversationId}`);
+    console.log(`Socket ${socket.id} joined conversation_${conversationId}`);
+  });
 
-    socket.on('leaveConversation', (conversationId) => {
-      socket.leave(`conversation_${conversationId}`);
-      console.log(`Socket ${socket.id} left conversation_${conversationId}`);
-    });
+  socket.on('leaveConversation', (conversationId) => {
+    socket.leave(`conversation_${conversationId}`);
+    console.log(`Socket ${socket.id} left conversation_${conversationId}`);
+  });
 
-    socket.on('typing', ({ conversationId, userId }) => {
+  socket.on('typing', ({ conversationId, userId, displayName }) => {
     socket.to(`conversation_${conversationId}`).emit('typing', {
       conversationId,
       userId,
+      displayName:
+        typeof displayName === 'string'
+          ? displayName.trim().slice(0, 80)
+          : '',
     });
   });
 

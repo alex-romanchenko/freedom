@@ -3,6 +3,7 @@ import { getWhoToFollowApi } from '../api/usersApi';
 import FollowButton from './FollowButton';
 import { getFileUrl } from '../api/fileUrl';
 import { t } from '../utils/i18n';
+import { getIdentityColors } from '../utils/identityColors';
 
 function WhoToFollow({ onOpenUser, language }) {
   const [users, setUsers] = useState([]);
@@ -24,7 +25,10 @@ function WhoToFollow({ onOpenUser, language }) {
     <div className="side-card">
       <h3>{t('who_to_follow', language)}</h3>
 
-      {users.map((user) => (
+      {users.map((user) => {
+        const colors = getIdentityColors(user.id || user.username);
+
+        return (
         <div key={user.id} className="follow-user">
           <div
             className="follow-user-info"
@@ -36,7 +40,13 @@ function WhoToFollow({ onOpenUser, language }) {
                 alt=""
               />
             ) : (
-              <div className="follow-avatar-placeholder">
+              <div
+                className="follow-avatar-placeholder"
+                style={{
+                  backgroundColor: colors.background,
+                  color: colors.foreground,
+                }}
+              >
                 {user.display_name?.[0] || '?'}
               </div>
             )}
@@ -50,7 +60,8 @@ function WhoToFollow({ onOpenUser, language }) {
             language={language}
           />
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

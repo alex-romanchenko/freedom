@@ -1,8 +1,15 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../api/api';
-import { IoClose, IoCameraOutline } from 'react-icons/io5';
+import {
+  IoClose,
+  IoCameraOutline,
+  IoNotificationsOutline,
+  IoNotificationsOffOutline,
+} from 'react-icons/io5';
 import { getFileUrl } from '../../api/fileUrl';
 import AddGroupMembersPanel from './AddGroupMembersPanel';
+import { getIdentityColors } from '../../utils/identityColors';
+import { t } from '../../utils/i18n';
 
 function GroupInfoPanel({
   groupInfo,
@@ -11,6 +18,7 @@ function GroupInfoPanel({
   onClose,
   onOpenUser,
   onGroupDeletedOrLeft,
+  language,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddingMembers, setIsAddingMembers] = useState(false);
@@ -23,6 +31,14 @@ function GroupInfoPanel({
   const [localGroupAvatar, setLocalGroupAvatar] = useState(
     groupInfo?.group_avatar || null
   );
+  const [notificationsMuted, setNotificationsMuted] = useState(
+    Boolean(groupInfo?.notifications_muted)
+  );
+  const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
+
+  useEffect(() => {
+    setNotificationsMuted(Boolean(groupInfo?.notifications_muted));
+  }, [groupInfo?.id, groupInfo?.notifications_muted]);
 
   if (!groupInfo) return null;
 
@@ -55,6 +71,27 @@ function GroupInfoPanel({
     );
   };
 
+  const toggleNotifications = async () => {
+    if (isUpdatingNotifications) return;
+    const nextMuted = !notificationsMuted;
+    setIsUpdatingNotifications(true);
+    setNotificationsMuted(nextMuted);
+
+    try {
+      const response = await api.patch(
+        `/group-chats/${groupInfo.id}/notifications`,
+        { muted: nextMuted }
+      );
+      setNotificationsMuted(Boolean(response.data.notifications_muted));
+    } catch (_) {
+      setNotificationsMuted(!nextMuted);
+    } finally {
+      setIsUpdatingNotifications(false);
+    }
+  };
+
+  const groupColors = getIdentityColors(groupInfo.id || localGroupName);
+
   return (
     <aside className="group-info-panel">
       <div className="group-info-header">
@@ -86,7 +123,10 @@ function GroupInfoPanel({
               alt=""
             />
           ) : (
-            <div className="group-info-avatar-placeholder">
+            <div
+              className="group-info-avatar-placeholder"
+              style={{ backgroundColor: groupColors.background }}
+            >
               {localGroupName?.[0] || '?'}
             </div>
           )}
@@ -151,6 +191,36 @@ function GroupInfoPanel({
         <p>{localMembers.length} members</p>
       </div>
 
+      <button
+        type="button"
+        className="group-notifications-toggle"
+        onClick={toggleNotifications}
+        disabled={isUpdatingNotifications}
+        aria-pressed={notificationsMuted}
+      >
+        <span className="group-notifications-icon">
+          {notificationsMuted ? (
+            <IoNotificationsOffOutline />
+          ) : (
+            <IoNotificationsOutline />
+          )}
+        </span>
+        <span className="group-notifications-copy">
+          <strong>{t('group_notifications', language)}</strong>
+          <small>
+            {t(
+              notificationsMuted
+                ? 'group_notifications_muted'
+                : 'group_notifications_enabled',
+              language
+            )}
+          </small>
+        </span>
+        <span className={`group-notifications-switch ${notificationsMuted ? 'muted' : ''}`}>
+          <span />
+        </span>
+      </button>
+
       <div className="group-members-block">
         <div className="group-members-title-row">
           <h4>{isAddingMembers ? 'Add Members' : 'Members'}</h4>
@@ -184,6 +254,9 @@ function GroupInfoPanel({
               const isOnline = onlineUsers.includes(String(member.id));
               const isGroupAdmin =
                 Number(member.id) === Number(groupInfo.admin_id);
+              const memberColors = getIdentityColors(
+                member.id || member.username || member.display_name
+              );
 
               return (
                 <div key={member.id} className="group-member-row-wrap">
@@ -194,13 +267,18 @@ function GroupInfoPanel({
                     {member.avatar ? (
                       <img src={getFileUrl(member.avatar)} alt="" />
                     ) : (
-                      <div className="group-member-placeholder">
+                      <div
+                        className="group-member-placeholder"
+                        style={{ backgroundColor: memberColors.background }}
+                      >
                         {member.display_name?.[0] || '?'}
                       </div>
                     )}
 
                     <div className="group-member-info">
-                      <strong>{member.display_name}</strong>
+                      <strong style={{ color: memberColors.background }}>
+                        {member.display_name}
+                      </strong>
 
                       <span className={isOnline ? 'online' : ''}>
                         {isOnline ? 'online' : 'offline'}
