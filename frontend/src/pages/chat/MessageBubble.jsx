@@ -58,6 +58,28 @@ function parseCallEvent(text = '') {
   };
 }
 
+function parseGroupMemberAdded(text = '') {
+  if (!text.startsWith('GROUP_MEMBER_ADDED|')) return null;
+
+  const parts = text.split('|');
+  if (parts.length < 4) return null;
+
+  try {
+    return {
+      username: decodeURIComponent(parts[2]),
+      name: decodeURIComponent(parts[3]) || decodeURIComponent(parts[2]),
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+function groupMemberAddedWords(language) {
+  if (language === 'uk') return ['Користувач', 'був доданий'];
+  if (language === 'ru') return ['Пользователь', 'был добавлен'];
+  return ['User', 'was added'];
+}
+
 function currentLanguage() {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -190,6 +212,22 @@ function MessageBubble({
   highlightedMessageId,
   onReplyTargetClick,
 }) {
+  const memberAdded = parseGroupMemberAdded(message.text || '');
+
+  if (memberAdded && isGroup) {
+    const [before, after] = groupMemberAddedWords(language);
+
+    return (
+      <div className="group-member-added-event" data-message-id={message.id}>
+        <span>{before} </span>
+        <button type="button" onClick={() => onOpenUser?.(memberAdded.username)}>
+          {memberAdded.name}
+        </button>
+        <span> {after}</span>
+      </div>
+    );
+  }
+
   const callEvent = parseCallEvent(message.text || '');
 
   if (callEvent && !isGroup) {

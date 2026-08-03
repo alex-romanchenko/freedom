@@ -115,6 +115,20 @@ async function createMessage({
   return result.rows[0];
 }
 
+async function getGroupPushRecipientIds(conversationId) {
+  const result = await pool.query(
+    `
+    SELECT user_id
+    FROM conversation_members
+    WHERE conversation_id = $1
+      AND COALESCE(notifications_muted, false) = false
+    `,
+    [conversationId]
+  );
+
+  return result.rows.map((row) => row.user_id);
+}
+
 async function ensureMessageReactionsTable() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS message_reactions (
@@ -758,6 +772,7 @@ module.exports = {
   markIncomingMessagesAsDelivered,
   clearConversationById,
   getGroupMemberIds,
+  getGroupPushRecipientIds,
   getConversationById,
   ensureMessageReactionsTable,
   getMessageReactions,

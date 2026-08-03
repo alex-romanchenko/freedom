@@ -7,6 +7,7 @@ const {
   getMessageById,
   getForwardableMessageById,
   getGroupMemberIds,
+  getGroupPushRecipientIds,
   markConversationAsRead,
   markMessagesAsRead,
   deleteConversationById,
@@ -293,6 +294,7 @@ async function sendGroupMessage(req, res) {
     }
 
     const memberIds = await getGroupMemberIds(conversationId);
+    const pushRecipientIds = await getGroupPushRecipientIds(conversationId);
 
     if (!memberIds.map(Number).includes(Number(senderId))) {
       return res.status(403).json({
@@ -359,7 +361,7 @@ async function sendGroupMessage(req, res) {
     });
 
     await Promise.all(
-      memberIds
+      pushRecipientIds
         .filter((memberId) => Number(memberId) !== Number(senderId))
         .filter(
           (memberId) => !isUserInConversation(io, memberId, conversationId)
@@ -490,6 +492,7 @@ async function forwardMessage(req, res) {
     const text = forwardedTextFromMessage(originalMessage);
     let targetConversation = null;
     let memberIds = [];
+    let pushRecipientIds = [];
 
     if (targetIsGroup) {
       if (!conversationId) {
@@ -499,6 +502,7 @@ async function forwardMessage(req, res) {
       }
 
       memberIds = await getGroupMemberIds(conversationId);
+      pushRecipientIds = await getGroupPushRecipientIds(conversationId);
 
       if (!memberIds.map(Number).includes(Number(senderId))) {
         return res.status(403).json({
@@ -578,7 +582,7 @@ async function forwardMessage(req, res) {
       });
 
       await Promise.all(
-        memberIds
+        pushRecipientIds
           .filter((memberId) => Number(memberId) !== Number(senderId))
           .filter(
             (memberId) =>

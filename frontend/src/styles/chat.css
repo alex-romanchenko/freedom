@@ -1511,5 +1511,28 @@
   margin-top: 2px;
 }
 
+.group-member-added-event {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  width: 100%;
+  padding: 8px 20px;
+  color: var(--text-muted, #6b7280);
+  font-size: 13px;
+  text-align: center;
+}
+
+.group-member-added-event button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2f80ed;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 
 

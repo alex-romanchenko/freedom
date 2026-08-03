@@ -1,0 +1,2 @@
+ALTER TABLE conversation_members
+ADD COLUMN IF NOT EXISTS notifications_muted BOOLEAN NOT NULL DEFAULT FALSE;

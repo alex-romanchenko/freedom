@@ -62,7 +62,8 @@ async function getGroupInfo(conversationId, currentUserId) {
       conversations.group_name,
       conversations.group_avatar,
       conversations.admin_id,
-      conversations.created_at
+      conversations.created_at,
+      conversation_members.notifications_muted
     FROM conversations
     JOIN conversation_members
       ON conversation_members.conversation_id = conversations.id
@@ -156,8 +157,10 @@ async function addGroupMembers(conversationId, adminId, memberIds) {
 
   const uniqueMemberIds = [...new Set(memberIds.map(Number))];
 
+  const addedMemberIds = [];
+
   for (const userId of uniqueMemberIds) {
-    await pool.query(
+    const result = await pool.query(
       `
       INSERT INTO conversation_members (
         conversation_id,
@@ -166,12 +169,43 @@ async function addGroupMembers(conversationId, adminId, memberIds) {
       )
       VALUES ($1, $2, 'member')
       ON CONFLICT (conversation_id, user_id) DO NOTHING
+      RETURNING user_id
       `,
       [conversationId, userId]
     );
+
+    if (result.rows[0]) {
+      addedMemberIds.push(result.rows[0].user_id);
+    }
   }
 
-  return true;
+  if (addedMemberIds.length === 0) return [];
+
+  const usersResult = await pool.query(
+    `
+    SELECT id, username, display_name
+    FROM users
+    WHERE id = ANY($1::int[])
+    `,
+    [addedMemberIds]
+  );
+
+  return usersResult.rows;
+}
+
+async function setGroupNotificationsMuted(conversationId, userId, muted) {
+  const result = await pool.query(
+    `
+    UPDATE conversation_members
+    SET notifications_muted = $3
+    WHERE conversation_id = $1
+      AND user_id = $2
+    RETURNING notifications_muted
+    `,
+    [conversationId, userId, muted]
+  );
+
+  return result.rows[0];
 }
 
 async function removeGroupMember(conversationId, adminId, memberId) {
@@ -234,6 +268,7 @@ module.exports = {
   updateGroupName,
   updateGroupAvatar,
   addGroupMembers,
+  setGroupNotificationsMuted,
   removeGroupMember,
   leaveGroup,
   deleteGroup,

@@ -4,12 +4,28 @@ const {
   updateGroupName,
   updateGroupAvatar,
   addGroupMembers,
+  setGroupNotificationsMuted,
   removeGroupMember,
   leaveGroup,
   deleteGroup,
   
 } = require('../models/groupChat.model');
 const Notification = require('../models/notification.model');
+const {
+  createMessage,
+  getMessageById,
+  getConversationById,
+  getGroupMemberIds,
+} = require('../models/message.model');
+
+function groupMemberAddedText(member) {
+  return [
+    'GROUP_MEMBER_ADDED',
+    member.id,
+    encodeURIComponent(member.username || ''),
+    encodeURIComponent(member.display_name || ''),
+  ].join('|');
+}
 
 async function createGroupChat(req, res) {
   try {
@@ -96,6 +112,35 @@ async function getGroupChatInfo(req, res) {
   }
 }
 
+async function updateGroupNotifications(req, res) {
+  try {
+    const userId = req.user.id;
+    const { conversationId } = req.params;
+    const { muted } = req.body;
+
+    if (typeof muted !== 'boolean') {
+      return res.status(400).json({ message: 'Muted must be a boolean' });
+    }
+
+    const membership = await setGroupNotificationsMuted(
+      conversationId,
+      userId,
+      muted
+    );
+
+    if (!membership) {
+      return res.status(404).json({ message: 'Group membership not found' });
+    }
+
+    res.json({ notifications_muted: membership.notifications_muted });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error updating group notifications',
+      error: error.message,
+    });
+  }
+}
+
 async function renameGroupChat(req, res) {
   try {
     const adminId = req.user.id;
@@ -169,27 +214,68 @@ async function addMembersToGroup(req, res) {
       });
     }
     await Promise.all(
-  memberIds.map((memberId) =>
-    Notification.createNotification({
-      userId: memberId,
-      senderId: adminId,
-      type: 'group_added',
-      entityId: conversationId,
-      entityType: 'conversation',
-      text: 'added you to a group chat',
-    })
-  )
-);
+      result.map((member) =>
+        Notification.createNotification({
+          userId: member.id,
+          senderId: adminId,
+          type: 'group_added',
+          entityId: conversationId,
+          entityType: 'conversation',
+          text: 'added you to a group chat',
+        })
+      )
+    );
 
-const io = req.app.get('io');
+    const io = req.app.get('io');
 
-memberIds.forEach((memberId) => {
-  io.to(`user_${memberId}`).emit('groupAdded', {
-    conversationId,
-  });
-});
+    result.forEach((member) => {
+      io.to(`user_${member.id}`).emit('groupAdded', { conversationId });
+    });
 
-    res.json({ message: 'Members added' });
+    const group = await getConversationById(conversationId);
+    const currentMemberIds = await getGroupMemberIds(conversationId);
+
+    for (const member of result) {
+      const message = await createMessage({
+        conversationId,
+        senderId: adminId,
+        text: groupMemberAddedText(member),
+        image: null,
+        video: null,
+        audio: null,
+        audioDuration: 0,
+        file: null,
+        fileName: null,
+        fileMime: null,
+        fileSize: 0,
+      });
+      const fullMessage = await getMessageById(message.id, adminId);
+      const payload = {
+        conversationId: Number(conversationId),
+        group: {
+          id: group.id,
+          group_name: group.group_name,
+          group_avatar: group.group_avatar,
+        },
+        message: fullMessage,
+      };
+      const conversationRoom = io.sockets.adapter.rooms.get(
+        `conversation_${conversationId}`
+      );
+
+      io.to(`conversation_${conversationId}`).emit('newMessage', payload);
+      currentMemberIds.forEach((memberId) => {
+        const userRoom = io.sockets.adapter.rooms.get(`user_${memberId}`);
+        if (!userRoom) return;
+        userRoom.forEach((socketId) => {
+          if (!conversationRoom || !conversationRoom.has(socketId)) {
+            io.to(socketId).emit('newMessage', payload);
+          }
+        });
+      });
+    }
+
+    res.json({ message: 'Members added', members: result });
   } catch (error) {
     res.status(500).json({
       message: 'Error adding members',
@@ -291,6 +377,7 @@ module.exports = {
   renameGroupChat,
   changeGroupAvatar,
   addMembersToGroup,
+  updateGroupNotifications,
   removeMemberFromGroup,
   leaveGroupChat,
   deleteGroupChat,

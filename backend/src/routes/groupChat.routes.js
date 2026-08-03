@@ -7,6 +7,7 @@ const {
   renameGroupChat,
   changeGroupAvatar,
   addMembersToGroup,
+  updateGroupNotifications,
   removeMemberFromGroup,
   leaveGroupChat,
   deleteGroupChat
@@ -22,6 +23,11 @@ router.post(
 );
 router.get('/:conversationId', authMiddleware, getGroupChatInfo);
 router.patch('/:conversationId/name', authMiddleware, renameGroupChat);
+router.patch(
+  '/:conversationId/notifications',
+  authMiddleware,
+  updateGroupNotifications
+);
 router.delete('/:conversationId/leave', authMiddleware, leaveGroupChat);
 router.delete('/:conversationId', authMiddleware, deleteGroupChat);
 router.patch(
