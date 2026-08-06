@@ -309,6 +309,7 @@
   background: #e5e7eb;
   color: #111827;
   word-break: break-word;
+  overflow: hidden;
 }
 
 .message-row.mine .message-bubble {
@@ -345,6 +346,24 @@
   gap: 4px;
   margin-left: 6px;
   float: right;
+  vertical-align: bottom;
+}
+
+.message-bubble.has-media {
+  position: relative;
+  padding-bottom: 28px;
+}
+
+.message-bubble.has-media .message-meta {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  z-index: 2;
+  margin-left: 0;
+  padding: 2px 5px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.62);
+  color: #fff;
 }
 
 .message-swipe-shell {
