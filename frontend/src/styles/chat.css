@@ -351,10 +351,18 @@
 
 .message-bubble.has-media {
   position: relative;
+  max-width: 65%;
+}
+
+.message-bubble.has-media-caption {
+  max-width: 50%;
+}
+
+.message-bubble.has-media-only {
   padding-bottom: 28px;
 }
 
-.message-bubble.has-media .message-meta {
+.message-bubble.has-media-only .message-meta {
   position: absolute;
   right: 8px;
   bottom: 6px;
@@ -364,6 +372,15 @@
   border-radius: 8px;
   background: rgba(15, 23, 42, 0.62);
   color: #fff;
+}
+
+.message-bubble.has-media-caption .message-meta {
+  position: static;
+  float: right;
+  margin-top: 4px;
+  padding: 0;
+  background: transparent;
+  color: inherit;
 }
 
 .message-swipe-shell {
@@ -404,7 +421,19 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  margin-top: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: -2px;
+  margin-left: 8px;
+  align-self: flex-start;
+  position: relative;
+  z-index: 1;
+}
+
+.message-row.mine .message-reactions {
+  align-self: flex-end;
+  margin-left: 0;
+  margin-right: 8px;
 }
 
 .message-reactions span {
@@ -525,9 +554,10 @@
 
 .message-image {
   display: block;
-  max-width: 260px;
-  max-height: 320px;
-  object-fit: cover;
+  width: 100%;
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
   border-radius: 14px;
   margin-top: 8px;
   cursor: pointer;
@@ -576,8 +606,8 @@
 .message-video {
   display: block;
   width: 100%;
-  max-height: 320px;
-  object-fit: cover;
+  max-height: 60vh;
+  object-fit: contain;
   border-radius: 14px;
   margin-top: 8px;
   background: #000;

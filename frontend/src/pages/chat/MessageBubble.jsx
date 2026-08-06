@@ -343,7 +343,9 @@ function MessageBubble({
 
     <SwipeReplyBubble enabled={isGroup} onReply={onReply}>
     <div
-      className={`message-bubble ${message.image || message.video ? 'has-media' : ''}`}
+      className={`message-bubble ${message.image || message.video ? 'has-media' : ''} ${
+        message.image || message.video ? (message.text?.trim() ? 'has-media-caption' : 'has-media-only') : ''
+      }`}
       onContextMenu={(e) => openMessageMenu(e, message, isMine)}
       onDoubleClick={() => setMessageReaction?.(message, '❤️')}
     >
@@ -385,8 +387,6 @@ function MessageBubble({
         </>
       ) : (
         <>
-          {message.text && <p>{message.text}</p>}
-
           {message.image && (
             <img
               className="message-image"
@@ -448,6 +448,8 @@ function MessageBubble({
             </a>
           )
         )}
+
+        {message.text && <p>{message.text}</p>}
         </>
       )}
 
@@ -462,20 +464,20 @@ function MessageBubble({
         {isMine && <MessageStatus status={message.status} />}
       </span>
 
-      {reactions.length > 0 && (
-        <div className="message-reactions">
-          {reactions.map((item) => (
-            <span
-              key={item.reaction}
-              className={item.reacted_by_me ? 'mine' : ''}
-            >
-              {item.reaction}
-              {Number(item.count) > 1 ? ` ${item.count}` : ''}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
+    {reactions.length > 0 && (
+      <div className="message-reactions">
+        {reactions.map((item) => (
+          <span
+            key={item.reaction}
+            className={item.reacted_by_me ? 'mine' : ''}
+          >
+            {item.reaction}
+            {Number(item.count) > 1 ? ` ${item.count}` : ''}
+          </span>
+        ))}
+      </div>
+    )}
     </SwipeReplyBubble>
   </div>
 );
