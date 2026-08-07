@@ -5,8 +5,8 @@ export async function getFeedPosts() {
   return res.data;
 }
 
-export async function createPostApi(formData) {
-  const res = await api.post('/posts', formData);
+export async function createPostApi(formData, config = {}) {
+  const res = await api.post('/posts', formData, config);
   return res.data;
 }
 

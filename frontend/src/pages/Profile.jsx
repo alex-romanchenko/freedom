@@ -12,6 +12,7 @@ import PostCard from '../components/PostCard';
 import PhotoModal from '../components/PhotoModal';
 import { getFileUrl } from '../api/fileUrl';
 import { getStoredLanguage, t } from '../utils/i18n';
+import { compressImageFile } from '../utils/mediaCompression';
 
 function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
   const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -122,7 +123,12 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('avatar', file);
+    const uploadAvatarFile = await compressImageFile(file, {
+      maxWidth: 512,
+      maxHeight: 512,
+      quality: 0.82,
+    });
+    formData.append('avatar', uploadAvatarFile);
 
     await updateAvatarApi(formData);
     loadProfile();
@@ -132,7 +138,12 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
     if (!file) return;
 
     const formData = new FormData();
-    formData.append('headerImage', file);
+    const uploadHeaderFile = await compressImageFile(file, {
+      maxWidth: 1800,
+      maxHeight: 900,
+      quality: 0.82,
+    });
+    formData.append('headerImage', uploadHeaderFile);
 
     await updateHeaderApi(formData);
     loadProfile();

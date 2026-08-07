@@ -2,15 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { createPostApi } from '../api/postsApi';
 import EmojiPicker from 'emoji-picker-react';
 import { t } from '../utils/i18n';
+import { compressImageFile } from '../utils/mediaCompression';
 
 function CreatePostForm({ onPostCreated, language }) {
   const [text, setText] = useState('');
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fileInputRef = useRef(null);
   const emojiPickerRef = useRef(null);
+  const uploadControllerRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -53,16 +57,30 @@ function CreatePostForm({ onPostCreated, language }) {
 
   const handleSubmit = async () => {
     if (!text.trim() && !image) return;
+    const controller = new AbortController();
+    uploadControllerRef.current = controller;
+    setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       const formData = new FormData();
       formData.append('text', text.trim());
 
       if (image) {
-        formData.append('image', image);
+        const uploadImage = await compressImageFile(image, {
+          maxWidth: 1600,
+          maxHeight: 1600,
+          quality: 0.82,
+        });
+        formData.append('image', uploadImage);
       }
 
-      await createPostApi(formData);
+      await createPostApi(formData, {
+        signal: controller.signal,
+        onUploadProgress: (event) => {
+          if (event.total) setUploadProgress(Math.round((event.loaded / event.total) * 100));
+        },
+      });
 
       setText('');
       setImage(null);
@@ -75,10 +93,17 @@ function CreatePostForm({ onPostCreated, language }) {
 
       onPostCreated && onPostCreated();
     } catch (err) {
+      if (err?.code === 'ERR_CANCELED' || controller.signal.aborted) return;
       console.error(err);
       alert(t('error_creating_post', language));
+    } finally {
+      uploadControllerRef.current = null;
+      setIsUploading(false);
+      setUploadProgress(null);
     }
   };
+
+  const cancelUpload = () => uploadControllerRef.current?.abort();
 
   return (
     <div className="post-composer">
@@ -100,6 +125,18 @@ function CreatePostForm({ onPostCreated, language }) {
             />
           ) : (
             <img src={imagePreview} alt="Preview" />
+          )}
+
+          {isUploading && (
+            <div className="post-upload-progress" aria-live="polite">
+              <svg viewBox="0 0 44 44" aria-hidden="true">
+                <circle className="post-upload-track" cx="22" cy="22" r="19" />
+                <circle className="post-upload-value" cx="22" cy="22" r="19"
+                  style={{ strokeDashoffset: 119.4 - (119.4 * (uploadProgress ?? 0)) / 100 }} />
+              </svg>
+              <button type="button" onClick={cancelUpload} aria-label="Cancel upload">×</button>
+              <span>{uploadProgress ?? 0}%</span>
+            </div>
           )}
 
           <button
@@ -150,6 +187,7 @@ function CreatePostForm({ onPostCreated, language }) {
         <button
           className="primary-btn composer-post-btn"
           onClick={handleSubmit}
+          disabled={isUploading}
         >
           {t('post', language)}
         </button>

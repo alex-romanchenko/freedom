@@ -3,6 +3,7 @@ import api from '../api/api';
 import PhotoModal from '../components/PhotoModal';
 import { getFileUrl } from '../api/fileUrl';
 import { IoHeartOutline, IoHeart } from 'react-icons/io5';
+import { compressImageFile } from '../utils/mediaCompression';
 
 export default function Photos({ userId }) {
   const [photos, setPhotos] = useState([]);
@@ -27,7 +28,12 @@ export default function Photos({ userId }) {
     if (!isMyPhotos || !file) return;
 
     const formData = new FormData();
-    formData.append('photo', file);
+    const uploadPhotoFile = await compressImageFile(file, {
+      maxWidth: 1600,
+      maxHeight: 1600,
+      quality: 0.82,
+    });
+    formData.append('photo', uploadPhotoFile);
     formData.append('description', description);
 
     try {

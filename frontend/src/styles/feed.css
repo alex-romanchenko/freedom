@@ -705,3 +705,11 @@
   object-fit: cover;
   display: block;
 }
+
+.post-upload-progress { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.24); border-radius: 16px; }
+.post-upload-progress svg { width: 58px; height: 58px; transform: rotate(-90deg); }
+.post-upload-progress circle { fill: none; stroke-width: 4; }
+.post-upload-track { stroke: rgba(255,255,255,.35); }
+.post-upload-value { stroke: #fff; stroke-linecap: round; stroke-dasharray: 119.4; }
+.post-upload-progress button { position: absolute; width: 30px; height: 30px; border: 0; border-radius: 50%; background: #dc2626; color: #fff; font-size: 22px; line-height: 1; cursor: pointer; }
+.post-upload-progress span { position: absolute; bottom: 7px; color: #fff; font-size: 11px; font-weight: 700; }
