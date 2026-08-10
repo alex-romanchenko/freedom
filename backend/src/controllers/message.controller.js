@@ -163,7 +163,7 @@ async function sendMessage(req, res) {
   try {
     const senderId = req.user.id;
     const { userId } = req.params;
-    const { text } = req.body;
+    const { text, clientMessageId } = req.body;
     const {
       imagePath,
       videoPath,
@@ -208,7 +208,9 @@ const message = await createMessage({
 });
 
     const fullMessage = await getMessageById(message.id, senderId);
-let finalMessage = fullMessage;
+    let finalMessage = clientMessageId
+      ? { ...fullMessage, client_message_id: clientMessageId }
+      : fullMessage;
 
 const io = req.app.get('io');
 
@@ -223,7 +225,7 @@ if (userRoom) {
 
   if (deliveredMessage) {
     finalMessage = {
-      ...fullMessage,
+      ...finalMessage,
       status: 'delivered',
     };
   }
@@ -275,7 +277,7 @@ async function sendGroupMessage(req, res) {
   try {
     const senderId = req.user.id;
     const { conversationId } = req.params;
-    const { text } = req.body;
+    const { text, clientMessageId } = req.body;
     const {
       imagePath,
       videoPath,
@@ -325,6 +327,9 @@ async function sendGroupMessage(req, res) {
     });
 
     const fullMessage = await getMessageById(message.id, senderId);
+    const finalMessage = clientMessageId
+      ? { ...fullMessage, client_message_id: clientMessageId }
+      : fullMessage;
 
     const io = req.app.get('io');
 
@@ -337,7 +342,7 @@ async function sendGroupMessage(req, res) {
         group_avatar: group.group_avatar,
       },
 
-      message: fullMessage,
+      message: finalMessage,
     };
 
     const conversationRoom = io.sockets.adapter.rooms.get(
