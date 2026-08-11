@@ -159,6 +159,21 @@ function isUserInConversation(io, userId, conversationId) {
   );
 }
 
+// A user can have several logged-in devices. A message in an open chat is
+// delivered through the conversation room, while the user's other devices are
+// only in `user_<id>`. Delivering to the latter keeps chat lists in sync
+// without duplicating the event on devices already in the conversation room.
+function emitMessageToUserDevices(io, userId, conversationRoom, payload) {
+  const userRoom = io.sockets.adapter.rooms.get(`user_${userId}`);
+  if (!userRoom) return;
+
+  userRoom.forEach((socketId) => {
+    if (!conversationRoom || !conversationRoom.has(socketId)) {
+      io.to(socketId).emit('newMessage', payload);
+    }
+  });
+}
+
 async function sendMessage(req, res) {
   try {
     const senderId = req.user.id;
@@ -238,12 +253,10 @@ const payload = {
 
 io.to(`conversation_${conversation.id}`).emit('newMessage', payload);
 
+emitMessageToUserDevices(io, senderId, conversationRoom, payload);
+
 if (userRoom) {
-  userRoom.forEach((socketId) => {
-    if (!conversationRoom || !conversationRoom.has(socketId)) {
-      io.to(socketId).emit('newMessage', payload);
-    }
-  });
+  emitMessageToUserDevices(io, userId, conversationRoom, payload);
 }
 
 if (!isUserInConversation(io, userId, conversation.id)) {
@@ -352,17 +365,7 @@ async function sendGroupMessage(req, res) {
     io.to(`conversation_${conversationId}`).emit('newMessage', payload);
 
     memberIds.forEach((memberId) => {
-      if (Number(memberId) === Number(senderId)) return;
-
-      const userRoom = io.sockets.adapter.rooms.get(`user_${memberId}`);
-
-      if (!userRoom) return;
-
-      userRoom.forEach((socketId) => {
-        if (!conversationRoom || !conversationRoom.has(socketId)) {
-          io.to(socketId).emit('newMessage', payload);
-        }
-      });
+      emitMessageToUserDevices(io, memberId, conversationRoom, payload);
     });
 
     await Promise.all(
@@ -574,16 +577,7 @@ async function forwardMessage(req, res) {
       io.to(`conversation_${targetConversation.id}`).emit('newMessage', payload);
 
       memberIds.forEach((memberId) => {
-        if (Number(memberId) === Number(senderId)) return;
-
-        const userRoom = io.sockets.adapter.rooms.get(`user_${memberId}`);
-        if (!userRoom) return;
-
-        userRoom.forEach((socketId) => {
-          if (!conversationRoom || !conversationRoom.has(socketId)) {
-            io.to(socketId).emit('newMessage', payload);
-          }
-        });
+        emitMessageToUserDevices(io, memberId, conversationRoom, payload);
       });
 
       await Promise.all(
@@ -629,12 +623,10 @@ async function forwardMessage(req, res) {
 
       io.to(`conversation_${targetConversation.id}`).emit('newMessage', payload);
 
+      emitMessageToUserDevices(io, senderId, conversationRoom, payload);
+
       if (userRoom) {
-        userRoom.forEach((socketId) => {
-          if (!conversationRoom || !conversationRoom.has(socketId)) {
-            io.to(socketId).emit('newMessage', payload);
-          }
-        });
+        emitMessageToUserDevices(io, userId, conversationRoom, payload);
       }
 
       if (!isUserInConversation(io, userId, targetConversation.id)) {

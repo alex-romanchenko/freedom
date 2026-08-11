@@ -79,6 +79,13 @@ try {
       post: fullPost,
     });
   });
+
+  // Also notify every session of the author. This keeps the "My posts" feed
+  // synchronized between phone, desktop and any other signed-in device.
+  io.to(`user_${userId}`).emit('newPost', {
+    ownerId: userId,
+    post: fullPost,
+  });
 } catch (notifyError) {
   console.error('New post notification error:', notifyError);
 }
