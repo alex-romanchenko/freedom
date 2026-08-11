@@ -931,6 +931,16 @@ app.post('/api/calls/reject', async (req, res) => {
     }
 
     io.to(`user_${callerId}`).emit('callRejected');
+    // HTTP rejection is commonly produced by a background CallKit action,
+    // where the device may not have an active socket. Broadcast to the whole
+    // receiver room so foreground sibling devices close without waiting for FCM.
+    io.to(`user_${receiverId}`).emit('callEnded', {
+      callerId,
+      from: receiverId,
+      to: callerId,
+      callSessionId: callSessionId || null,
+      reason: 'rejected_on_other_device',
+    });
 
     try {
       await deletePendingCall(receiverId, callerId);
@@ -947,7 +957,10 @@ app.post('/api/calls/reject', async (req, res) => {
       console.error('Delete pending HTTP rejected call error:', error.message);
     }
 
-    await sendCallCancelPush(callerId, receiverId, { callSessionId });
+    // The rejecting device has already closed its own CallKit UI.  Every
+    // other device of the receiver must receive the same cancellation too.
+    await sendCallCancelPush(receiverId, callerId, { callSessionId });
+    await sendCallCancelPush(callerId, callerId, { callSessionId });
 
     res.json({ message: 'Call rejected' });
   } catch (error) {
@@ -1352,6 +1365,9 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
     const answeredElsewhere = {
       from: actorId,
       to,
+      // `to` is the original caller.  Other receiver devices use this to
+      // match and close their incoming CallKit session.
+      callerId: to,
       callSessionId: resolvedCallSessionId,
     };
 
@@ -1393,11 +1409,23 @@ socket.on('rejectCall', async ({ to, from, callSessionId }) => {
     }
   }
 
-  io.to(`user_${to}`).emit('callRejected');
+    if (from) {
+      // A receiver can be ringing on several devices.  Do not rely only on
+      // FCM here: foreground clients must also close immediately over Socket.IO.
+      socket.to(`user_${from}`).emit('callHandledOnOtherDevice', {
+        callerId: to,
+        callSessionId: callSessionId || null,
+      });
+      socket.to(`user_${from}`).emit('callEnded', {
+        callerId: to,
+        from,
+        to,
+        callSessionId: callSessionId || null,
+        reason: 'rejected_on_other_device',
+      });
+    }
 
-  if (from) {
-    socket.to(`user_${from}`).emit('callHandledOnOtherDevice');
-  }
+    io.to(`user_${to}`).emit('callRejected');
 
   if (from && to) {
     try {
@@ -1417,7 +1445,9 @@ socket.on('rejectCall', async ({ to, from, callSessionId }) => {
   }
 
   if (to && from) {
-    await sendCallCancelPush(to, from, { callSessionId });
+    // Notify every FCM token registered for the receiver, not the caller.
+    // This is what closes CallKit on receiver devices which are backgrounded.
+    await sendCallCancelPush(from, to, { callSessionId });
   }
 });
 
