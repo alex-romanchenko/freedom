@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { getFileUrl } from '../../api/fileUrl';
 import AudioMessagePlayer from './AudioMessagePlayer';
 import { t } from '../../utils/i18n';
-import { getIdentityColors } from '../../utils/identityColors';
+import { getIdentityColors, getIdentityNameColor } from '../../utils/identityColors';
 import {
   IoArrowUndo,
   IoArrowDown,
@@ -342,7 +342,10 @@ function MessageBubble({
     (item) => item.reaction && Number(item.count || 0) > 0
   );
   const identityColors = getIdentityColors(
-    message.sender_id || message.username || message.display_name
+    message.username || message.sender_id || message.display_name
+  );
+  const identityNameColor = getIdentityNameColor(
+    message.username || message.sender_id || message.display_name
   );
   
 
@@ -383,7 +386,7 @@ function MessageBubble({
       {isGroup && !isMine && (
         <button
           className="group-message-author"
-          style={{ color: identityColors.background }}
+          style={{ color: identityNameColor }}
           onClick={() => onOpenUser?.(message.username)}
         >
           {message.display_name || message.username}

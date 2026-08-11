@@ -23,3 +23,7 @@ export function getIdentityColors(value) {
   const background = IDENTITY_COLORS[stableHash(value) % IDENTITY_COLORS.length];
   return { background, foreground: '#ffffff' };
 }
+
+export function getIdentityNameColor(value) {
+  return IDENTITY_COLORS[stableHash(value) % IDENTITY_COLORS.length];
+}
