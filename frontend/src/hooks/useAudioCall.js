@@ -296,14 +296,11 @@ const getLocalMedia = async (
 
     await peer.setLocalDescription(answer);
 
-    socket.emit('acceptCallOnDevice', {
-      from: currentUserId,
-    });
-
     socket.emit('answerCall', {
       to: incomingCall.from,
       from: currentUserId,
       answer,
+      callSessionId: incomingCall.callSessionId,
     });
 
     setCallUserId(incomingCall.from);
@@ -434,7 +431,7 @@ const rejectCall = () => {
 };
 
   useEffect(() => {
-  const handleIncomingCall = ({ from, offer, withVideo, caller }) => {
+  const handleIncomingCall = ({ from, offer, withVideo, caller, callSessionId }) => {
     if (isCalling || isInCall || peerRef.current) {
       return;
     }
@@ -452,6 +449,7 @@ const rejectCall = () => {
       offer,
       withVideo,
       caller,
+      callSessionId,
     });
   };
 
@@ -526,6 +524,7 @@ const handleCallHandledOnOtherDevice = () => {
   socket.on('callEnded', handleCallEnded);
   socket.on('callRejected', handleCallRejected);
   socket.on('callHandledOnOtherDevice', handleCallHandledOnOtherDevice);
+  socket.on('callAnsweredOnOtherDevice', handleCallHandledOnOtherDevice);
 
   return () => {
     socket.off('incomingCall', handleIncomingCall);
@@ -534,6 +533,7 @@ const handleCallHandledOnOtherDevice = () => {
     socket.off('callEnded', handleCallEnded);
     socket.off('callRejected', handleCallRejected);
     socket.off('callHandledOnOtherDevice', handleCallHandledOnOtherDevice);
+    socket.off('callAnsweredOnOtherDevice', handleCallHandledOnOtherDevice);
   };
 }, [isCalling, isInCall]);
 

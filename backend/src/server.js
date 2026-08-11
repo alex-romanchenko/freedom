@@ -517,6 +517,7 @@ async function sendCallCancelPush(
     showMissedNotification = false,
     withVideo = false,
     callSessionId = null,
+    reason = null,
   } = {}
 ) {
   try {
@@ -546,6 +547,7 @@ async function sendCallCancelPush(
           type: 'call_cancel',
           callerId: callerId ? String(callerId) : '',
           callSessionId: callSessionId ? String(callSessionId) : '',
+          ...(reason ? { reason: String(reason) } : {}),
           ...(showMissedNotification
             ? {
                 missedNotification: 'true',
@@ -1272,6 +1274,8 @@ socket.on('callUser', async ({ to, offer, from, withVideo, callSessionId }) => {
 
 socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
   const actorId = from || socket.userId;
+  let resolvedCallSessionId = callSessionId || null;
+  let answeredOnThisDevice = false;
 
   console.log('ANSWER CALL:', { from: actorId, to });
 
@@ -1283,6 +1287,7 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
       const pendingSessionId =
         getPendingCallSessionId(to, actorId) ||
         getPendingCallSessionId(actorId, to);
+      resolvedCallSessionId = pendingSessionId || callSessionId || null;
 
       if (
         callSessionId &&
@@ -1298,15 +1303,37 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
         return;
       }
 
+      const activeCall = getActiveCallForUser(actorId);
+      const activePeerId = getOtherActiveCallUser(activeCall, actorId);
+      if (
+        activeCall &&
+        String(activePeerId) === String(to) &&
+        (!resolvedCallSessionId ||
+          !activeCall.callSessionId ||
+          String(resolvedCallSessionId) === String(activeCall.callSessionId))
+      ) {
+        console.log('ANSWER CALL IGNORED: already answered on another device', {
+          from: actorId,
+          to,
+          callSessionId: resolvedCallSessionId,
+        });
+        socket.emit('callAnsweredOnOtherDevice', {
+          from: actorId,
+          to,
+          callSessionId: activeCall.callSessionId || resolvedCallSessionId,
+        });
+        return;
+      }
+
       setActiveCall(
         actorId,
         to,
         pendingCall?.with_video,
-        pendingSessionId || callSessionId,
+        resolvedCallSessionId,
         pendingCall?.caller_id || to,
         pendingCall?.receiver_id || actorId
       );
-      clearIncomingCallDelivery(pendingSessionId || callSessionId);
+      clearIncomingCallDelivery(resolvedCallSessionId);
       await deletePendingCall(actorId, to);
       await deletePendingCall(to, actorId);
       clearPendingCallTimeout(to, actorId);
@@ -1315,16 +1342,36 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
       clearPendingCallIceCandidates(actorId, to);
       clearPendingCallSessionId(to, actorId);
       clearPendingCallSessionId(actorId, to);
+      answeredOnThisDevice = true;
     } catch (error) {
       console.error('Delete pending answered call error:', error.message);
     }
+  }
+
+  if (answeredOnThisDevice) {
+    const answeredElsewhere = {
+      from: actorId,
+      to,
+      callSessionId: resolvedCallSessionId,
+    };
+
+    // The accepted socket stays in the call. Every other device of the
+    // receiver must immediately close its incoming-call UI and ringtone.
+    socket.to(`user_${actorId}`).emit(
+      'callAnsweredOnOtherDevice',
+      answeredElsewhere
+    );
+    await sendCallCancelPush(actorId, to, {
+      callSessionId: resolvedCallSessionId,
+      reason: 'answered_elsewhere',
+    });
   }
 
   io.to(`user_${to}`).emit('callAnswered', {
     answer,
     from: actorId,
     to,
-    callSessionId,
+    callSessionId: resolvedCallSessionId,
   });
 });
 
@@ -1374,9 +1421,14 @@ socket.on('rejectCall', async ({ to, from, callSessionId }) => {
   }
 });
 
-socket.on('acceptCallOnDevice', ({ from }) => {
+socket.on('acceptCallOnDevice', ({ from, to, callSessionId }) => {
   if (from) {
     socket.to(`user_${from}`).emit('callHandledOnOtherDevice');
+    socket.to(`user_${from}`).emit('callAnsweredOnOtherDevice', {
+      from,
+      to,
+      callSessionId: callSessionId || null,
+    });
   }
 });
 
