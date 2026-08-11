@@ -102,6 +102,24 @@ function MessageStatus({ status }) {
   );
 }
 
+function standaloneEmojiCount(text) {
+  const value = text?.trim();
+  if (!value) return 0;
+
+  let count = 0;
+  for (const symbol of Array.from(value)) {
+    if (/\s/u.test(symbol) || /[\u200D\uFE0F\u20E3]/u.test(symbol)) {
+      continue;
+    }
+    if (/^[\u{1F3FB}-\u{1F3FF}]$/u.test(symbol)) continue;
+    if (!/^[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u00A9\u00AE\u203C\u2049\u2122\u2139\u3030\u303D\u3297\u3299]$/u.test(symbol)) {
+      return 0;
+    }
+    count += 1;
+  }
+  return count;
+}
+
 function parseCallEvent(text = '') {
   if (!text.startsWith('CALL_EVENT|')) return null;
 
@@ -309,6 +327,17 @@ function MessageBubble({
 
   const forwardedMessage = parseForwardMessage(message.text);
   const replyMessage = parseReplyMessage(message.text);
+  const visibleText = forwardedMessage
+    ? forwardedMessage.text
+    : replyMessage
+      ? replyMessage.text
+      : message.text;
+  const emojiCount = standaloneEmojiCount(visibleText);
+  const emojiClass = emojiCount === 1
+    ? 'emoji-only emoji-only-single'
+    : emojiCount > 1
+      ? 'emoji-only'
+      : '';
   const reactions = (message.reactions || []).filter(
     (item) => item.reaction && Number(item.count || 0) > 0
   );
@@ -370,7 +399,7 @@ function MessageBubble({
             </div>
           </div>
 
-          <p>{forwardedMessage.text}</p>
+          {forwardedMessage.text && <p className={emojiClass}>{forwardedMessage.text}</p>}
         </>
       ) : replyMessage ? (
         <>
@@ -412,7 +441,7 @@ function MessageBubble({
             </div>
           )}
 
-          {replyMessage.text && <p>{replyMessage.text}</p>}
+          {replyMessage.text && <p className={emojiClass}>{replyMessage.text}</p>}
         </>
       ) : (
         <>
@@ -478,7 +507,7 @@ function MessageBubble({
           )
         )}
 
-        {message.text && <p>{message.text}</p>}
+        {message.text && <p className={emojiClass}>{message.text}</p>}
         </>
       )}
 

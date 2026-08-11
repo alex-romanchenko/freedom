@@ -332,6 +332,17 @@
   white-space: pre-wrap;
 }
 
+.message-bubble p.emoji-only {
+  display: block;
+  padding-bottom: 16px;
+  font-size: 44px;
+  line-height: 1.1;
+}
+
+.message-bubble p.emoji-only-single {
+  font-size: 88px;
+}
+
 .message-time {
   display: inline;
   margin-left: 8px;
