@@ -20,6 +20,10 @@ const {
 const { areUsersBlocked } = require('../models/safety.model');
 const { getFcmTokensByUserId, getUserById } = require('../models/user.model');
 const { messaging } = require('../utils/firebaseAdmin');
+const pool = require('../db');
+const crypto = require('crypto');
+const fs = require('fs/promises');
+const fsSync = require('fs');
 
 function notificationText(message) {
   if (message.text) return message.text;
@@ -101,6 +105,63 @@ function messageUploadFromRequest(file) {
   }
 
   return upload;
+}
+
+async function sha256File(filePath) {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const stream = fsSync.createReadStream(filePath);
+    stream.on('error', reject);
+    stream.on('data', (chunk) => hash.update(chunk));
+    stream.on('end', () => resolve(hash.digest('hex')));
+  });
+}
+
+async function reuseExistingUploadedMedia(file, senderId) {
+  const uploaded = messageUploadFromRequest(file);
+  const mediaColumn = uploaded.videoPath
+    ? 'video'
+    : uploaded.imagePath
+    ? 'image'
+    : uploaded.audioPath
+    ? 'audio'
+    : uploaded.filePath
+    ? 'file'
+    : null;
+
+  if (!mediaColumn || !file?.path) {
+    return { ...uploaded, mediaSha256: null };
+  }
+
+  const mediaSha256 = await sha256File(file.path);
+  const existing = await pool.query(
+    `SELECT image, video, audio, file
+     FROM messages
+     WHERE sender_id = $1
+       AND media_sha256 = $2
+       AND ${mediaColumn} IS NOT NULL
+     ORDER BY id ASC
+     LIMIT 1`,
+    [senderId, mediaSha256]
+  );
+  const existingPath = existing.rows[0]?.[mediaColumn];
+
+  if (!existingPath) return { ...uploaded, mediaSha256 };
+
+  // Multer has written the request body already; remove that duplicate and
+  // attach the new message to the author's existing media asset instead.
+  await fs.unlink(file.path).catch((error) => {
+    if (error.code !== 'ENOENT') throw error;
+  });
+
+  return {
+    ...uploaded,
+    imagePath: mediaColumn === 'image' ? existingPath : null,
+    videoPath: mediaColumn === 'video' ? existingPath : null,
+    audioPath: mediaColumn === 'audio' ? existingPath : null,
+    filePath: mediaColumn === 'file' ? existingPath : null,
+    mediaSha256,
+  };
 }
 
 async function sendMessagePush({ userId, title, body, data = {} }) {
@@ -187,7 +248,8 @@ async function sendMessage(req, res) {
       fileName,
       fileMime,
       fileSize,
-    } = messageUploadFromRequest(req.file);
+      mediaSha256,
+    } = await reuseExistingUploadedMedia(req.file, senderId);
     const audioDuration = Number(req.body.audioDuration || 0);
 
     if (Number(senderId) === Number(userId)) {
@@ -220,6 +282,7 @@ const message = await createMessage({
   fileName,
   fileMime,
   fileSize,
+  mediaSha256,
 });
 
     const fullMessage = await getMessageById(message.id, senderId);
@@ -299,7 +362,8 @@ async function sendGroupMessage(req, res) {
       fileName,
       fileMime,
       fileSize,
-    } = messageUploadFromRequest(req.file);
+      mediaSha256,
+    } = await reuseExistingUploadedMedia(req.file, senderId);
     const audioDuration = Number(req.body.audioDuration || 0);
 
     if (!text && !imagePath && !videoPath && !audioPath && !filePath) {
@@ -337,6 +401,7 @@ async function sendGroupMessage(req, res) {
       fileName,
       fileMime,
       fileSize,
+      mediaSha256,
     });
 
     const fullMessage = await getMessageById(message.id, senderId);

@@ -58,6 +58,7 @@ async function createMessage({
   fileName,
   fileMime,
   fileSize,
+  mediaSha256,
 }) {
   const result = await pool.query(
     `INSERT INTO messages (
@@ -69,12 +70,13 @@ async function createMessage({
       audio,
       audio_duration,
       file,
-      file_name,
-      file_mime,
-      file_size,
-      status
-    )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'sent')
+       file_name,
+       file_mime,
+       file_size,
+       media_sha256,
+       status
+     )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'sent')
     RETURNING
       id,
       conversation_id,
@@ -85,10 +87,11 @@ async function createMessage({
       audio,
       audio_duration,
       file,
-      file_name,
-      file_mime,
-      file_size,
-      status,
+       file_name,
+       file_mime,
+       file_size,
+       media_sha256,
+       status,
       created_at`,
     [
       conversationId,
@@ -102,6 +105,7 @@ async function createMessage({
       fileName || null,
       fileMime || null,
       fileSize || 0,
+      mediaSha256 || null,
     ]
   );
 
