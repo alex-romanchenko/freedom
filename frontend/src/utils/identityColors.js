@@ -13,8 +13,9 @@ const IDENTITY_COLORS = [
 
 function stableHash(value) {
   let hash = 0;
-  for (const char of String(value || '?').trim().toLowerCase()) {
-    hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  const normalized = String(value || '?').trim().toLowerCase();
+  for (let index = 0; index < normalized.length; index += 1) {
+    hash = (hash * 31 + normalized.charCodeAt(index)) & 0x7fffffff;
   }
   return hash;
 }
