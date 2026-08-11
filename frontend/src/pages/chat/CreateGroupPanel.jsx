@@ -88,8 +88,8 @@ const createGroup = async () => {
                   <span
                     className="selected-user-avatar-placeholder"
                     style={{
-                      backgroundColor: getIdentityColors(user.id || user.username).background,
-                      color: getIdentityColors(user.id || user.username).foreground,
+                      backgroundColor: getIdentityColors(user.username || user.id).background,
+                      color: getIdentityColors(user.username || user.id).foreground,
                     }}
                   >
                     {user.display_name?.[0] || '?'}
@@ -134,8 +134,8 @@ const createGroup = async () => {
                     <div
                       className="create-group-user-placeholder"
                       style={{
-                        backgroundColor: getIdentityColors(user.id || user.username).background,
-                        color: getIdentityColors(user.id || user.username).foreground,
+                        backgroundColor: getIdentityColors(user.username || user.id).background,
+                        color: getIdentityColors(user.username || user.id).foreground,
                       }}
                     >
                       {user.display_name?.[0] || '?'}

@@ -128,7 +128,7 @@ useEffect(() => {
       );
     }
 
-    const colors = getIdentityColors(user.id || user.username);
+    const colors = getIdentityColors(user.username || user.id);
 
     return (
       <div

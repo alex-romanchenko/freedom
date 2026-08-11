@@ -26,7 +26,7 @@ function WhoToFollow({ onOpenUser, language }) {
       <h3>{t('who_to_follow', language)}</h3>
 
       {users.map((user) => {
-        const colors = getIdentityColors(user.id || user.username);
+        const colors = getIdentityColors(user.username || user.id);
 
         return (
         <div key={user.id} className="follow-user">

@@ -13,6 +13,7 @@ import PhotoModal from '../components/PhotoModal';
 import { getFileUrl } from '../api/fileUrl';
 import { getStoredLanguage, t } from '../utils/i18n';
 import { compressImageFile } from '../utils/mediaCompression';
+import { getIdentityColors } from '../utils/identityColors';
 
 function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
   const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -152,6 +153,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
   if (!profile) return <p className="page">{t('loading', language)}</p>;
 
   const user = profile.user;
+  const identityColors = getIdentityColors(user.username || user.id);
 
   const firstName = user.firstName || user.first_name;
   const lastName = user.lastName || user.last_name;
@@ -190,7 +192,13 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
               onClick={() => setAvatarPreviewOpen(true)}
             />
           ) : (
-            <div className="profile-avatar avatar-placeholder">
+            <div
+              className="profile-avatar avatar-placeholder"
+              style={{
+                backgroundColor: identityColors.background,
+                color: identityColors.foreground,
+              }}
+            >
               {user.displayName?.[0] || '?'}
             </div>
           )}

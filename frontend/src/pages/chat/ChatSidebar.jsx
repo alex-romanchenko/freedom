@@ -138,7 +138,7 @@ function ChatSidebar({
 
         {conversations.map((c) => {
           const identityColors = getIdentityColors(
-            c.user_id || c.id || c.username || c.display_name
+            c.username || c.user_id || c.id || c.display_name
           );
 
           return (

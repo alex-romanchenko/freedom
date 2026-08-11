@@ -8,6 +8,7 @@ import PostCard from '../components/PostCard';
 import PhotoModal from '../components/PhotoModal';
 import { getFileUrl } from '../api/fileUrl';
 import { t } from '../utils/i18n';
+import { getIdentityColors } from '../utils/identityColors';
 
 function UserProfile({
   username,
@@ -55,6 +56,7 @@ function UserProfile({
   if (!profile) return <p className="page">{t('loading', language)}</p>;
 
   const user = profile.user;
+  const identityColors = getIdentityColors(user.username || user.id);
 
   const firstName = user.firstName || user.first_name;
   const lastName = user.lastName || user.last_name;
@@ -88,7 +90,13 @@ function UserProfile({
                 }
               />
           ) : (
-            <div className="profile-avatar avatar-placeholder">
+            <div
+              className="profile-avatar avatar-placeholder"
+              style={{
+                backgroundColor: identityColors.background,
+                color: identityColors.foreground,
+              }}
+            >
               {user.displayName?.[0] || '?'}
             </div>
           )}
