@@ -360,17 +360,19 @@ function MessageBubble({
   >
     {isGroup && !isMine && (
       <button
-          className="group-message-avatar"
-          onClick={() => onOpenUser?.(message.username)}
-        >
-          {message.avatar ? (
-            <img src={getFileUrl(message.avatar)} alt="" />
-          ) : (
-            <span style={{ backgroundColor: identityColors.background }}>
-              {message.display_name?.[0] || message.username?.[0] || '?'}
-            </span>
-          )}
-        </button>
+        className="group-message-avatar"
+        onClick={() => onOpenUser?.(message.username)}
+        style={message.avatar ? undefined : {
+          backgroundColor: identityColors.background,
+          color: identityColors.foreground,
+        }}
+      >
+        {message.avatar ? (
+          <img src={getFileUrl(message.avatar)} alt="" />
+        ) : (
+          <span>{message.display_name?.[0] || message.username?.[0] || '?'}</span>
+        )}
+      </button>
     )}
 
     <SwipeReplyBubble enabled={isGroup} onReply={onReply}>
