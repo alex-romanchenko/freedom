@@ -383,7 +383,34 @@ function MessageBubble({
             <span>{replyMessage.preview}</span>
           </button>
 
-          <p>{replyMessage.text}</p>
+          {message.image && (
+            <img
+              className="message-image"
+              src={getFileUrl(message.image)}
+              alt=""
+              onClick={() => setOpenedImage(getFileUrl(message.image))}
+            />
+          )}
+
+          {message.video && (
+            <div
+              className="message-video-wrap"
+              onClick={() => setOpenedVideo(getFileUrl(message.video))}
+            >
+              <video
+                className="message-video"
+                src={getFileUrl(message.video)}
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+
+              <div className="message-video-play">в–·</div>
+            </div>
+          )}
+
+          {replyMessage.text && <p>{replyMessage.text}</p>}
         </>
       ) : (
         <>
