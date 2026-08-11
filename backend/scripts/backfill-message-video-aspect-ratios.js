@@ -32,8 +32,10 @@ async function readAspectRatio(filePath) {
     'error',
     '-select_streams',
     'v:0',
-    '-show_entries',
-    'stream=width,height:stream_side_data=rotation',
+    // `-show_streams` is supported by older FFmpeg releases too. The more
+    // selective `stream_side_data` section is not available on Ubuntu's older
+    // ffprobe builds.
+    '-show_streams',
     '-of',
     'json',
     filePath,
@@ -41,7 +43,9 @@ async function readAspectRatio(filePath) {
   const stream = JSON.parse(stdout).streams?.[0];
   let width = Number(stream?.width);
   let height = Number(stream?.height);
-  const rotation = Number(stream?.side_data_list?.[0]?.rotation || 0);
+  const rotation = Number(
+    stream?.side_data_list?.[0]?.rotation || stream?.tags?.rotate || 0
+  );
 
   if (!width || !height) throw new Error('Video dimensions are unavailable');
   if (Math.abs(rotation) % 180 === 90) [width, height] = [height, width];
