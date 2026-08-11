@@ -1,0 +1,2 @@
+ALTER TABLE messages
+  ADD COLUMN IF NOT EXISTS video_aspect_ratio DOUBLE PRECISION;

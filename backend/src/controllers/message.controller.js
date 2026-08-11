@@ -240,6 +240,7 @@ async function sendMessage(req, res) {
     const senderId = req.user.id;
     const { userId } = req.params;
     const { text, clientMessageId } = req.body;
+    const videoAspectRatio = Number(req.body.videoAspectRatio);
     const {
       imagePath,
       videoPath,
@@ -283,6 +284,7 @@ const message = await createMessage({
   fileMime,
   fileSize,
   mediaSha256,
+  videoAspectRatio,
 });
 
     const fullMessage = await getMessageById(message.id, senderId);
@@ -354,6 +356,7 @@ async function sendGroupMessage(req, res) {
     const senderId = req.user.id;
     const { conversationId } = req.params;
     const { text, clientMessageId } = req.body;
+    const videoAspectRatio = Number(req.body.videoAspectRatio);
     const {
       imagePath,
       videoPath,
@@ -402,6 +405,7 @@ async function sendGroupMessage(req, res) {
       fileMime,
       fileSize,
       mediaSha256,
+      videoAspectRatio,
     });
 
     const fullMessage = await getMessageById(message.id, senderId);
@@ -620,6 +624,7 @@ async function forwardMessage(req, res) {
       fileName: originalMessage.file_name,
       fileMime: originalMessage.file_mime,
       fileSize: originalMessage.file_size,
+      videoAspectRatio: originalMessage.video_aspect_ratio,
     });
 
     const fullMessage = await getMessageById(message.id, senderId);

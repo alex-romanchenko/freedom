@@ -59,6 +59,7 @@ async function createMessage({
   fileMime,
   fileSize,
   mediaSha256,
+  videoAspectRatio,
 }) {
   const result = await pool.query(
     `INSERT INTO messages (
@@ -74,9 +75,10 @@ async function createMessage({
        file_mime,
        file_size,
        media_sha256,
+       video_aspect_ratio,
        status
      )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'sent')
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'sent')
     RETURNING
       id,
       conversation_id,
@@ -91,6 +93,7 @@ async function createMessage({
        file_mime,
        file_size,
        media_sha256,
+       video_aspect_ratio,
        status,
       created_at`,
     [
@@ -106,6 +109,9 @@ async function createMessage({
       fileMime || null,
       fileSize || 0,
       mediaSha256 || null,
+      Number.isFinite(videoAspectRatio) && videoAspectRatio > 0
+        ? videoAspectRatio
+        : null,
     ]
   );
 
@@ -455,6 +461,7 @@ async function getMessagesByConversation(
         users.avatar,
         messages.image,
         messages.video,
+        messages.video_aspect_ratio,
         messages.audio,
         messages.audio_duration,
         messages.file,
@@ -558,6 +565,7 @@ async function getMessageById(messageId, currentUserId = null) {
       users.avatar,
       messages.image,
       messages.video,
+      messages.video_aspect_ratio,
       messages.audio,
       messages.audio_duration,
       messages.file,
@@ -594,6 +602,7 @@ async function getForwardableMessageById(messageId, userId) {
       users.avatar,
       messages.image,
       messages.video,
+      messages.video_aspect_ratio,
       messages.audio,
       messages.audio_duration,
       messages.file,
