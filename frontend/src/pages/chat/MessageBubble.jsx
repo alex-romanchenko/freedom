@@ -344,6 +344,8 @@ function MessageBubble({
     <SwipeReplyBubble enabled={isGroup} onReply={onReply}>
     <div
       className={`message-bubble ${message.image || message.video ? 'has-media' : ''} ${
+        replyMessage ? 'has-reply' : ''
+      } ${
         message.image || message.video ? (message.text?.trim() ? 'has-media-caption' : 'has-media-only') : ''
       }`}
       onContextMenu={(e) => openMessageMenu(e, message, isMine)}

@@ -563,6 +563,12 @@
   cursor: pointer;
 }
 
+/* A reply can be wider than a tall image. Keep the image aligned with the
+   reply block instead of shrinking it to the generic viewport-height limit. */
+.message-bubble.has-reply .message-image {
+  max-height: none;
+}
+
 /* MESSAGE MEDIA PREVIEW */
 
 .image-preview-overlay {
