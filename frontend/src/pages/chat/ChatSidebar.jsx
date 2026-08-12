@@ -152,7 +152,7 @@ function ChatSidebar({
               setShowGroupInfo(false);
               setGroupInfo(null);
 
-              await loadMessages(c.id);
+              await loadMessages(c.id, c);
             }}
             className={`chat-item ${selectedConv?.id === c.id ? 'active' : ''}`}
           >

@@ -3,13 +3,17 @@ import api from '../../api/api';
 import {
   IoClose,
   IoCameraOutline,
+  IoChatbubbleOutline,
+  IoLogOutOutline,
   IoNotificationsOutline,
   IoNotificationsOffOutline,
+  IoPencilOutline,
+  IoPersonAddOutline,
+  IoTrashOutline,
 } from 'react-icons/io5';
 import { getFileUrl } from '../../api/fileUrl';
 import AddGroupMembersPanel from './AddGroupMembersPanel';
 import { getIdentityColors } from '../../utils/identityColors';
-import { t } from '../../utils/i18n';
 
 function GroupInfoPanel({
   groupInfo,
@@ -91,25 +95,29 @@ function GroupInfoPanel({
   };
 
   const groupColors = getIdentityColors(groupInfo.id || localGroupName);
+  const actionLabels = language === 'uk'
+    ? { write: '\u041d\u0430\u043f\u0438\u0441\u0430\u0442\u0438', enable: '\u0423\u0432\u0456\u043c\u043a\u043d\u0443\u0442\u0438', disable: '\u0412\u0438\u043c\u043a\u043d\u0443\u0442\u0438', leave: '\u041f\u043e\u043a\u0438\u043d\u0443\u0442\u0438', delete: '\u0412\u0438\u0434\u0430\u043b\u0438\u0442\u0438', addMembers: '\u0414\u043e\u0434\u0430\u0442\u0438 \u0443\u0447\u0430\u0441\u043d\u0438\u043a\u0456\u0432' }
+    : language === 'ru'
+      ? { write: '\u041d\u0430\u043f\u0438\u0441\u0430\u0442\u044c', enable: '\u0412\u043a\u043b\u044e\u0447\u0438\u0442\u044c', disable: '\u0412\u044b\u043a\u043b\u044e\u0447\u0438\u0442\u044c', leave: '\u041f\u043e\u043a\u0438\u043d\u0443\u0442\u044c', delete: '\u0423\u0434\u0430\u043b\u0438\u0442\u044c', addMembers: '\u0414\u043e\u0431\u0430\u0432\u0438\u0442\u044c \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u043e\u0432' }
+      : { write: 'Write', enable: 'Enable', disable: 'Disable', leave: 'Leave', delete: 'Delete', addMembers: 'Add members' };
 
   return (
     <aside className="group-info-panel">
-      <div className="group-info-header">
+      <div className="group-info-header group-info-header-minimal">
         <button onClick={onClose}>
           <IoClose />
         </button>
-
-        <h3>Group Info</h3>
+        <span />
 
         {isAdmin && (
           <button
-            className="group-edit-btn"
+            className="group-edit-icon-btn"
             onClick={() => {
               setIsEditing((prev) => !prev);
               setIsAddingMembers(false);
             }}
           >
-            {isEditing ? 'Done' : 'Edit'}
+            <IoPencilOutline />
           </button>
         )}
       </div>
@@ -191,6 +199,47 @@ function GroupInfoPanel({
         <p>{localMembers.length} members</p>
       </div>
 
+      <div className="group-actions">
+        <button type="button" className="group-action-btn" onClick={onClose}>
+          <IoChatbubbleOutline />
+          <span>{actionLabels.write}</span>
+        </button>
+
+        <button
+          type="button"
+          className="group-action-btn"
+          onClick={toggleNotifications}
+          disabled={isUpdatingNotifications}
+          aria-label={notificationsMuted ? 'Enable notifications' : 'Disable notifications'}
+        >
+          {notificationsMuted ? <IoNotificationsOffOutline /> : <IoNotificationsOutline />}
+          <span>{notificationsMuted ? actionLabels.enable : actionLabels.disable}</span>
+        </button>
+
+        <button
+          type="button"
+          className="group-action-btn group-action-btn-danger"
+          onClick={() => setConfirmAction(isAdmin ? 'delete' : 'leave')}
+        >
+          {isAdmin ? <IoTrashOutline /> : <IoLogOutOutline />}
+          <span>{isAdmin ? actionLabels.delete : actionLabels.leave}</span>
+        </button>
+      </div>
+
+      {isAdmin && !isAddingMembers && (
+        <button
+          type="button"
+          className="group-add-members-action"
+          onClick={() => {
+            setIsAddingMembers(true);
+            setIsEditing(false);
+          }}
+        >
+          <IoPersonAddOutline />
+          <span>{actionLabels.addMembers}</span>
+        </button>
+      )}
+
       <button
         type="button"
         className={`group-notifications-toggle ${notificationsMuted ? 'muted' : ''}`}
@@ -216,7 +265,7 @@ function GroupInfoPanel({
         <div className="group-members-title-row">
           <h4>{isAddingMembers ? 'Add Members' : 'Members'}</h4>
 
-          {isAdmin && isEditing && (
+          {isAdmin && isEditing && !isAddingMembers && (
             <button
               className="group-add-member-btn"
               onClick={() => setIsAddingMembers((prev) => !prev)}
@@ -296,12 +345,6 @@ function GroupInfoPanel({
         )}
       </div>
 
-      <button
-            className="leave-group-btn"
-            onClick={() => setConfirmAction(isAdmin ? 'delete' : 'leave')}
-            >
-            {isAdmin ? 'Delete group' : 'Leave group'}
-            </button>
         {confirmAction && (
   <div className="modal-overlay">
     <div className="delete-chat-popup">

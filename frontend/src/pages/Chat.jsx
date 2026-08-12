@@ -37,6 +37,9 @@ function Chat({
 }) {
   const [conversations, setConversations] = useState([]);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [unreadBoundaryId, setUnreadBoundaryId] = useState(null);
+  const [unreadMessageIds, setUnreadMessageIds] = useState([]);
+  const [unreadRemaining, setUnreadRemaining] = useState(0);
   const [selectedConv, setSelectedConv] = useState(null);
   const [isFakeFullscreen, setIsFakeFullscreen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -68,6 +71,11 @@ function Chat({
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const shouldScrollToBottomRef = useRef(false);
+  const unreadPositionPendingRef = useRef(false);
+  const unreadPositionCancelledRef = useRef(false);
+  const unreadCompletedRef = useRef(true);
+  const markingReadRef = useRef(false);
+  const unreadMarkerRef = useRef(null);
   const chatImageInputRef = useRef(null);
   const textareaRef = useRef(null);
   const chatEmojiRef = useRef(null);
@@ -104,12 +112,26 @@ useEffect(() => {
   };
 }, [selectedConv, isInCall, isCalling]);
 
+useEffect(() => {
+  if (selectedConv) return;
+  setUnreadBoundaryId(null);
+  setUnreadMessageIds([]);
+  setUnreadRemaining(0);
+  unreadPositionPendingRef.current = false;
+  unreadPositionCancelledRef.current = false;
+  unreadCompletedRef.current = true;
+}, [selectedConv]);
+
 const scrollToBottom = () => {
   messagesEndRef.current?.scrollIntoView({
     behavior: 'smooth',
   });
 
   setShowScrollButton(false);
+  setUnreadRemaining(0);
+  setUnreadMessageIds([]);
+  unreadCompletedRef.current = true;
+  if (selectedConv?.id) markConversationRead(selectedConv.id);
 };
 
 const handleGroupDeletedOrLeft = async () => {
@@ -222,23 +244,27 @@ const handleGroupDeletedOrLeft = async () => {
   }
 };
 
-  const loadMessages = async (id) => {
-    const res = await api.get(`/messages/${id}?limit=30`);
+  const loadMessages = async (id, conversationOverride = null) => {
+    const conversation =
+      conversationOverride ||
+      conversations.find((item) => String(item.id) === String(id)) ||
+      (String(selectedConv?.id) === String(id) ? selectedConv : null);
+    const unreadCount = Math.max(Number(conversation?.unread_count || 0), 0);
+    const limit = Math.max(30, unreadCount + 1);
+    const res = await api.get(`/messages/${id}?limit=${limit}`);
+    const unreadItems = unreadCount > 0
+      ? res.data.slice(-Math.min(unreadCount, res.data.length))
+      : [];
 
-    shouldScrollToBottomRef.current = true;
+    shouldScrollToBottomRef.current = unreadItems.length === 0;
+    unreadPositionPendingRef.current = unreadItems.length > 0;
+    unreadPositionCancelledRef.current = false;
+    unreadCompletedRef.current = unreadItems.length === 0;
+    setUnreadMessageIds(unreadItems.map((message) => String(message.id)));
+    setUnreadBoundaryId(unreadItems[0]?.id ?? null);
+    setUnreadRemaining(unreadItems.length);
     setMessages(res.data);
-    setHasMoreMessages(res.data.length === 30);
-
-    await api.post(`/messages/${id}/read`);
-
-    const conversationsRes = await api.get('/messages');
-    setConversations(conversationsRes.data);
-
-    const totalUnread = conversationsRes.data.reduce((sum, conv) => {
-      return sum + Number(conv.unread_count || 0);
-    }, 0);
-
-    onUnreadCountChange(totalUnread);
+    setHasMoreMessages(res.data.length === limit);
 
     if (String(joinedConversationRef.current) !== String(id)) {
       socket.emit('joinConversation', id);
@@ -297,7 +323,7 @@ const handleGroupDeletedOrLeft = async () => {
 
     if (!selectedConv && res.data.length > 0 && !isCompactChat) {
       setSelectedConv(res.data[0]);
-      await loadMessages(res.data[0].id);
+      await loadMessages(res.data[0].id, res.data[0]);
     }
   };
 
@@ -318,6 +344,42 @@ const handleGroupDeletedOrLeft = async () => {
     if (!el) return false;
 
     return el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
+  };
+
+  const markConversationRead = async (conversationId) => {
+    if (!conversationId || markingReadRef.current) return;
+    markingReadRef.current = true;
+    try {
+      await api.post(`/messages/${conversationId}/read`);
+      const conversationsRes = await api.get('/messages');
+      setConversations(conversationsRes.data);
+      const totalUnread = conversationsRes.data.reduce((sum, conv) => {
+        return sum + Number(conv.unread_count || 0);
+      }, 0);
+      onUnreadCountChange(totalUnread);
+    } finally {
+      markingReadRef.current = false;
+    }
+  };
+
+  const updateUnreadProgress = (container) => {
+    if (unreadCompletedRef.current || unreadMessageIds.length === 0) return;
+    const containerBottom = container.getBoundingClientRect().bottom;
+    const calculatedRemaining = unreadMessageIds.reduce((count, id) => {
+      const item = container.querySelector(`[data-message-id="${id}"]`);
+      return count + (!item || item.getBoundingClientRect().bottom > containerBottom + 2 ? 1 : 0);
+    }, 0);
+
+    setUnreadRemaining((previous) => Math.min(previous, calculatedRemaining));
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    if (distanceFromBottom <= 50) {
+      unreadCompletedRef.current = true;
+      setUnreadRemaining(0);
+      setUnreadMessageIds([]);
+      markConversationRead(selectedConv?.id);
+    }
   };
 
   const parseForwardMessage = (messageText) => {
@@ -688,7 +750,7 @@ formData.append(
       if (forwardedMessage) {
         appendMessageOnce(forwardedMessage);
       } else {
-        await loadMessages(conversation.id);
+        await loadMessages(conversation.id, conversation);
       }
     }
 
@@ -1020,13 +1082,23 @@ useEffect(() => {
       }
 
       if (String(data.conversationId) === String(selectedConv?.id)) {
-        shouldScrollToBottomRef.current = true;
+        const wasAtBottom = isUserAtBottom();
+        shouldScrollToBottomRef.current = wasAtBottom;
 
         appendMessageOnce(data.message);
 
-        api.post(`/messages/${data.conversationId}/read`).then(() => {
-          refreshConversations();
-        });
+        if (wasAtBottom) {
+          markConversationRead(data.conversationId);
+        } else if (!isMyMessage) {
+          unreadCompletedRef.current = false;
+          setUnreadBoundaryId((previous) => previous ?? data.message.id);
+          setUnreadMessageIds((previous) => [
+            ...previous,
+            String(data.message.id),
+          ]);
+          setUnreadRemaining((previous) => previous + 1);
+          setShowScrollButton(true);
+        }
       } else {
         refreshConversations();
       }
@@ -1087,9 +1159,47 @@ useEffect(() => {
   };
 }, [selectedConv?.id, currentUser?.id]);
 
+useEffect(() => {
+  if (!unreadBoundaryId || !unreadPositionPendingRef.current) return;
+
+  const container = messagesContainerRef.current;
+  const marker = unreadMarkerRef.current;
+  if (!container || !marker) return;
+
+  let disposed = false;
+  const positionMarker = () => {
+    if (disposed || unreadPositionCancelledRef.current) return;
+    const containerRect = container.getBoundingClientRect();
+    const markerRect = marker.getBoundingClientRect();
+    container.scrollTop +=
+      markerRect.top - containerRect.top - container.clientHeight * 0.25;
+  };
+
+  requestAnimationFrame(positionMarker);
+  const timers = [300, 800, 1600, 2600].map((delay) =>
+    window.setTimeout(positionMarker, delay)
+  );
+  container.addEventListener('load', positionMarker, true);
+  container.addEventListener('loadedmetadata', positionMarker, true);
+
+  const finishTimer = window.setTimeout(() => {
+    unreadPositionPendingRef.current = false;
+  }, 2800);
+
+  return () => {
+    disposed = true;
+    timers.forEach(window.clearTimeout);
+    window.clearTimeout(finishTimer);
+    container.removeEventListener('load', positionMarker, true);
+    container.removeEventListener('loadedmetadata', positionMarker, true);
+  };
+}, [unreadBoundaryId, messages.length]);
+
   useEffect(() => {
     const el = messagesContainerRef.current;
     if (!el) return;
+
+    if (unreadPositionPendingRef.current) return;
 
     if (shouldScrollToBottomRef.current) {
       requestAnimationFrame(() => {
@@ -1281,6 +1391,14 @@ useEffect(() => {
             <div
               className="messages-list custom-scroll"
               ref={messagesContainerRef}
+              onPointerDown={() => {
+                unreadPositionCancelledRef.current = true;
+                unreadPositionPendingRef.current = false;
+              }}
+              onWheel={() => {
+                unreadPositionCancelledRef.current = true;
+                unreadPositionPendingRef.current = false;
+              }}
               onScroll={(e) => {
                 const el = e.currentTarget;
 
@@ -1288,6 +1406,10 @@ useEffect(() => {
                   el.scrollHeight - el.scrollTop - el.clientHeight;
 
                 setShowScrollButton(distanceFromBottom > 250);
+
+                if (!unreadPositionPendingRef.current) {
+                  updateUnreadProgress(el);
+                }
 
                 if (el.scrollTop < 40) {
                   loadOlderMessages();
@@ -1298,8 +1420,23 @@ useEffect(() => {
               const isMine = String(m.sender_id) === String(currentUser?.id);
 
               return (
-                <MessageBubble
+                <div
                   key={m.id}
+                  className="message-list-item"
+                  data-message-id={m.id}
+                >
+                  {String(m.id) === String(unreadBoundaryId) && (
+                    <div ref={unreadMarkerRef} className="unread-messages-divider">
+                      <span>
+                        {language === 'uk'
+                          ? 'Непрочитані повідомлення'
+                          : language === 'ru'
+                            ? 'Непрочитанные сообщения'
+                            : 'Unread messages'}
+                      </span>
+                    </div>
+                  )}
+                  <MessageBubble
                   message={m}
                   isMine={isMine}
                   isGroup={selectedConv?.type === 'group'}
@@ -1319,7 +1456,8 @@ useEffect(() => {
                   highlightedMessageId={highlightedMessageId}
                   onReplyTargetClick={revealReplyTarget}
                   onReply={() => beginReply(m)}
-                />
+                  />
+                </div>
               );
             })}
 
@@ -1378,11 +1516,14 @@ useEffect(() => {
           <p>Select a chat</p>
         )}
       </div>
-      {showScrollButton && (
+      {(showScrollButton || unreadRemaining > 0) && (
   <button
     className="scroll-to-bottom-btn"
     onClick={scrollToBottom}
   >
+    {unreadRemaining > 0 && (
+      <span className="scroll-unread-count">{unreadRemaining}</span>
+    )}
     <IoArrowDown  />
   </button>
 )}

@@ -312,6 +312,33 @@
   overflow: hidden;
 }
 
+.message-list-item {
+  width: 100%;
+}
+
+.unread-messages-divider {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 14px;
+}
+
+.unread-messages-divider span {
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.12);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+body.dark .unread-messages-divider span,
+.dark .unread-messages-divider span {
+  background: #242424;
+  color: #f8fafc;
+}
+
 .message-row.mine .message-bubble {
   background: #d8fdd2;
   color: #111827;
@@ -1628,6 +1655,31 @@
 
 .message-bubble:has(.audio-message) .message-meta {
   margin-top: 2px;
+}
+
+.scroll-unread-count {
+  position: absolute;
+  left: 50%;
+  top: -29px;
+  transform: translateX(-50%);
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  box-sizing: border-box;
+}
+
+body.dark .scroll-unread-count,
+.dark .scroll-unread-count {
+  border-color: #1f1f1f;
 }
 
 .group-member-added-event {
