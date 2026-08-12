@@ -332,6 +332,13 @@
   white-space: pre-wrap;
 }
 
+.message-bubble p a {
+  color: #2563eb;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  overflow-wrap: anywhere;
+}
+
 .message-bubble p.emoji-only {
   display: block;
   padding-bottom: 16px;
@@ -367,6 +374,13 @@
 
 .message-bubble.has-media-caption {
   max-width: 50%;
+}
+
+.message-bubble.has-media-caption .message-image {
+  width: 100%;
+  height: min(60vh, 420px);
+  object-fit: cover;
+  object-position: top;
 }
 
 .message-bubble.has-media-only {

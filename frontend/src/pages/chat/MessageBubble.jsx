@@ -120,6 +120,26 @@ function standaloneEmojiCount(text) {
   return count;
 }
 
+function LinkifiedText({ text, className = '' }) {
+  const urlPattern = /((?:https?:\/\/|www\.)[^\s<]+|\b(?:[a-z0-9-]+\.)+(?:com|org|net|ua|io|app|dev|info|me|co)(?:\/[^\s<]*)?)/gi;
+  const isUrl = /^(?:https?:\/\/|www\.)[^\s<]+$|^(?:[a-z0-9-]+\.)+(?:com|org|net|ua|io|app|dev|info|me|co)(?:\/[^\s<]*)?$/i;
+  const parts = String(text || '').split(urlPattern);
+
+  return (
+    <p className={className}>
+      {parts.map((part, index) => {
+        if (!part || !isUrl.test(part)) return part;
+        const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
+        return (
+          <a key={`${part}-${index}`} href={href} target="_blank" rel="noreferrer">
+            {part}
+          </a>
+        );
+      })}
+    </p>
+  );
+}
+
 function parseCallEvent(text = '') {
   if (!text.startsWith('CALL_EVENT|')) return null;
 
@@ -344,6 +364,40 @@ function MessageBubble({
   const identityColors = getIdentityColors(
     message.username || message.sender_id || message.display_name
   );
+  const messageAttachments = (
+    <>
+      {message.image && (
+        <img
+          className="message-image"
+          src={getFileUrl(message.image)}
+          alt=""
+          onClick={() => setOpenedImage(getFileUrl(message.image))}
+        />
+      )}
+      {message.video && (
+        <div className="message-video-wrap" onClick={() => setOpenedVideo(getFileUrl(message.video))}>
+          <video className="message-video" src={getFileUrl(message.video)} autoPlay muted loop playsInline />
+          <div className="message-video-play">▶</div>
+        </div>
+      )}
+      {message.audio && (
+        <AudioMessagePlayer src={message.audio} duration={message.audio_duration} isMine={isMine} />
+      )}
+      {message.file && (
+        message.file_mime?.startsWith('audio/') ? (
+          <AudioMessagePlayer src={message.file} duration={0} isMine={isMine} />
+        ) : (
+          <a className="message-file" href={getFileUrl(message.file)} target="_blank" rel="noreferrer">
+            <span className="message-file-icon">📄</span>
+            <span>
+              <strong>{message.file_name || 'File'}</strong>
+              {Number(message.file_size || 0) > 0 && <small>{(Number(message.file_size) / 1024 / 1024).toFixed(1)} MB</small>}
+            </span>
+          </a>
+        )
+      )}
+    </>
+  );
   const identityNameColor = getIdentityNameColor(
     message.username || message.sender_id || message.display_name
   );
@@ -404,7 +458,8 @@ function MessageBubble({
             </div>
           </div>
 
-          {forwardedMessage.text && <p className={emojiClass}>{forwardedMessage.text}</p>}
+          {messageAttachments}
+          {forwardedMessage.text && <LinkifiedText text={forwardedMessage.text} className={emojiClass} />}
         </>
       ) : replyMessage ? (
         <>
@@ -446,7 +501,7 @@ function MessageBubble({
             </div>
           )}
 
-          {replyMessage.text && <p className={emojiClass}>{replyMessage.text}</p>}
+          {replyMessage.text && <LinkifiedText text={replyMessage.text} className={emojiClass} />}
         </>
       ) : (
         <>
@@ -512,7 +567,7 @@ function MessageBubble({
           )
         )}
 
-        {message.text && <p className={emojiClass}>{message.text}</p>}
+        {message.text && <LinkifiedText text={message.text} className={emojiClass} />}
         </>
       )}
 
