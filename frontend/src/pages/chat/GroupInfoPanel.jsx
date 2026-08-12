@@ -193,10 +193,10 @@ function GroupInfoPanel({
 
       <button
         type="button"
-        className="group-notifications-toggle"
+        className={`group-notifications-toggle ${notificationsMuted ? 'muted' : ''}`}
         onClick={toggleNotifications}
         disabled={isUpdatingNotifications}
-        aria-pressed={notificationsMuted}
+        aria-label={notificationsMuted ? 'Enable notifications' : 'Disable notifications'}
       >
         <span className="group-notifications-icon">
           {notificationsMuted ? (
@@ -205,20 +205,11 @@ function GroupInfoPanel({
             <IoNotificationsOutline />
           )}
         </span>
-        <span className="group-notifications-copy">
-          <strong>{t('group_notifications', language)}</strong>
-          <small>
-            {t(
-              notificationsMuted
-                ? 'group_notifications_muted'
-                : 'group_notifications_enabled',
-              language
-            )}
-          </small>
-        </span>
-        <span className={`group-notifications-switch ${notificationsMuted ? 'muted' : ''}`}>
-          <span />
-        </span>
+        <strong>
+          {notificationsMuted
+            ? (language === 'uk' ? 'Увімкнути' : language === 'ru' ? 'Включить' : 'Enable')
+            : (language === 'uk' ? 'Вимкнути' : language === 'ru' ? 'Отключить' : 'Disable')}
+        </strong>
       </button>
 
       <div className="group-members-block">
