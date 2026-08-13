@@ -21,6 +21,22 @@ button {
   padding: 20px;
 }
 
+.content-inset-page {
+  margin-inline: 10%;
+}
+
+@media (max-width: 1100px) {
+  .content-inset-page {
+    margin-inline: 5%;
+  }
+}
+
+@media (max-width: 768px) {
+  .content-inset-page {
+    margin-inline: 0;
+  }
+}
+
 .username {
   color: #6b7280;
   font-size: 14px;

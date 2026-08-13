@@ -188,7 +188,7 @@ useEffect(() => {
   );
 
   return (
-    <div className="page">
+    <div className="page content-inset-page">
       <div className="feed-tabs friends-tabs">
         <button
           className={activeTab === 'friends' ? 'active' : ''}

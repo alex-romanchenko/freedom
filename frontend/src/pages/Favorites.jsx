@@ -20,7 +20,7 @@ function Favorites({ onOpenUser, onPostClick, language }) {
   }, []);
 
   return (
-    <div className="page">
+    <div className="page content-inset-page">
       <h1>{t('favorites', language)}</h1>
 
       {posts.length === 0 && (

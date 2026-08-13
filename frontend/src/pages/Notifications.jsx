@@ -171,7 +171,7 @@ function Notifications({ onOpenUser, onOpenPost, onOpenPhoto, onOpenGroupChat, l
   };
 
   return (
-    <div className="page">
+    <div className="page content-inset-page">
       <h2>{t('notifications', language)}</h2>
 
       {notifications.length === 0 && !loading && (

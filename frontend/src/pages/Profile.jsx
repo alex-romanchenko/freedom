@@ -160,7 +160,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
   const birthDate = user.birthDate || user.birth_date;
 
   return (
-    <div className="profile-page">
+    <div className="profile-page content-inset-page">
       <div className="profile-cover-wrap">
         {user.headerImage ? (
           <img
