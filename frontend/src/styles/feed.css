@@ -62,6 +62,10 @@
   background: white;
 }
 
+.feed-page > .post-card {
+  margin-inline: 10%;
+}
+
 .feed-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -107,6 +111,27 @@
 
 .post-composer {
   padding: 18px 20px;
+  margin-inline: 10%;
+}
+
+@media (max-width: 1100px) {
+  .feed-page > .post-card {
+    margin-inline: 5%;
+  }
+
+  .feed-page > .post-composer {
+    margin-inline: 5%;
+  }
+}
+
+@media (max-width: 768px) {
+  .feed-page > .post-card {
+    margin-inline: 12px;
+  }
+
+  .feed-page > .post-composer {
+    margin-inline: 0;
+  }
 }
 
 .post-composer textarea {

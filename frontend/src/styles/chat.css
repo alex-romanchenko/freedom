@@ -314,6 +314,7 @@
 
 .message-list-item {
   width: 100%;
+  max-width: 760px;
 }
 
 .unread-messages-divider {
