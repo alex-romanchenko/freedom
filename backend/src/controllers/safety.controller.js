@@ -8,6 +8,9 @@ const {
   createReport,
   createAccountDeletionRequest,
 } = require('../models/safety.model');
+const sendEmail = require('../utils/sendEmail');
+
+const SUPPORT_EMAIL = 'support@myfreedomchat.org';
 
 const ENTITY_TYPES = new Set([
   'user',
@@ -26,6 +29,16 @@ const REASONS = new Set([
   'scam',
   'other',
 ]);
+
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;',
+  })[character]);
+}
 
 async function getTermsStatus(req, res) {
   try {
@@ -64,6 +77,18 @@ async function reportContent(req, res) {
       reason,
       details: String(details || '').trim(),
     });
+    await sendEmail(
+      SUPPORT_EMAIL,
+      `[Freedom] New ${entityType} report #${report.id}`,
+      `<h2>New Freedom content report</h2>
+       <p><strong>Report ID:</strong> ${report.id}</p>
+       <p><strong>Content type:</strong> ${escapeHtml(entityType)}</p>
+       <p><strong>Content ID:</strong> ${entityId ?? 'N/A'}</p>
+       <p><strong>Reason:</strong> ${escapeHtml(reason)}</p>
+       <p><strong>Reporter ID:</strong> ${req.user.id}</p>
+       <p><strong>Reported user ID:</strong> ${reportedUserId ?? 'N/A'}</p>
+       <p><strong>Details:</strong><br>${escapeHtml(details).replace(/\n/g, '<br>') || 'N/A'}</p>`,
+    );
     res.status(201).json({ message: 'Report submitted', report });
   } catch (error) {
     res.status(500).json({ message: 'Unable to submit report' });
