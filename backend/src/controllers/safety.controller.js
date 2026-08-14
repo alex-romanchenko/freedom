@@ -10,7 +10,10 @@ const {
 } = require('../models/safety.model');
 const sendEmail = require('../utils/sendEmail');
 
-const SUPPORT_EMAIL = 'support@myfreedomchat.org';
+// Send reports directly to the moderation inbox. This avoids a forwarding
+// loop when EMAIL_USER is the same Gmail inbox that receives support mail.
+const SUPPORT_EMAIL =
+  process.env.REPORT_RECIPIENT_EMAIL || 'support@myfreedomchat.org';
 
 const ENTITY_TYPES = new Set([
   'user',
