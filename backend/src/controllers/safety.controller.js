@@ -89,8 +89,12 @@ async function reportContent(req, res) {
        <p><strong>Reported user ID:</strong> ${reportedUserId ?? 'N/A'}</p>
        <p><strong>Details:</strong><br>${escapeHtml(details).replace(/\n/g, '<br>') || 'N/A'}</p>`,
     );
+    console.info(
+      `REPORT EMAIL SENT: report=${report.id} type=${entityType} recipient=${SUPPORT_EMAIL}`,
+    );
     res.status(201).json({ message: 'Report submitted', report });
   } catch (error) {
+    console.error('REPORT SUBMISSION ERROR:', error);
     res.status(500).json({ message: 'Unable to submit report' });
   }
 }
