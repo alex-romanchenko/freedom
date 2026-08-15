@@ -1477,6 +1477,7 @@ useEffect(() => {
                 startEditMessage={startEditMessage}
                 deleteMessage={deleteMessage}
                 setMessageReaction={setMessageReaction}
+                language={language}
               />
 
               <div ref={messagesEndRef} />

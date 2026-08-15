@@ -190,9 +190,14 @@ function ChatSidebar({
                   )}
                 </div>
 
-                {Number(c.unread_count) > 0 && (
-                  <span className="unread-badge">{c.unread_count}</span>
-                )}
+                <span className="chat-badge-stack">
+                  {Number(c.mention_unread_count) > 0 && (
+                    <span className="mention-badge">@ {c.mention_unread_count}</span>
+                  )}
+                  {Number(c.unread_count) > 0 && (
+                    <span className="unread-badge">{c.unread_count}</span>
+                  )}
+                </span>
               </div>
 
               {c.last_message_text && (() => {

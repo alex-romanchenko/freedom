@@ -150,6 +150,37 @@ async function ensureMessageReactionsTable() {
       UNIQUE(message_id, user_id)
     )
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS message_mentions (
+      message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+      mentioned_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      PRIMARY KEY (message_id, mentioned_user_id)
+    )
+  `);
+}
+
+async function recordGroupMessageMentions({ messageId, conversationId, text }) {
+  const usernames = [...new Set(
+    String(text || '')
+      .match(/@([a-zA-Z0-9_]+)/g)
+      ?.map((match) => match.slice(1).toLowerCase()) || []
+  )];
+  if (!usernames.length) return;
+
+  await pool.query(
+    `
+    INSERT INTO message_mentions (message_id, mentioned_user_id)
+    SELECT $1, users.id
+    FROM users
+    JOIN conversation_members
+      ON conversation_members.user_id = users.id
+     AND conversation_members.conversation_id = $2
+    WHERE LOWER(users.username) = ANY($3::text[])
+    ON CONFLICT DO NOTHING
+    `,
+    [messageId, conversationId, usernames]
+  );
 }
 
 async function getReactionRows(messageIds, currentUserId = null) {
@@ -158,14 +189,25 @@ async function getReactionRows(messageIds, currentUserId = null) {
   const result = await pool.query(
     `
     SELECT
-      message_id,
-      reaction,
+      message_reactions.message_id,
+      message_reactions.reaction,
       COUNT(*)::int AS count,
-      BOOL_OR(user_id = $2) AS reacted_by_me
+      BOOL_OR(message_reactions.user_id = $2) AS reacted_by_me,
+      JSONB_AGG(
+        JSONB_BUILD_OBJECT(
+          'user_id', users.id,
+          'username', users.username,
+          'display_name', users.display_name,
+          'avatar', users.avatar,
+          'created_at', message_reactions.created_at
+        )
+        ORDER BY message_reactions.created_at
+      ) AS users
     FROM message_reactions
-    WHERE message_id = ANY($1::int[])
-    GROUP BY message_id, reaction
-    ORDER BY MIN(created_at)
+    JOIN users ON users.id = message_reactions.user_id
+    WHERE message_reactions.message_id = ANY($1::int[])
+    GROUP BY message_reactions.message_id, message_reactions.reaction
+    ORDER BY MIN(message_reactions.created_at)
     `,
     [messageIds, currentUserId]
   );
@@ -186,6 +228,7 @@ async function attachReactionsToMessages(messages, currentUserId = null) {
       reaction: row.reaction,
       count: Number(row.count || 0),
       reacted_by_me: Boolean(row.reacted_by_me),
+      users: Array.isArray(row.users) ? row.users : [],
     });
 
     return acc;
@@ -204,6 +247,7 @@ async function getMessageReactions(messageId, currentUserId = null) {
     reaction: row.reaction,
     count: Number(row.count || 0),
     reacted_by_me: Boolean(row.reacted_by_me),
+    users: Array.isArray(row.users) ? row.users : [],
   }));
 }
 
@@ -266,7 +310,8 @@ async function getUserConversations(userId) {
         last_message.file_mime AS last_message_file_mime,
         last_message.file_size AS last_message_file_size,
 
-        COUNT(unread_messages.id) AS unread_count
+        COUNT(unread_messages.id) AS unread_count,
+        0::int AS mention_unread_count
 
       FROM conversations
 
@@ -323,7 +368,8 @@ async function getUserConversations(userId) {
         last_message.file,
         last_message.file_name,
         last_message.file_mime,
-        last_message.file_size
+        last_message.file_size,
+        conversation_reads.last_read_at
 
       UNION ALL
 
@@ -356,7 +402,21 @@ async function getUserConversations(userId) {
         last_message.file_mime AS last_message_file_mime,
         last_message.file_size AS last_message_file_size,
 
-        COUNT(unread_messages.id) AS unread_count
+        COUNT(unread_messages.id) AS unread_count,
+        (
+          SELECT COUNT(*)::int
+          FROM message_mentions
+          JOIN messages AS mentioned_messages
+            ON mentioned_messages.id = message_mentions.message_id
+          WHERE message_mentions.mentioned_user_id = $1
+            AND mentioned_messages.conversation_id = conversations.id
+            AND mentioned_messages.is_deleted = false
+            AND mentioned_messages.sender_id <> $1
+            AND (
+              conversation_reads.last_read_at IS NULL
+              OR mentioned_messages.created_at > conversation_reads.last_read_at
+            )
+        ) AS mention_unread_count
 
       FROM conversations
 
@@ -404,7 +464,8 @@ async function getUserConversations(userId) {
         last_message.file,
         last_message.file_name,
         last_message.file_mime,
-        last_message.file_size
+        last_message.file_size,
+        conversation_reads.last_read_at
     ) AS all_conversations
 
     ORDER BY updated_at DESC
@@ -788,6 +849,7 @@ module.exports = {
   getGroupPushRecipientIds,
   getConversationById,
   ensureMessageReactionsTable,
+  recordGroupMessageMentions,
   getMessageReactions,
   setMessageReaction,
 };

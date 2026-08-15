@@ -16,6 +16,7 @@ const {
   deleteMessageById,
   markMessageAsDelivered,
   getConversationById,
+  recordGroupMessageMentions,
 } = require('../models/message.model');
 const { areUsersBlocked } = require('../models/safety.model');
 const { getFcmTokensByUserId, getUserById } = require('../models/user.model');
@@ -406,6 +407,12 @@ async function sendGroupMessage(req, res) {
       fileSize,
       mediaSha256,
       videoAspectRatio,
+    });
+
+    await recordGroupMessageMentions({
+      messageId: message.id,
+      conversationId: Number(conversationId),
+      text,
     });
 
     const fullMessage = await getMessageById(message.id, senderId);

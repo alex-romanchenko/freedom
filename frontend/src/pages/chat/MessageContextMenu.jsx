@@ -4,9 +4,11 @@ import {
   FiSend,
   FiEdit2,
   FiTrash2,
+  FiSmile,
 } from 'react-icons/fi';
 import { useMemo, useState } from 'react';
 import EmojiPicker from 'emoji-picker-react';
+import { getFileUrl } from '../../api/fileUrl';
 
 const quickReactions = ['😁', '❤️', '👍', '👎', '🔥', '👏'];
 
@@ -18,8 +20,10 @@ function MessageContextMenu({
   startEditMessage,
   deleteMessage,
   setMessageReaction,
+  language,
 }) {
   const [showAllReactions, setShowAllReactions] = useState(false);
+  const [showReactionDetails, setShowReactionDetails] = useState(false);
 
   const menuLeft = useMemo(() => {
     if (!messageMenu) return 0;
@@ -91,6 +95,13 @@ function MessageContextMenu({
             Copy Text
           </button>
 
+          {(messageMenu.message.reactions || []).length > 0 && (
+            <button onClick={() => setShowReactionDetails(true)}>
+              <FiSmile />
+              {language === 'uk' ? 'Реакції' : language === 'ru' ? 'Реакции' : 'Reactions'}
+            </button>
+          )}
+
           <button onClick={forwardMessage}>
             <FiSend />
             Forward
@@ -108,6 +119,27 @@ function MessageContextMenu({
             Delete
           </button>
         </>
+      )}
+      {showReactionDetails && (
+        <div className="reaction-details-backdrop" onClick={() => setShowReactionDetails(false)}>
+          <section className="reaction-details-sheet" onClick={(event) => event.stopPropagation()}>
+            <div className="reaction-details-heading">
+              <strong>{language === 'uk' ? 'Реакції' : language === 'ru' ? 'Реакции' : 'Reactions'}</strong>
+              <button type="button" onClick={() => setShowReactionDetails(false)}>×</button>
+            </div>
+            {(messageMenu.message.reactions || []).flatMap((reaction) =>
+              (reaction.users || []).map((user, index) => (
+                <div className="reaction-details-user" key={`${reaction.reaction}-${user.user_id || user.id || index}`}>
+                  <span className="reaction-details-avatar">
+                    {user.avatar ? <img src={getFileUrl(user.avatar)} alt="" /> : (user.display_name || user.username || '?')[0].toUpperCase()}
+                  </span>
+                  <span>{user.display_name || user.username || 'User'}</span>
+                  <b>{reaction.reaction}</b>
+                </div>
+              ))
+            )}
+          </section>
+        </div>
       )}
     </div>
   );

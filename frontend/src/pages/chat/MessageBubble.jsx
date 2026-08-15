@@ -315,6 +315,7 @@ function MessageBubble({
   onReplyTargetClick,
   onReply,
 }) {
+  const [showReactionDetails, setShowReactionDetails] = useState(false);
   const memberAdded = parseGroupMemberAdded(message.text || '');
 
   if (memberAdded && isGroup) {
@@ -360,6 +361,9 @@ function MessageBubble({
       : '';
   const reactions = (message.reactions || []).filter(
     (item) => item.reaction && Number(item.count || 0) > 0
+  );
+  const reactionUsers = reactions.flatMap((reaction) =>
+    (reaction.users || []).map((user) => ({ ...user, reaction: reaction.reaction }))
   );
   const identityColors = getIdentityColors(
     message.username || message.sender_id || message.display_name
@@ -586,14 +590,51 @@ function MessageBubble({
     {reactions.length > 0 && (
       <div className="message-reactions">
         {reactions.map((item) => (
-          <span
+          <button
+            type="button"
             key={item.reaction}
             className={item.reacted_by_me ? 'mine' : ''}
+            onClick={() => setShowReactionDetails(true)}
           >
             {item.reaction}
-            {Number(item.count) > 1 ? ` ${item.count}` : ''}
-          </span>
+            {isGroup && item.users?.length ? (
+              <span className="reaction-avatar-stack">
+                {item.users.slice(0, 3).map((user, index) => (
+                  <span
+                    className="reaction-avatar"
+                    key={user.user_id || user.id || index}
+                    style={{ zIndex: 3 - index }}
+                  >
+                    {user.avatar ? (
+                      <img src={getFileUrl(user.avatar)} alt="" />
+                    ) : (
+                      (user.display_name || user.username || '?')[0].toUpperCase()
+                    )}
+                  </span>
+                ))}
+              </span>
+            ) : Number(item.count) > 1 ? ` ${item.count}` : ''}
+          </button>
         ))}
+      </div>
+    )}
+    {showReactionDetails && (
+      <div className="reaction-details-backdrop" onClick={() => setShowReactionDetails(false)}>
+        <section className="reaction-details-sheet" onClick={(event) => event.stopPropagation()}>
+          <div className="reaction-details-heading">
+            <strong>{language === 'uk' ? 'Реакції' : language === 'ru' ? 'Реакции' : 'Reactions'}</strong>
+            <button type="button" onClick={() => setShowReactionDetails(false)}>×</button>
+          </div>
+          {reactionUsers.map((user, index) => (
+            <div className="reaction-details-user" key={`${user.user_id || user.id}-${index}`}>
+              <span className="reaction-details-avatar">
+                {user.avatar ? <img src={getFileUrl(user.avatar)} alt="" /> : (user.display_name || user.username || '?')[0].toUpperCase()}
+              </span>
+              <span>{user.display_name || user.username || 'User'}</span>
+              <b>{user.reaction}</b>
+            </div>
+          ))}
+        </section>
       </div>
     )}
     </SwipeReplyBubble>
