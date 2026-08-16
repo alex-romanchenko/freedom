@@ -234,7 +234,8 @@
     display: none;
   }
 
-  .group-info-panel {
+  .group-info-panel,
+  .contact-info-panel {
     position: fixed;
     inset: 0 0 74px 0;
     width: 100%;

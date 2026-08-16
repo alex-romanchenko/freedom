@@ -240,27 +240,6 @@ function GroupInfoPanel({
         </button>
       )}
 
-      <button
-        type="button"
-        className={`group-notifications-toggle ${notificationsMuted ? 'muted' : ''}`}
-        onClick={toggleNotifications}
-        disabled={isUpdatingNotifications}
-        aria-label={notificationsMuted ? 'Enable notifications' : 'Disable notifications'}
-      >
-        <span className="group-notifications-icon">
-          {notificationsMuted ? (
-            <IoNotificationsOffOutline />
-          ) : (
-            <IoNotificationsOutline />
-          )}
-        </span>
-        <strong>
-          {notificationsMuted
-            ? (language === 'uk' ? 'Увімкнути' : language === 'ru' ? 'Включить' : 'Enable')
-            : (language === 'uk' ? 'Вимкнути' : language === 'ru' ? 'Отключить' : 'Disable')}
-        </strong>
-      </button>
-
       <div className="group-members-block">
         <div className="group-members-title-row">
           <h4>{isAddingMembers ? 'Add Members' : 'Members'}</h4>
