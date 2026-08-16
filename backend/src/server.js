@@ -22,6 +22,7 @@
     ensureMessageReactionsTable,
     setMessageReaction,
     upsertMessageReactionNotification,
+    isConversationNotificationsMuted,
     findOrCreateConversation,
     createMessage,
     getMessageById,
@@ -1224,7 +1225,14 @@ app.post('/api/calls/reject', async (req, res) => {
           });
         }
 
-        if (normalizedReaction && !recipientIsViewingChat) {
+        if (
+          normalizedReaction &&
+          !recipientIsViewingChat &&
+          !(await isConversationNotificationsMuted(
+            conversationId,
+            message.sender_id
+          ))
+        ) {
           await sendReactionPush({
             recipientId: Number(message.sender_id),
             actor,

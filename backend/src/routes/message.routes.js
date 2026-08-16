@@ -9,6 +9,9 @@ const {
   getConversations, 
   getMessages,
   getImages,
+  getAttachments,
+  getNotificationSettings,
+  updateNotificationSettings,
   searchUserMessages,
   markAsRead,
   markReactionsAsSeen,
@@ -50,6 +53,9 @@ router.post(
 router.get('/', authMiddleware, getConversations);
 router.get('/search', authMiddleware, searchUserMessages);
 router.get('/:conversationId/images', authMiddleware, getImages);
+router.get('/:conversationId/attachments', authMiddleware, getAttachments);
+router.get('/:conversationId/notifications', authMiddleware, getNotificationSettings);
+router.patch('/:conversationId/notifications', authMiddleware, updateNotificationSettings);
 router.post('/forward', authMiddleware, forwardMessage);
 router.get('/:conversationId', authMiddleware, getMessages);
 router.post('/conversations/:userId', authMiddleware, createConversation);

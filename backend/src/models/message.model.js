@@ -162,6 +162,42 @@ async function getConversationImages(conversationId, userId) {
   return result.rows;
 }
 
+async function getConversationAttachments(conversationId, userId) {
+  const result = await pool.query(
+    `
+    SELECT
+      messages.id, messages.image, messages.video, messages.audio,
+      messages.file, messages.file_name, messages.file_mime,
+      messages.audio_duration, messages.created_at
+    FROM messages
+    WHERE messages.conversation_id = $1
+      AND messages.is_deleted = false
+      AND (
+        messages.image IS NOT NULL OR messages.video IS NOT NULL
+        OR messages.audio IS NOT NULL OR messages.file IS NOT NULL
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM conversations
+        LEFT JOIN conversation_members
+          ON conversation_members.conversation_id = conversations.id
+          AND conversation_members.user_id = $2
+        WHERE conversations.id = $1
+          AND (
+            (conversations.is_group = false AND (
+              conversations.user_one_id = $2 OR conversations.user_two_id = $2
+            ))
+            OR (conversations.is_group = true AND conversation_members.user_id IS NOT NULL)
+          )
+      )
+    ORDER BY messages.created_at DESC, messages.id DESC
+    `,
+    [conversationId, userId]
+  );
+
+  return result.rows;
+}
+
 async function getGroupPushRecipientIds(conversationId) {
   const result = await pool.query(
     `
@@ -209,6 +245,51 @@ async function ensureMessageReactionsTable() {
       UNIQUE (message_id, recipient_id, actor_id)
     )
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS conversation_notification_settings (
+      conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      muted BOOLEAN NOT NULL DEFAULT false,
+      PRIMARY KEY (conversation_id, user_id)
+    )
+  `);
+}
+
+async function isConversationNotificationsMuted(conversationId, userId) {
+  const result = await pool.query(
+    `SELECT muted FROM conversation_notification_settings
+     WHERE conversation_id = $1 AND user_id = $2`,
+    [conversationId, userId]
+  );
+  return result.rows[0]?.muted === true;
+}
+
+async function setConversationNotificationsMuted(conversationId, userId, muted) {
+  const result = await pool.query(
+    `
+    INSERT INTO conversation_notification_settings (conversation_id, user_id, muted)
+    SELECT $1, $2, $3
+    WHERE EXISTS (
+      SELECT 1 FROM conversations
+      LEFT JOIN conversation_members
+        ON conversation_members.conversation_id = conversations.id
+        AND conversation_members.user_id = $2
+      WHERE conversations.id = $1
+        AND (
+          (conversations.is_group = false AND (
+            conversations.user_one_id = $2 OR conversations.user_two_id = $2
+          ))
+          OR (conversations.is_group = true AND conversation_members.user_id IS NOT NULL)
+        )
+    )
+    ON CONFLICT (conversation_id, user_id)
+    DO UPDATE SET muted = EXCLUDED.muted
+    RETURNING muted
+    `,
+    [conversationId, userId, muted]
+  );
+  return result.rows[0]?.muted;
 }
 
 async function upsertMessageReactionNotification({
@@ -988,6 +1069,9 @@ module.exports = {
   getGroupPushRecipientIds,
   getConversationById,
   getConversationImages,
+  getConversationAttachments,
+  isConversationNotificationsMuted,
+  setConversationNotificationsMuted,
   ensureMessageReactionsTable,
   recordGroupMessageMentions,
   upsertMessageReactionNotification,

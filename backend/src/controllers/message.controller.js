@@ -18,6 +18,9 @@ const {
   markMessageAsDelivered,
   getConversationById,
   getConversationImages,
+  getConversationAttachments,
+  isConversationNotificationsMuted,
+  setConversationNotificationsMuted,
   recordGroupMessageMentions,
 } = require('../models/message.model');
 const { areUsersBlocked } = require('../models/safety.model');
@@ -327,7 +330,10 @@ if (userRoom) {
   emitMessageToUserDevices(io, userId, conversationRoom, payload);
 }
 
-if (!isUserInConversation(io, userId, conversation.id)) {
+  if (
+    !isUserInConversation(io, userId, conversation.id) &&
+    !(await isConversationNotificationsMuted(conversation.id, userId))
+  ) {
   await sendMessagePush({
     userId,
     title: fullMessage.display_name || fullMessage.username || 'Freedom',
@@ -567,6 +573,49 @@ async function getImages(req, res) {
   }
 }
 
+async function getAttachments(req, res) {
+  try {
+    const attachments = await getConversationAttachments(
+      req.params.conversationId,
+      req.user.id
+    );
+    return res.json(attachments);
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error getting conversation attachments',
+      error: error.message,
+    });
+  }
+}
+
+async function getNotificationSettings(req, res) {
+  try {
+    const muted = await isConversationNotificationsMuted(
+      req.params.conversationId,
+      req.user.id
+    );
+    return res.json({ muted });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error getting notification settings' });
+  }
+}
+
+async function updateNotificationSettings(req, res) {
+  try {
+    const muted = await setConversationNotificationsMuted(
+      req.params.conversationId,
+      req.user.id,
+      req.body?.muted === true
+    );
+    if (muted === undefined) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    return res.json({ muted });
+  } catch (error) {
+    return res.status(500).json({ message: 'Error updating notification settings' });
+  }
+}
+
 async function markReactionsAsSeen(req, res) {
   try {
     await markReactionNotificationsAsSeen(req.params.conversationId, req.user.id);
@@ -741,7 +790,10 @@ async function forwardMessage(req, res) {
         emitMessageToUserDevices(io, userId, conversationRoom, payload);
       }
 
-      if (!isUserInConversation(io, userId, targetConversation.id)) {
+      if (
+        !isUserInConversation(io, userId, targetConversation.id) &&
+        !(await isConversationNotificationsMuted(targetConversation.id, userId))
+      ) {
         await sendMessagePush({
           userId,
           title: fullMessage.display_name || fullMessage.username || 'Freedom',
@@ -909,6 +961,9 @@ module.exports = {
   getConversations,
   getMessages,
   getImages,
+  getAttachments,
+  getNotificationSettings,
+  updateNotificationSettings,
   searchUserMessages,
   markAsRead,
   markReactionsAsSeen,
