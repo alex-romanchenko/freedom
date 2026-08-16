@@ -56,6 +56,10 @@ function Chat({
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
 
+  useEffect(() => {
+    if (selectedConv?.type === 'group') setShowContactInfo(false);
+  }, [selectedConv?.id, selectedConv?.type]);
+
   const [typingUserId, setTypingUserId] = useState(null);
   const [typingUserName, setTypingUserName] = useState('');
   const typingTimeoutRef = useRef(null);
@@ -1575,7 +1579,7 @@ useEffect(() => {
           language={language}
         />
       )}
-      {showContactInfo && selectedConv && (
+      {showContactInfo && selectedConv && selectedConv.type !== 'group' && (
         <ContactInfoPanel
           conversation={selectedConv}
           onlineUsers={onlineUsers}

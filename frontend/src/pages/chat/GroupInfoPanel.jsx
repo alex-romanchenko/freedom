@@ -10,6 +10,10 @@ import {
   IoPencilOutline,
   IoPersonAddOutline,
   IoTrashOutline,
+  IoDocumentOutline,
+  IoMicOutline,
+  IoMusicalNotesOutline,
+  IoVideocamOutline,
 } from 'react-icons/io5';
 import { getFileUrl } from '../../api/fileUrl';
 import AddGroupMembersPanel from './AddGroupMembersPanel';
@@ -39,10 +43,19 @@ function GroupInfoPanel({
     Boolean(groupInfo?.notifications_muted)
   );
   const [isUpdatingNotifications, setIsUpdatingNotifications] = useState(false);
+  const [activeTab, setActiveTab] = useState('members');
+  const [attachments, setAttachments] = useState([]);
 
   useEffect(() => {
     setNotificationsMuted(Boolean(groupInfo?.notifications_muted));
   }, [groupInfo?.id, groupInfo?.notifications_muted]);
+
+  useEffect(() => {
+    if (!groupInfo?.id) return;
+    api.get(`/messages/${groupInfo.id}/attachments`)
+      .then((response) => setAttachments(response.data || []))
+      .catch(() => setAttachments([]));
+  }, [groupInfo?.id]);
 
   if (!groupInfo) return null;
 
@@ -95,6 +108,18 @@ function GroupInfoPanel({
   };
 
   const groupColors = getIdentityColors(groupInfo.id || localGroupName);
+  const attachmentItems = attachments.filter((item) => {
+    const mime = item.file_mime || '';
+    if (activeTab === 'media') return item.image || item.video;
+    if (activeTab === 'files') return item.file && !mime.startsWith('audio/');
+    if (activeTab === 'music') return item.file && mime.startsWith('audio/');
+    return item.audio;
+  });
+  const tabs = language === 'uk'
+    ? [['members', 'Учасники'], ['media', 'Медіа'], ['files', 'Файли'], ['music', 'Музика'], ['voice', 'Голосові']]
+    : language === 'ru'
+      ? [['members', 'Участники'], ['media', 'Медиа'], ['files', 'Файлы'], ['music', 'Музыка'], ['voice', 'Голосовые']]
+      : [['members', 'Members'], ['media', 'Media'], ['files', 'Files'], ['music', 'Music'], ['voice', 'Voice']];
   const actionLabels = language === 'uk'
     ? { write: '\u041d\u0430\u043f\u0438\u0441\u0430\u0442\u0438', enable: '\u0423\u0432\u0456\u043c\u043a\u043d\u0443\u0442\u0438', disable: '\u0412\u0438\u043c\u043a\u043d\u0443\u0442\u0438', leave: '\u041f\u043e\u043a\u0438\u043d\u0443\u0442\u0438', delete: '\u0412\u0438\u0434\u0430\u043b\u0438\u0442\u0438', addMembers: '\u0414\u043e\u0434\u0430\u0442\u0438 \u0443\u0447\u0430\u0441\u043d\u0438\u043a\u0456\u0432' }
     : language === 'ru'
@@ -226,7 +251,7 @@ function GroupInfoPanel({
         </button>
       </div>
 
-      {isAdmin && !isAddingMembers && (
+      {activeTab === 'members' && isAdmin && !isAddingMembers && (
         <button
           type="button"
           className="group-add-members-action"
@@ -240,6 +265,23 @@ function GroupInfoPanel({
         </button>
       )}
 
+      <div className="group-info-tabs">
+        {tabs.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            className={activeTab === id ? 'active' : ''}
+            onClick={() => {
+              setActiveTab(id);
+              if (id !== 'members') setIsAddingMembers(false);
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'members' ? (
       <div className="group-members-block">
         <div className="group-members-title-row">
           <h4>{isAddingMembers ? 'Add Members' : 'Members'}</h4>
@@ -323,6 +365,25 @@ function GroupInfoPanel({
           </>
         )}
       </div>
+      ) : (
+        <div className={`group-attachments ${activeTab === 'media' ? 'grid' : ''}`}>
+          {attachmentItems.length === 0 ? (
+            <p>{language === 'uk' ? 'У чаті ще немає таких файлів' : language === 'ru' ? 'В чате ещё нет таких файлов' : 'There are no such files in this chat yet'}</p>
+          ) : attachmentItems.map((item) => {
+            const url = getFileUrl(item.image || item.video || item.file || item.audio);
+            if (activeTab === 'media') {
+              return <a key={item.id} href={url} target="_blank" rel="noreferrer" className="group-attachment-media">
+                <img src={url} alt="" />
+                {item.video && <IoVideocamOutline />}
+              </a>;
+            }
+            const Icon = activeTab === 'files' ? IoDocumentOutline : activeTab === 'music' ? IoMusicalNotesOutline : IoMicOutline;
+            return <a key={item.id} href={url} target="_blank" rel="noreferrer" className="group-attachment-file">
+              <Icon /><span>{item.file_name || (activeTab === 'music' ? 'Music' : activeTab === 'voice' ? 'Voice message' : 'File')}</span>
+            </a>;
+          })}
+        </div>
+      )}
 
         {confirmAction && (
   <div className="modal-overlay">
