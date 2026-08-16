@@ -16,6 +16,7 @@ function ChatHeader({
   selectedConv,
   onOpenUser,
   onOpenGroupInfo,
+  onOpenContactInfo,
   getChatStatus,
   groupTypingStatus,
   language,
@@ -50,7 +51,7 @@ function ChatHeader({
       <div
         onClick={() => {
           if (isGroup) onOpenGroupInfo?.();
-          else onOpenUser(selectedConv.username);
+          else onOpenContactInfo?.();
         }}
         style={{ cursor: 'pointer' }}
       >
@@ -78,7 +79,7 @@ function ChatHeader({
           className="chat-header-name"
           onClick={() => {
             if (isGroup) onOpenGroupInfo?.();
-            else onOpenUser(selectedConv.username);
+            else onOpenContactInfo?.();
           }}
           style={{ cursor: 'pointer' }}
         >

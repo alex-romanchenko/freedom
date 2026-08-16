@@ -154,6 +154,92 @@
   background: #e5e7eb !important;
 }
 
+.contact-info-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #f5f5f7;
+  border-left: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+
+.contact-info-topbar {
+  min-height: 56px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 14px;
+}
+
+.contact-info-topbar > button,
+.contact-menu-wrap > button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.contact-menu-wrap { position: relative; }
+.contact-actions-menu {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  z-index: 3;
+  width: 220px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+  padding: 6px;
+}
+.contact-actions-menu button {
+  width: 100%; border: 0; background: transparent; padding: 11px;
+  display: flex; gap: 10px; align-items: center; text-align: left;
+  cursor: pointer; font-size: 14px;
+}
+.contact-actions-menu button:hover { background: #f1f2f4; border-radius: 9px; }
+
+.contact-info-profile { text-align: center; padding: 8px 18px 18px; }
+.contact-info-profile img, .contact-info-profile > div {
+  width: 112px; height: 112px; border-radius: 50%; object-fit: cover;
+  margin: 0 auto; display: grid; place-items: center; color: #fff;
+  font-size: 42px; font-weight: 700;
+}
+.contact-info-profile h2 { margin: 14px 0 4px; font-size: 22px; }
+.contact-info-profile p { margin: 0; color: #73777d; font-size: 14px; }
+.contact-info-profile .contact-online { color: #168a46; }
+
+.contact-info-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 16px 18px; }
+.contact-info-buttons button {
+  min-width: 0; height: 70px; border: 0; border-radius: 17px;
+  background: #e9e9ed; color: #17191c; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;
+}
+.contact-info-buttons svg { font-size: 25px; }
+.contact-info-buttons span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
+.contact-tabs { display: flex; gap: 3px; overflow-x: auto; padding: 8px 12px; background: #fff; }
+.contact-tabs button { border: 0; background: transparent; border-radius: 14px; padding: 7px 12px; white-space: nowrap; color: #777; cursor: pointer; }
+.contact-tabs button.active { color: #257fb0; background: #ddecf5; font-weight: 700; }
+.contact-attachments { flex: 1; overflow: auto; padding: 12px; }
+.contact-attachments > p { color: #777; text-align: center; margin-top: 35px; }
+.contact-attachments.grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 100px; gap: 4px; align-content: start; }
+.contact-media-item { position: relative; overflow: hidden; border-radius: 8px; background: #ddd; }
+.contact-media-item img { width: 100%; height: 100%; object-fit: cover; }
+.contact-media-item svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 30px; filter: drop-shadow(0 1px 2px #000); }
+.contact-file-item { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid #e4e4e6; color: inherit; text-decoration: none; }
+.contact-file-item svg { font-size: 25px; color: #257fb0; }
+.contact-file-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.dark .contact-info-panel, .dark .contact-info-panel { background: #151515; color: #f5f5f5; border-color: #333; }
+body.dark .contact-tabs, .dark .contact-tabs, body.dark .contact-actions-menu, .dark .contact-actions-menu { background: #202020; color: #f5f5f5; }
+body.dark .contact-info-buttons button, .dark .contact-info-buttons button { background: #2a2a2a; color: #fff; }
+body.dark .contact-actions-menu button, .dark .contact-actions-menu button { color: #fff; }
+body.dark .contact-actions-menu button:hover, .dark .contact-actions-menu button:hover { background: #303030; }
+
 .group-info-header-minimal {
   grid-template-columns: 40px 1fr 40px;
 }

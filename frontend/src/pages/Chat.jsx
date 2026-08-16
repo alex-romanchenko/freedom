@@ -11,6 +11,7 @@ import api from '../api/api';
 import socket from '../socket';
 import { deleteConversationApi } from '../api/messagesApi';
 import GroupInfoPanel from './chat/GroupInfoPanel';
+import ContactInfoPanel from './chat/ContactInfoPanel';
 import { getFileUrl } from '../api/fileUrl';
 import { t } from '../utils/i18n';
 import {
@@ -53,6 +54,7 @@ function Chat({
   const [deleteDialogId, setDeleteDialogId] = useState(null);
   const [groupInfo, setGroupInfo] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showContactInfo, setShowContactInfo] = useState(false);
 
   const [typingUserId, setTypingUserId] = useState(null);
   const [typingUserName, setTypingUserName] = useState('');
@@ -1349,7 +1351,7 @@ useEffect(() => {
         className={`chat-layout
           ${selectedConv ? 'chat-open' : ''}
           ${isDraggingImage ? 'dragging-image' : ''}
-          ${showGroupInfo ? 'with-group-info' : ''}
+          ${showGroupInfo || showContactInfo ? 'with-group-info' : ''}
         `}
         onClick={closeMessageMenu}
         onDragOver={handleDragOver}
@@ -1377,6 +1379,7 @@ useEffect(() => {
               selectedConv={selectedConv}
               onOpenUser={onOpenUser}
               onOpenGroupInfo={openGroupInfo}
+              onOpenContactInfo={() => setShowContactInfo(true)}
               getChatStatus={getChatStatus}
               groupTypingStatus={getGroupTypingStatus()}
               language={language}
@@ -1570,6 +1573,18 @@ useEffect(() => {
           onOpenUser={onOpenUser}
           onGroupDeletedOrLeft={handleGroupDeletedOrLeft}
           language={language}
+        />
+      )}
+      {showContactInfo && selectedConv && (
+        <ContactInfoPanel
+          conversation={selectedConv}
+          onlineUsers={onlineUsers}
+          language={language}
+          onClose={(closeChat) => {
+            setShowContactInfo(false);
+            if (closeChat) setSelectedConv(null);
+          }}
+          onStartCall={(withVideo) => startCall(selectedConv.user_id, withVideo)}
         />
       )}
       {isFakeFullscreen && videoCallContent &&
