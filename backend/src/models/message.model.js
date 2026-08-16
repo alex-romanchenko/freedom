@@ -160,13 +160,19 @@ async function ensureMessageReactionsTable() {
   `);
 }
 
-async function recordGroupMessageMentions({ messageId, conversationId, text }) {
+async function recordGroupMessageMentions({
+  messageId,
+  conversationId,
+  senderId,
+  text,
+}) {
   const usernames = [...new Set(
     String(text || '')
       .match(/@([a-zA-Z0-9_]+)/g)
       ?.map((match) => match.slice(1).toLowerCase()) || []
   )];
   if (!usernames.length) return;
+  const mentionEveryone = usernames.includes('all');
 
   await pool.query(
     `
@@ -176,10 +182,14 @@ async function recordGroupMessageMentions({ messageId, conversationId, text }) {
     JOIN conversation_members
       ON conversation_members.user_id = users.id
      AND conversation_members.conversation_id = $2
-    WHERE LOWER(users.username) = ANY($3::text[])
+    WHERE users.id <> $3
+      AND (
+        $4::boolean
+        OR LOWER(users.username) = ANY($5::text[])
+      )
     ON CONFLICT DO NOTHING
     `,
-    [messageId, conversationId, usernames]
+    [messageId, conversationId, senderId, mentionEveryone, usernames]
   );
 }
 

@@ -412,6 +412,7 @@ async function sendGroupMessage(req, res) {
     await recordGroupMessageMentions({
       messageId: message.id,
       conversationId: Number(conversationId),
+      senderId,
       text,
     });
 
