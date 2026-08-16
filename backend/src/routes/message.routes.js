@@ -8,6 +8,7 @@ const {
   sendGroupMessage,
   getConversations, 
   getMessages,
+  getImages,
   searchUserMessages,
   markAsRead,
   markReactionsAsSeen,
@@ -48,6 +49,7 @@ router.post(
 );
 router.get('/', authMiddleware, getConversations);
 router.get('/search', authMiddleware, searchUserMessages);
+router.get('/:conversationId/images', authMiddleware, getImages);
 router.post('/forward', authMiddleware, forwardMessage);
 router.get('/:conversationId', authMiddleware, getMessages);
 router.post('/conversations/:userId', authMiddleware, createConversation);

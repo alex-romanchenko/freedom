@@ -125,6 +125,43 @@ async function createMessage({
   return result.rows[0];
 }
 
+async function getConversationImages(conversationId, userId) {
+  const access = await pool.query(
+    `
+    SELECT 1
+    FROM conversations
+    LEFT JOIN conversation_members
+      ON conversation_members.conversation_id = conversations.id
+      AND conversation_members.user_id = $2
+    WHERE conversations.id = $1
+      AND (
+        (conversations.is_group = false AND (
+          conversations.user_one_id = $2 OR conversations.user_two_id = $2
+        ))
+        OR (conversations.is_group = true AND conversation_members.user_id IS NOT NULL)
+      )
+    `,
+    [conversationId, userId]
+  );
+
+  if (!access.rowCount) return null;
+
+  const result = await pool.query(
+    `
+    SELECT id, image, created_at
+    FROM messages
+    WHERE conversation_id = $1
+      AND image IS NOT NULL
+      AND image <> ''
+      AND is_deleted = false
+    ORDER BY created_at ASC, id ASC
+    `,
+    [conversationId]
+  );
+
+  return result.rows;
+}
+
 async function getGroupPushRecipientIds(conversationId) {
   const result = await pool.query(
     `
@@ -950,6 +987,7 @@ module.exports = {
   getGroupMemberIds,
   getGroupPushRecipientIds,
   getConversationById,
+  getConversationImages,
   ensureMessageReactionsTable,
   recordGroupMessageMentions,
   upsertMessageReactionNotification,

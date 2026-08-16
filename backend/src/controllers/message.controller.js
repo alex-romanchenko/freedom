@@ -17,6 +17,7 @@ const {
   deleteMessageById,
   markMessageAsDelivered,
   getConversationById,
+  getConversationImages,
   recordGroupMessageMentions,
 } = require('../models/message.model');
 const { areUsersBlocked } = require('../models/safety.model');
@@ -546,6 +547,26 @@ async function getMessages(req, res) {
   }
 }
 
+async function getImages(req, res) {
+  try {
+    const images = await getConversationImages(
+      req.params.conversationId,
+      req.user.id
+    );
+
+    if (images === null) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    return res.json(images);
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Error getting conversation images',
+      error: error.message,
+    });
+  }
+}
+
 async function markReactionsAsSeen(req, res) {
   try {
     await markReactionNotificationsAsSeen(req.params.conversationId, req.user.id);
@@ -887,6 +908,7 @@ module.exports = {
   sendMessage,
   getConversations,
   getMessages,
+  getImages,
   searchUserMessages,
   markAsRead,
   markReactionsAsSeen,
