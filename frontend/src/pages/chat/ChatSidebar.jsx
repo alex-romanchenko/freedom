@@ -33,6 +33,20 @@ function currentLanguage() {
   }
 }
 
+function reactionPreviewText(preview) {
+  const actor = preview?.actor_name;
+  const reaction = preview?.reaction;
+  if (!actor || !reaction) return '';
+  switch (currentLanguage()) {
+    case 'uk':
+      return `${actor} відреагував(ла) ${reaction} на ваше повідомлення`;
+    case 'ru':
+      return `${actor} поставил(а) ${reaction} на ваше сообщение`;
+    default:
+      return `${actor} reacted ${reaction} to your message`;
+  }
+}
+
 function callWord(key) {
   const language = currentLanguage();
   const words = {
@@ -140,6 +154,7 @@ function ChatSidebar({
           const identityColors = getIdentityColors(
             c.username || c.user_id || c.id || c.display_name
           );
+          const reactionText = reactionPreviewText(c.reaction_preview);
 
           return (
             <div
@@ -200,7 +215,9 @@ function ChatSidebar({
                 </span>
               </div>
 
-              {c.last_message_text && (() => {
+              {reactionText ? (
+                <div className="chat-preview reaction-preview">{reactionText}</div>
+              ) : c.last_message_text && (() => {
                 const callEvent = parseCallEvent(c.last_message_text);
 
                 if (callEvent) {

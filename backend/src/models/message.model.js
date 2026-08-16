@@ -158,6 +158,50 @@ async function ensureMessageReactionsTable() {
       PRIMARY KEY (message_id, mentioned_user_id)
     )
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS message_reaction_notifications (
+      id SERIAL PRIMARY KEY,
+      conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+      message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+      recipient_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      actor_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      reaction TEXT NOT NULL,
+      seen_at TIMESTAMP NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (message_id, recipient_id, actor_id)
+    )
+  `);
+}
+
+async function upsertMessageReactionNotification({
+  conversationId,
+  messageId,
+  recipientId,
+  actorId,
+  reaction,
+}) {
+  if (!reaction) {
+    await pool.query(
+      `DELETE FROM message_reaction_notifications
+       WHERE message_id = $1 AND recipient_id = $2 AND actor_id = $3`,
+      [messageId, recipientId, actorId]
+    );
+    return;
+  }
+
+  await pool.query(
+    `
+    INSERT INTO message_reaction_notifications (
+      conversation_id, message_id, recipient_id, actor_id, reaction, seen_at
+    ) VALUES ($1, $2, $3, $4, $5, NULL)
+    ON CONFLICT (message_id, recipient_id, actor_id)
+    DO UPDATE SET reaction = EXCLUDED.reaction,
+                  seen_at = NULL,
+                  created_at = CURRENT_TIMESTAMP
+    `,
+    [conversationId, messageId, recipientId, actorId, reaction]
+  );
 }
 
 async function recordGroupMessageMentions({
@@ -321,7 +365,21 @@ async function getUserConversations(userId) {
         last_message.file_size AS last_message_file_size,
 
         COUNT(unread_messages.id) AS unread_count,
-        0::int AS mention_unread_count
+        0::int AS mention_unread_count,
+        (
+          SELECT JSON_BUILD_OBJECT(
+            'reaction', message_reaction_notifications.reaction,
+            'actor_name', users.display_name,
+            'actor_avatar', users.avatar
+          )
+          FROM message_reaction_notifications
+          JOIN users ON users.id = message_reaction_notifications.actor_id
+          WHERE message_reaction_notifications.conversation_id = conversations.id
+            AND message_reaction_notifications.recipient_id = $1
+            AND message_reaction_notifications.seen_at IS NULL
+          ORDER BY message_reaction_notifications.created_at DESC
+          LIMIT 1
+        ) AS reaction_preview
 
       FROM conversations
 
@@ -426,7 +484,21 @@ async function getUserConversations(userId) {
               conversation_reads.last_read_at IS NULL
               OR mentioned_messages.created_at > conversation_reads.last_read_at
             )
-        ) AS mention_unread_count
+        ) AS mention_unread_count,
+        (
+          SELECT JSON_BUILD_OBJECT(
+            'reaction', message_reaction_notifications.reaction,
+            'actor_name', users.display_name,
+            'actor_avatar', users.avatar
+          )
+          FROM message_reaction_notifications
+          JOIN users ON users.id = message_reaction_notifications.actor_id
+          WHERE message_reaction_notifications.conversation_id = conversations.id
+            AND message_reaction_notifications.recipient_id = $1
+            AND message_reaction_notifications.seen_at IS NULL
+          ORDER BY message_reaction_notifications.created_at DESC
+          LIMIT 1
+        ) AS reaction_preview
 
       FROM conversations
 
@@ -713,6 +785,15 @@ async function deleteConversationById(conversationId, userId) {
      AND (user_one_id = $2 OR user_two_id = $2)`,
     [conversationId, userId]
   );
+
+  await pool.query(
+    `UPDATE message_reaction_notifications
+     SET seen_at = CURRENT_TIMESTAMP
+     WHERE conversation_id = $1
+       AND recipient_id = $2
+       AND seen_at IS NULL`,
+    [conversationId, userId]
+  );
 }
 
 async function clearConversationById(conversationId, userId) {
@@ -860,6 +941,7 @@ module.exports = {
   getConversationById,
   ensureMessageReactionsTable,
   recordGroupMessageMentions,
+  upsertMessageReactionNotification,
   getMessageReactions,
   setMessageReaction,
 };

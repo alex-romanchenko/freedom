@@ -1112,6 +1112,12 @@ useEffect(() => {
   }, [selectedConv, currentUser?.id]);
 
   useEffect(() => {
+    const handleReactionNotification = () => refreshConversations();
+    socket.on('reactionNotification', handleReactionNotification);
+    return () => socket.off('reactionNotification', handleReactionNotification);
+  }, []);
+
+  useEffect(() => {
   const handleMessagesRead = ({ conversationId, messageIds }) => {
     if (String(conversationId) !== String(selectedConv?.id)) return;
 

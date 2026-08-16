@@ -21,12 +21,14 @@
     markIncomingMessagesAsDelivered,
     ensureMessageReactionsTable,
     setMessageReaction,
+    upsertMessageReactionNotification,
     findOrCreateConversation,
     createMessage,
     getMessageById,
   } = require('./models/message.model');
   const {
     getFcmTokensByUserId,
+    getUserById,
     deleteFcmToken,
     savePendingCall,
     getPendingCall,
@@ -411,6 +413,36 @@ async function sendFcmToTokens(tokens, buildMessage, label) {
   );
 
   return sent;
+}
+
+async function sendReactionPush({
+  recipientId,
+  actor,
+  conversationId,
+  reaction,
+  targetType = 'message',
+}) {
+  const tokens = await getFcmTokensByUserId(recipientId);
+  if (!tokens.length) return;
+  const name = actor?.display_name || actor?.username || 'Someone';
+  await sendFcmToTokens(
+    tokens,
+    (token) => ({
+      token,
+      data: {
+        type: 'reaction',
+        conversationId: String(conversationId),
+        senderId: String(actor?.id || ''),
+        senderName: String(name),
+        senderAvatar: String(actor?.avatar || ''),
+        reaction: String(reaction),
+        reactionTarget: String(targetType),
+        messageText: `${name} reacted ${reaction} to your message`,
+      },
+      android: { priority: 'high' },
+    }),
+    'REACTION PUSH'
+  );
 }
 
 async function sendIncomingCallPush({
@@ -1153,6 +1185,45 @@ app.post('/api/calls/reject', async (req, res) => {
         reaction: normalizedReaction,
         reactions,
       });
+
+      const message = await getMessageById(Number(messageId), Number(userId));
+      if (
+        message &&
+        Number(message.conversation_id) === Number(conversationId) &&
+        Number(message.sender_id) !== Number(userId)
+      ) {
+        await upsertMessageReactionNotification({
+          conversationId: Number(conversationId),
+          messageId: Number(messageId),
+          recipientId: Number(message.sender_id),
+          actorId: Number(userId),
+          reaction: normalizedReaction,
+        });
+
+        const actor = await getUserById(Number(userId));
+        io.to(`user_${message.sender_id}`).emit('reactionNotification', {
+          conversationId: Number(conversationId),
+        });
+        if (normalizedReaction) {
+          await sendReactionPush({
+            recipientId: Number(message.sender_id),
+            actor,
+            conversationId: Number(conversationId),
+            reaction: normalizedReaction,
+            targetType: message.image
+              ? 'photo'
+              : message.video
+              ? 'video'
+              : message.audio
+              ? 'voice'
+              : message.file_mime?.startsWith('audio/')
+              ? 'music'
+              : message.file
+              ? 'file'
+              : 'message',
+          });
+        }
+      }
     } catch (error) {
       console.error('MESSAGE REACTION ERROR:', error.message);
     }
