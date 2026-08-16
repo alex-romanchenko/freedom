@@ -794,6 +794,19 @@ async function deleteConversationById(conversationId, userId) {
        AND seen_at IS NULL`,
     [conversationId, userId]
   );
+
+  // Reaction previews are notifications too.  Once the conversation has
+  // been opened, they must no longer replace its real last-message preview.
+  await pool.query(
+    `
+    UPDATE message_reaction_notifications
+    SET seen_at = CURRENT_TIMESTAMP
+    WHERE conversation_id = $1
+      AND recipient_id = $2
+      AND seen_at IS NULL
+    `,
+    [conversationId, userId]
+  );
 }
 
 async function clearConversationById(conversationId, userId) {

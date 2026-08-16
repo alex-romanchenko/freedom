@@ -362,6 +362,18 @@
     return Array.from(foregroundSockets.get(String(userId)) || []);
   }
 
+  // A reaction is already visible live over Socket.IO when the author is
+  // looking at this exact conversation.  Do not create a second, unread
+  // notification (or wake the device with FCM) in that case.
+  function isUserViewingConversation(userId, conversationId) {
+    const roomName = `conversation_${conversationId}`;
+
+    return getForegroundSocketIds(userId).some((socketId) => {
+      const userSocket = io.sockets.sockets.get(socketId);
+      return Boolean(userSocket?.rooms?.has(roomName));
+    });
+  }
+
   function setSocketForeground(socket, isForeground) {
     const userId = socket.userId;
     if (!userId) return;
@@ -1192,19 +1204,27 @@ app.post('/api/calls/reject', async (req, res) => {
         Number(message.conversation_id) === Number(conversationId) &&
         Number(message.sender_id) !== Number(userId)
       ) {
-        await upsertMessageReactionNotification({
-          conversationId: Number(conversationId),
-          messageId: Number(messageId),
-          recipientId: Number(message.sender_id),
-          actorId: Number(userId),
-          reaction: normalizedReaction,
-        });
-
         const actor = await getUserById(Number(userId));
-        io.to(`user_${message.sender_id}`).emit('reactionNotification', {
-          conversationId: Number(conversationId),
-        });
-        if (normalizedReaction) {
+        const recipientIsViewingChat = isUserViewingConversation(
+          message.sender_id,
+          conversationId
+        );
+
+        if (!recipientIsViewingChat) {
+          await upsertMessageReactionNotification({
+            conversationId: Number(conversationId),
+            messageId: Number(messageId),
+            recipientId: Number(message.sender_id),
+            actorId: Number(userId),
+            reaction: normalizedReaction,
+          });
+
+          io.to(`user_${message.sender_id}`).emit('reactionNotification', {
+            conversationId: Number(conversationId),
+          });
+        }
+
+        if (normalizedReaction && !recipientIsViewingChat) {
           await sendReactionPush({
             recipientId: Number(message.sender_id),
             actor,
