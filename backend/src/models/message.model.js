@@ -566,6 +566,8 @@ async function markConversationAsRead(conversationId, userId) {
     `,
     [conversationId, userId]
   );
+
+  await markReactionNotificationsAsSeen(conversationId, userId);
 }
 
 async function getMessagesByConversation(
@@ -786,17 +788,12 @@ async function deleteConversationById(conversationId, userId) {
     [conversationId, userId]
   );
 
-  await pool.query(
-    `UPDATE message_reaction_notifications
-     SET seen_at = CURRENT_TIMESTAMP
-     WHERE conversation_id = $1
-       AND recipient_id = $2
-       AND seen_at IS NULL`,
-    [conversationId, userId]
-  );
+}
 
-  // Reaction previews are notifications too.  Once the conversation has
-  // been opened, they must no longer replace its real last-message preview.
+// Unlike regular messages, reactions do not require scrolling to the newest
+// message to be considered viewed.  The client calls this as soon as a chat
+// is opened, without changing the existing message-read behaviour.
+async function markReactionNotificationsAsSeen(conversationId, userId) {
   await pool.query(
     `
     UPDATE message_reaction_notifications
@@ -942,6 +939,7 @@ module.exports = {
   getMessageById,
   getForwardableMessageById,
   markConversationAsRead,
+  markReactionNotificationsAsSeen,
   deleteConversationById,
   updateMessageById,
   deleteMessageById,

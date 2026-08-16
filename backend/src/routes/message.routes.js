@@ -10,6 +10,7 @@ const {
   getMessages,
   searchUserMessages,
   markAsRead,
+  markReactionsAsSeen,
   createConversation,
   deleteConversation,
   clearConversation,
@@ -51,6 +52,7 @@ router.post('/forward', authMiddleware, forwardMessage);
 router.get('/:conversationId', authMiddleware, getMessages);
 router.post('/conversations/:userId', authMiddleware, createConversation);
 router.post('/:conversationId/read', authMiddleware, markAsRead);
+router.post('/:conversationId/reactions/seen', authMiddleware, markReactionsAsSeen);
 router.post(
   '/group/:conversationId',
   authMiddleware,

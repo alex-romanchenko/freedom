@@ -9,6 +9,7 @@ const {
   getGroupMemberIds,
   getGroupPushRecipientIds,
   markConversationAsRead,
+  markReactionNotificationsAsSeen,
   markMessagesAsRead,
   deleteConversationById,
   clearConversationById,
@@ -545,6 +546,18 @@ async function getMessages(req, res) {
   }
 }
 
+async function markReactionsAsSeen(req, res) {
+  try {
+    await markReactionNotificationsAsSeen(req.params.conversationId, req.user.id);
+    res.json({ message: 'Reaction notifications marked as seen' });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error marking reaction notifications as seen',
+      error: error.message,
+    });
+  }
+}
+
 function forwardedTextFromMessage(message) {
   const senderName = (
     message.display_name ||
@@ -876,6 +889,7 @@ module.exports = {
   getMessages,
   searchUserMessages,
   markAsRead,
+  markReactionsAsSeen,
   createConversation,
   deleteConversation,
   clearConversation,
