@@ -14,6 +14,7 @@ import {
   IoArrowBack,
   IoArrowUndoOutline,
   IoClose,
+  IoShareSocialOutline,
 } from 'react-icons/io5';
 import { t } from '../utils/i18n';
 
@@ -97,6 +98,23 @@ export default function PostDetails({
 
     await deletePostApi(post.id);
     onBack();
+  };
+
+  const sharePost = async () => {
+    const content = [
+      post.text,
+      post.image && getFileUrl(post.image),
+      post.video && getFileUrl(post.video),
+    ].filter(Boolean).join('\n');
+    try {
+      if (navigator.share) {
+        await navigator.share({ text: content });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(content);
+      }
+    } catch (error) {
+      if (error?.name !== 'AbortError') console.error('Share post error:', error);
+    }
   };
 
   useEffect(() => {
@@ -197,6 +215,9 @@ export default function PostDetails({
         <span className="photo-comments-count">
           💬 {comments.length}
         </span>
+        <button className="post-inline-action" onClick={sharePost} aria-label={t('share', language)}>
+          <IoShareSocialOutline />
+        </button>
       </div>
 
       <div className="post-comments">

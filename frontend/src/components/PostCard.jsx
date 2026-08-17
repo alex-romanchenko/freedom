@@ -6,7 +6,12 @@ import {
   deletePostApi,
 } from '../api/postsApi';
 import { getFileUrl } from '../api/fileUrl';
-import { IoHeartOutline, IoHeart } from 'react-icons/io5';
+import {
+  IoHeartOutline,
+  IoHeart,
+  IoChatbubbleOutline,
+  IoShareSocialOutline,
+} from 'react-icons/io5';
 import { t } from '../utils/i18n';
 
 function PostCard({
@@ -51,6 +56,24 @@ function PostCard({
     await deletePostApi(post.id);
     setShowDeleteConfirm(false);
     onPostChanged && onPostChanged();
+  };
+
+  const sharePost = async (event) => {
+    event.stopPropagation();
+    const text = [
+      post.text,
+      post.image && getFileUrl(post.image),
+      post.video && getFileUrl(post.video),
+    ].filter(Boolean).join('\n');
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      }
+    } catch (error) {
+      if (error?.name !== 'AbortError') console.error('Share post error:', error);
+    }
   };
  
 
@@ -158,6 +181,26 @@ function PostCard({
           </button>
 
           <span className="username">{likesCount}</span>
+
+          <button
+            className="post-inline-action"
+            aria-label={t('comment', language)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onPostClick && onPostClick(post);
+            }}
+          >
+            <IoChatbubbleOutline />
+          </button>
+          <span className="username">{post.comments_count || 0}</span>
+
+          <button
+            className="post-inline-action"
+            aria-label={t('share', language)}
+            onClick={sharePost}
+          >
+            <IoShareSocialOutline />
+          </button>
         </div>
       </div>
 
