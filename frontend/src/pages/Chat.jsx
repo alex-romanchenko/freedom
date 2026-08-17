@@ -359,6 +359,35 @@ const handleGroupDeletedOrLeft = async () => {
     return el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
   };
 
+  const openMentionPrivateChat = async (username) => {
+    if (!username || username.toLowerCase() === 'all') return;
+
+    try {
+      const profileResponse = await api.get(`/users/${encodeURIComponent(username)}`);
+      const user = profileResponse.data?.user;
+      if (!user?.id || String(user.id) === String(currentUser?.id)) return;
+
+      const conversationResponse = await api.post(`/messages/conversations/${user.id}`);
+      const conversation = conversationResponse.data?.conversation;
+      if (!conversation?.id) return;
+
+      const nextConversation = {
+        ...conversation,
+        user_id: user.id,
+        username: user.username,
+        display_name: user.displayName || user.display_name || user.username,
+        avatar: user.avatar,
+      };
+      setShowGroupInfo(false);
+      setShowContactInfo(false);
+      setSelectedConv(nextConversation);
+      await loadMessages(nextConversation.id, nextConversation);
+      await refreshConversations();
+    } catch (error) {
+      console.error('Cannot open mentioned user chat', error);
+    }
+  };
+
   const markConversationRead = async (conversationId) => {
     if (!conversationId || markingReadRef.current) return;
     markingReadRef.current = true;
@@ -1476,6 +1505,7 @@ useEffect(() => {
                   highlightedMessageId={highlightedMessageId}
                   onReplyTargetClick={revealReplyTarget}
                   onReply={() => beginReply(m)}
+                  onOpenMention={openMentionPrivateChat}
                   />
                 </div>
               );

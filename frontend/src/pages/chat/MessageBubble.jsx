@@ -120,15 +120,34 @@ function standaloneEmojiCount(text) {
   return count;
 }
 
-function LinkifiedText({ text, className = '' }) {
-  const urlPattern = /((?:https?:\/\/|www\.)[^\s<]+|\b(?:[a-z0-9-]+\.)+(?:com|org|net|ua|io|app|dev|info|me|co)(?:\/[^\s<]*)?)/gi;
+function LinkifiedText({ text, className = '', onMentionClick }) {
+  const tokenPattern = /((?:https?:\/\/|www\.)[^\s<]+|\b(?:[a-z0-9-]+\.)+(?:com|org|net|ua|io|app|dev|info|me|co)(?:\/[^\s<]*)?|@[a-z0-9_]+)/gi;
   const isUrl = /^(?:https?:\/\/|www\.)[^\s<]+$|^(?:[a-z0-9-]+\.)+(?:com|org|net|ua|io|app|dev|info|me|co)(?:\/[^\s<]*)?$/i;
-  const parts = String(text || '').split(urlPattern);
+  const parts = String(text || '').split(tokenPattern);
 
   return (
     <p className={className}>
       {parts.map((part, index) => {
-        if (!part || !isUrl.test(part)) return part;
+        if (!part) return part;
+        const mention = /^@([a-z0-9_]+)$/i.exec(part);
+        if (mention) {
+          const username = mention[1];
+          if (username.toLowerCase() === 'all' || !onMentionClick) return part;
+          return (
+            <button
+              key={`${part}-${index}`}
+              type="button"
+              className="message-mention-link"
+              onClick={(event) => {
+                event.stopPropagation();
+                onMentionClick(username);
+              }}
+            >
+              {part}
+            </button>
+          );
+        }
+        if (!isUrl.test(part)) return part;
         const href = /^https?:\/\//i.test(part) ? part : `https://${part}`;
         return (
           <a key={`${part}-${index}`} href={href} target="_blank" rel="noreferrer">
@@ -314,6 +333,7 @@ function MessageBubble({
   highlightedMessageId,
   onReplyTargetClick,
   onReply,
+  onOpenMention,
 }) {
   const [showReactionDetails, setShowReactionDetails] = useState(false);
   const memberAdded = parseGroupMemberAdded(message.text || '');
@@ -463,7 +483,7 @@ function MessageBubble({
           </div>
 
           {messageAttachments}
-          {forwardedMessage.text && <LinkifiedText text={forwardedMessage.text} className={emojiClass} />}
+          {forwardedMessage.text && <LinkifiedText text={forwardedMessage.text} className={emojiClass} onMentionClick={onOpenMention} />}
         </>
       ) : replyMessage ? (
         <>
@@ -505,7 +525,7 @@ function MessageBubble({
             </div>
           )}
 
-          {replyMessage.text && <LinkifiedText text={replyMessage.text} className={emojiClass} />}
+          {replyMessage.text && <LinkifiedText text={replyMessage.text} className={emojiClass} onMentionClick={onOpenMention} />}
         </>
       ) : (
         <>
@@ -572,7 +592,7 @@ function MessageBubble({
           )
         )}
 
-        {message.text && <LinkifiedText text={message.text} className={emojiClass} />}
+        {message.text && <LinkifiedText text={message.text} className={emojiClass} onMentionClick={onOpenMention} />}
         </>
       )}
 

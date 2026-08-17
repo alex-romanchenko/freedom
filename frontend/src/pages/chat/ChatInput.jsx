@@ -279,7 +279,7 @@ const handleSendAudio = async () => {
         <div className="chat-input-row">
           <div
             ref={inputBoxRef}
-            className={`chat-input-box ${showAttachMenu ? 'attach-open' : ''}`}
+            className={`chat-input-box ${showAttachMenu ? 'attach-open' : ''} ${mentionMatch ? 'mentions-open' : ''}`}
           >
             <button
               type="button"
