@@ -49,15 +49,16 @@ function ChatInput({
   const [recordedAudio, setRecordedAudio] = useState(null);
   const [recordDuration, setRecordDuration] = useState(0);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const mentionMatch = isGroup ? text.match(/(?:^|\s)@([^\s@]*)$/) : null;
-  const mentionQuery = mentionMatch?.[1]?.toLowerCase() || '';
+  const mentionMatch = isGroup ? text.match(/(?:^|\s)@([a-zA-Z0-9_ ]*)$/) : null;
+  const mentionQuery = mentionMatch?.[1]?.replaceAll('\u200B', '').toLowerCase() || '';
   const mentionMembers = groupMembers.filter((member) => {
     const value = `${member.display_name || ''} ${member.username || ''}`.toLowerCase();
     return value.includes(mentionQuery);
   });
 
   const insertMention = (username) => {
-    setText(text.replace(/@[^\s@]*$/, `@${username} `));
+    const mentionUsername = String(username).replaceAll(' ', ' \u200B');
+    setText(text.replace(/@[a-zA-Z0-9_ ]*$/, `@${mentionUsername} `));
     requestAnimationFrame(() => textareaRef.current?.focus());
   };
 

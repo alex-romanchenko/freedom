@@ -330,8 +330,11 @@ async function recordGroupMessageMentions({
 }) {
   const usernames = [...new Set(
     String(text || '')
-      .match(/@([a-zA-Z0-9_]+)/g)
-      ?.map((match) => match.slice(1).toLowerCase()) || []
+      // A selected multi-word username contains an invisible separator after
+      // each normal space. It looks like "@Dasha Romanchenko" to people but
+      // stays an unambiguous mention token for the parser.
+      .match(/@[a-zA-Z0-9_]+(?:\s\u200B[a-zA-Z0-9_]+)*/g)
+      ?.map((match) => match.slice(1).replaceAll('\u200B', '').toLowerCase()) || []
   )];
   if (!usernames.length) return;
   const mentionEveryone = usernames.includes('all');

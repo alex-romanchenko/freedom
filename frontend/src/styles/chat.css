@@ -645,7 +645,7 @@ body.dark .unread-messages-divider span,
 .reaction-details-user b { margin-left: auto; font-size: 23px; }
 .reaction-details-avatar { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #64748b; color: #fff; }
 .chat-badge-stack { display: inline-flex; align-items: center; gap: 5px; }
-.mention-badge { display: inline-flex; align-items: center; min-height: 22px; padding: 2px 7px; border-radius: 999px; background: #f97316; color: #fff; font-size: 12px; font-weight: 800; }
+.mention-badge { display: inline-flex; align-items: center; padding: 0; background: transparent; color: #22a85a; font-size: 21px; font-weight: 800; line-height: 1; }
 
 .message-status-icon {
   width: 18px;

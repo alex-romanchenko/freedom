@@ -121,7 +121,7 @@ function standaloneEmojiCount(text) {
 }
 
 function LinkifiedText({ text, className = '', onMentionClick }) {
-  const tokenPattern = /((?:https?:\/\/|www\.)[^\s<]+|\b(?:[a-z0-9-]+\.)+(?:com|org|net|ua|io|app|dev|info|me|co)(?:\/[^\s<]*)?|@[a-z0-9_]+)/gi;
+  const tokenPattern = /((?:https?:\/\/|www\.)[^\s<]+|\b(?:[a-z0-9-]+\.)+(?:com|org|net|ua|io|app|dev|info|me|co)(?:\/[^\s<]*)?|@[a-z0-9_]+(?:\s\u200B[a-z0-9_]+)*)/gi;
   const isUrl = /^(?:https?:\/\/|www\.)[^\s<]+$|^(?:[a-z0-9-]+\.)+(?:com|org|net|ua|io|app|dev|info|me|co)(?:\/[^\s<]*)?$/i;
   const parts = String(text || '').split(tokenPattern);
 
@@ -129,9 +129,9 @@ function LinkifiedText({ text, className = '', onMentionClick }) {
     <p className={className}>
       {parts.map((part, index) => {
         if (!part) return part;
-        const mention = /^@([a-z0-9_]+)$/i.exec(part);
+        const mention = /^@([a-z0-9_]+(?:\s\u200B[a-z0-9_]+)*)$/i.exec(part);
         if (mention) {
-          const username = mention[1];
+          const username = mention[1].replaceAll('\u200B', '');
           if (username.toLowerCase() === 'all' || !onMentionClick) return part;
           return (
             <button
@@ -143,7 +143,7 @@ function LinkifiedText({ text, className = '', onMentionClick }) {
                 onMentionClick(username);
               }}
             >
-              {part}
+              {part.replaceAll('\u200B', '')}
             </button>
           );
         }
