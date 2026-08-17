@@ -230,7 +230,7 @@
 .contact-attachments.grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 100px; gap: 4px; align-content: start; }
 .contact-media-item { position: relative; overflow: hidden; border: 0; padding: 0; border-radius: 8px; background: #ddd; cursor: pointer; }
 .contact-media-item img { width: 100%; height: 100%; object-fit: cover; }
-.contact-media-item video { width: 100%; height: 100%; object-fit: cover; }
+.contact-media-item video { width: 100%; height: 100%; object-fit: cover; box-shadow: 0 8px 18px rgba(15, 23, 42, .28); }
 .contact-media-item svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 30px; filter: drop-shadow(0 1px 2px #000); }
 .contact-file-item { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid #e4e4e6; color: inherit; text-decoration: none; }
 .contact-file-item svg { font-size: 25px; color: #257fb0; }
@@ -368,7 +368,7 @@ body.dark .contact-actions-menu button:hover, .dark .contact-actions-menu button
 .group-attachments.grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 96px; gap: 4px; align-content: start; }
 .group-attachment-media { position: relative; overflow: hidden; border: 0; padding: 0; border-radius: 8px; background: #ddd; cursor: pointer; }
 .group-attachment-media img { width: 100%; height: 100%; object-fit: cover; }
-.group-attachment-media video { width: 100%; height: 100%; object-fit: cover; }
+.group-attachment-media video { width: 100%; height: 100%; object-fit: cover; box-shadow: 0 8px 18px rgba(15, 23, 42, .28); }
 .group-attachment-media svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 30px; filter: drop-shadow(0 1px 2px #000); }
 .group-attachment-file { display: flex; align-items: center; gap: 10px; padding: 12px; color: inherit; text-decoration: none; border-bottom: 1px solid #e5e7eb; }
 .group-attachment-file svg { color: #257fb0; font-size: 24px; }

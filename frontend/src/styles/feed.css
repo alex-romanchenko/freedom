@@ -112,6 +112,10 @@
 .post-composer {
   padding: 18px 20px;
   margin-inline: 10%;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  background: var(--surface, #fff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.11);
 }
 
 @media (max-width: 1100px) {
@@ -558,6 +562,7 @@
   background: #000;
   display: block;
   margin-top: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
 }
 
 .post-big-video {
@@ -567,6 +572,7 @@
   background: #000;
   object-fit: contain;
   margin-top: 12px;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.3);
 }
 
 .post-details-actions {
@@ -729,6 +735,7 @@
   border-radius: 16px;
   object-fit: cover;
   display: block;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
 }
 
 .post-upload-progress { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.24); border-radius: 16px; }
