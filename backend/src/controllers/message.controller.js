@@ -629,6 +629,12 @@ async function markReactionsAsSeen(req, res) {
 }
 
 function forwardedTextFromMessage(message) {
+  // Attachments already make their type clear in the bubble. A forwarded
+  // marker is kept only for text and native voice messages.
+  if (message.image || message.video || message.file) {
+    return message.text || '';
+  }
+
   const senderName = (
     message.display_name ||
     message.username ||
