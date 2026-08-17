@@ -16,6 +16,7 @@
   const notificationRoutes = require('./routes/notification.routes');
   const groupChatRoutes = require('./routes/groupChat.routes');
   const safetyRoutes = require('./routes/safety.routes');
+  const gifRoutes = require('./routes/gif.routes');
   const { areUsersBlocked } = require('./models/safety.model');
   const {
     markIncomingMessagesAsDelivered,
@@ -55,6 +56,7 @@
   app.use('/api/messages', messageRoutes);
   app.use('/api/group-chats', groupChatRoutes);
   app.use('/api/safety', safetyRoutes);
+  app.use('/api/gifs', gifRoutes);
   app.use('/api/posts', postCommentRoutes);
   app.use('/api/posts', postRoutes);
   app.get('/', (req, res) => {
