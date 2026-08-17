@@ -80,7 +80,9 @@ function ContactInfoPanel({ conversation, onlineUsers, language, onClose, onStar
     : '';
   const identity = getIdentityColors(conversation.username || conversation.display_name || conversation.id);
   const tabs = [['media', labels.media], ['files', labels.files], ['music', labels.music], ['voice', labels.voice]];
-  const galleryImages = attachments.filter((item) => item.image).map((item) => item.image);
+  const galleryMedia = attachments
+    .filter((item) => item.image || item.video)
+    .map((item) => ({ path: item.image || item.video, type: item.video ? 'video' : 'image' }));
 
   return <aside className="contact-info-panel">
     <div className="contact-info-topbar">
@@ -109,13 +111,13 @@ function ContactInfoPanel({ conversation, onlineUsers, language, onClose, onStar
     <div className={`contact-attachments ${tab === 'media' ? 'grid' : ''}`}>
       {media.length === 0 ? <p>{labels.empty}</p> : media.map((item) => {
         const url = getFileUrl(item.image || item.video || item.file || item.audio);
-        if (tab === 'media') return <button key={item.id} type="button" className="contact-media-item" onClick={() => item.video ? window.open(url, '_blank', 'noopener,noreferrer') : setGalleryIndex(galleryImages.indexOf(item.image))}><img src={url} alt="" />{item.video && <IoVideocamOutline />}</button>;
-        if (tab === 'music' || tab === 'voice') return <AudioMessagePlayer key={item.id} src={item.file || item.audio} duration={item.audio_duration || 0} isMine={false} />;
+        if (tab === 'media') return <button key={item.id} type="button" className="contact-media-item" onClick={() => setGalleryIndex(galleryMedia.findIndex((entry) => entry.path === (item.image || item.video)))}>{item.video ? <video src={url} muted preload="metadata" playsInline /> : <img src={url} alt="" />}{item.video && <IoVideocamOutline />}</button>;
+        if (tab === 'music' || tab === 'voice') return <AudioMessagePlayer key={item.id} src={item.file || item.audio} duration={item.audio_duration || 0} isMine={false} isMusic={tab === 'music'} />;
         const Icon = tab === 'files' ? IoDocumentOutline : tab === 'music' ? IoMusicalNotesOutline : IoMicOutline;
         return <a key={item.id} href={url} target="_blank" rel="noreferrer" className="contact-file-item"><Icon /><span>{item.file_name || labels[tab]}</span></a>;
       })}
     </div>
-    {galleryIndex !== null && <ChatMediaGallery images={galleryImages} index={galleryIndex} onChange={setGalleryIndex} onClose={() => setGalleryIndex(null)} />}
+    {galleryIndex !== null && <ChatMediaGallery media={galleryMedia} index={galleryIndex} onChange={setGalleryIndex} onClose={() => setGalleryIndex(null)} />}
   </aside>;
 }
 

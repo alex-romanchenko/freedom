@@ -123,7 +123,9 @@ function GroupInfoPanel({
     : language === 'ru'
       ? [['members', 'Участники'], ['media', 'Медиа'], ['files', 'Файлы'], ['music', 'Музыка'], ['voice', 'Голосовые']]
       : [['members', 'Members'], ['media', 'Media'], ['files', 'Files'], ['music', 'Music'], ['voice', 'Voice']];
-  const galleryImages = attachments.filter((item) => item.image).map((item) => item.image);
+  const galleryMedia = attachments
+    .filter((item) => item.image || item.video)
+    .map((item) => ({ path: item.image || item.video, type: item.video ? 'video' : 'image' }));
   const actionLabels = language === 'uk'
     ? { write: '\u041d\u0430\u043f\u0438\u0441\u0430\u0442\u0438', enable: '\u0423\u0432\u0456\u043c\u043a\u043d\u0443\u0442\u0438', disable: '\u0412\u0438\u043c\u043a\u043d\u0443\u0442\u0438', leave: '\u041f\u043e\u043a\u0438\u043d\u0443\u0442\u0438', delete: '\u0412\u0438\u0434\u0430\u043b\u0438\u0442\u0438', addMembers: '\u0414\u043e\u0434\u0430\u0442\u0438 \u0443\u0447\u0430\u0441\u043d\u0438\u043a\u0456\u0432' }
     : language === 'ru'
@@ -376,12 +378,12 @@ function GroupInfoPanel({
           ) : attachmentItems.map((item) => {
             const url = getFileUrl(item.image || item.video || item.file || item.audio);
             if (activeTab === 'media') {
-              return <button key={item.id} type="button" className="group-attachment-media" onClick={() => item.video ? window.open(url, '_blank', 'noopener,noreferrer') : setGalleryIndex(galleryImages.indexOf(item.image))}>
-                <img src={url} alt="" />
+              return <button key={item.id} type="button" className="group-attachment-media" onClick={() => setGalleryIndex(galleryMedia.findIndex((entry) => entry.path === (item.image || item.video)))}>
+                {item.video ? <video src={url} muted preload="metadata" playsInline /> : <img src={url} alt="" />}
                 {item.video && <IoVideocamOutline />}
               </button>;
             }
-            if (activeTab === 'music' || activeTab === 'voice') return <AudioMessagePlayer key={item.id} src={item.file || item.audio} duration={item.audio_duration || 0} isMine={false} />;
+            if (activeTab === 'music' || activeTab === 'voice') return <AudioMessagePlayer key={item.id} src={item.file || item.audio} duration={item.audio_duration || 0} isMine={false} isMusic={activeTab === 'music'} />;
             const Icon = activeTab === 'files' ? IoDocumentOutline : activeTab === 'music' ? IoMusicalNotesOutline : IoMicOutline;
             return <a key={item.id} href={url} target="_blank" rel="noreferrer" className="group-attachment-file">
               <Icon /><span>{item.file_name || (activeTab === 'music' ? 'Music' : activeTab === 'voice' ? 'Voice message' : 'File')}</span>
@@ -390,7 +392,7 @@ function GroupInfoPanel({
         </div>
       )}
 
-      {galleryIndex !== null && <ChatMediaGallery images={galleryImages} index={galleryIndex} onChange={setGalleryIndex} onClose={() => setGalleryIndex(null)} />}
+      {galleryIndex !== null && <ChatMediaGallery media={galleryMedia} index={galleryIndex} onChange={setGalleryIndex} onClose={() => setGalleryIndex(null)} />}
 
         {confirmAction && (
   <div className="modal-overlay">

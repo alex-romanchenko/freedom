@@ -1674,6 +1674,8 @@ body.dark .unread-messages-divider span,
   margin-top: 2px;
 }
 
+.music-progress { width: 100%; accent-color: #257fb0; cursor: pointer; }
+
 .scroll-unread-count {
   position: absolute;
   left: 50%;

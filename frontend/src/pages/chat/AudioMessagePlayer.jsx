@@ -16,7 +16,7 @@ function formatTime(seconds = 0) {
   return `${minutes}:${String(secs).padStart(2, '0')}`;
 }
 
-function AudioMessagePlayer({ src, duration = 0, isMine }) {
+function AudioMessagePlayer({ src, duration = 0, isMine, isMusic = false }) {
   const audioRef = useRef(null);
   const waveRef = useRef(null);
 
@@ -60,20 +60,29 @@ function AudioMessagePlayer({ src, duration = 0, isMine }) {
       </button>
 
       <div className="audio-info">
-        <div className="audio-wave" ref={waveRef} onClick={handleWaveSeek}>
-          {bars.map((height, index) => {
-            const barProgress = index / bars.length;
-            const active = barProgress <= progress;
-
-            return (
-              <span
-                key={index}
-                className={`audio-wave-bar ${active ? 'active' : ''}`}
-                style={{ height: `${height}px` }}
-              />
-            );
-          })}
-        </div>
+        {isMusic ? (
+          <input
+            className="music-progress"
+            type="range"
+            min="0"
+            max={audioDuration || 1}
+            step="0.01"
+            value={currentTime}
+            onChange={(event) => {
+              const value = Number(event.target.value);
+              if (audioRef.current) audioRef.current.currentTime = value;
+              setCurrentTime(value);
+            }}
+          />
+        ) : (
+          <div className="audio-wave" ref={waveRef} onClick={handleWaveSeek}>
+            {bars.map((height, index) => {
+              const barProgress = index / bars.length;
+              const active = barProgress <= progress;
+              return <span key={index} className={`audio-wave-bar ${active ? 'active' : ''}`} style={{ height: `${height}px` }} />;
+            })}
+          </div>
+        )}
 
         <div className="audio-time">
           {formatTime(currentTime)} / {formatTime(audioDuration)}

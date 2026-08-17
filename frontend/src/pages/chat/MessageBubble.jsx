@@ -389,7 +389,7 @@ function MessageBubble({
       )}
       {message.file && (
         message.file_mime?.startsWith('audio/') ? (
-          <AudioMessagePlayer src={message.file} duration={0} isMine={isMine} />
+          <AudioMessagePlayer src={message.file} duration={0} isMine={isMine} isMusic />
         ) : (
           <a className="message-file" href={getFileUrl(message.file)} target="_blank" rel="noreferrer">
             <span className="message-file-icon">📄</span>
@@ -550,6 +550,7 @@ function MessageBubble({
               src={message.file}
               duration={0}
               isMine={isMine}
+              isMusic
             />
           ) : (
             <a
