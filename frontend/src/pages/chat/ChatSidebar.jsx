@@ -2,7 +2,7 @@ import { useState } from 'react';
 import CreateGroupPanel from './CreateGroupPanel';
 import { getFileUrl } from '../../api/fileUrl';
 import { getIdentityColors } from '../../utils/identityColors';
-import { IoArrowBack, IoCallOutline, IoVideocamOutline } from 'react-icons/io5';
+import { IoArrowBack, IoArrowRedoOutline, IoCallOutline, IoVideocamOutline } from 'react-icons/io5';
 
 function parseCallEvent(text = '') {
   if (!text.startsWith('CALL_EVENT|')) return null;
@@ -22,6 +22,12 @@ function parseCallEvent(text = '') {
     durationSeconds: Number(parts[4]) || 0,
     isVideo: parts[5] === 'video',
   };
+}
+
+function parseForwardedPreview(text = '') {
+  if (!text.startsWith('FORWARDED|')) return null;
+  const parts = text.split('|');
+  return parts.length > 2 ? parts.slice(2).join('|').trim() : '';
 }
 
 function currentLanguage() {
@@ -218,7 +224,12 @@ function ChatSidebar({
               {reactionText ? (
                 <div className="chat-preview reaction-preview">{reactionText}</div>
               ) : c.last_message_text && (() => {
+                const forwardedPreview = parseForwardedPreview(c.last_message_text);
                 const callEvent = parseCallEvent(c.last_message_text);
+
+                if (forwardedPreview !== null) {
+                  return <div className="chat-preview forwarded-preview"><IoArrowRedoOutline /><span>{forwardedPreview}</span></div>;
+                }
 
                 if (callEvent) {
                   return (

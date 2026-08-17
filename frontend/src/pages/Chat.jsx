@@ -56,9 +56,16 @@ function Chat({
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
 
-  useEffect(() => {
-    if (selectedConv?.type === 'group') setShowContactInfo(false);
-  }, [selectedConv?.id, selectedConv?.type]);
+useEffect(() => {
+  if (selectedConv?.type === 'group') setShowContactInfo(false);
+}, [selectedConv?.id, selectedConv?.type]);
+
+useEffect(() => {
+  if (selectedConv?.type !== 'group') return;
+  api.get(`/group-chats/${selectedConv.id}`).then((res) => {
+    setGroupInfo(res.data);
+  }).catch(() => {});
+}, [selectedConv?.id, selectedConv?.type]);
 
   const [typingUserId, setTypingUserId] = useState(null);
   const [typingUserName, setTypingUserName] = useState('');
@@ -1517,6 +1524,8 @@ useEffect(() => {
                 sendMessage={sendMessage}
                 sendAudioMessage={sendAudioMessage}
                 language={language}
+                isGroup={selectedConv?.type === 'group'}
+                groupMembers={groupInfo?.members || []}
               />
 
           <MediaPreviewModal

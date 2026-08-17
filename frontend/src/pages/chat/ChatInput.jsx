@@ -10,6 +10,7 @@ import {
 import { IoMic, IoStop, IoTrash, IoSend } from 'react-icons/io5';
 import EmojiPicker from 'emoji-picker-react';
 import { t } from '../../utils/i18n';
+import { getFileUrl } from '../../api/fileUrl';
 
 
 function ChatInput({
@@ -33,6 +34,8 @@ function ChatInput({
   sendMessage,
   sendAudioMessage,
   language,
+  isGroup = false,
+  groupMembers = [],
 }) {
   const emojiTimerRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -46,6 +49,17 @@ function ChatInput({
   const [recordedAudio, setRecordedAudio] = useState(null);
   const [recordDuration, setRecordDuration] = useState(0);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const mentionMatch = isGroup ? text.match(/(?:^|\s)@([^\s@]*)$/) : null;
+  const mentionQuery = mentionMatch?.[1]?.toLowerCase() || '';
+  const mentionMembers = groupMembers.filter((member) => {
+    const value = `${member.display_name || ''} ${member.username || ''}`.toLowerCase();
+    return value.includes(mentionQuery);
+  });
+
+  const insertMention = (username) => {
+    setText(text.replace(/@[^\s@]*$/, `@${username} `));
+    requestAnimationFrame(() => textareaRef.current?.focus());
+  };
 
   const blurChatInput = () => {
     textareaRef.current?.blur();
@@ -354,6 +368,20 @@ const handleSendAudio = async () => {
               }}
             />
 
+            {mentionMatch && (
+              <div className="chat-mention-suggestions">
+                <button type="button" onClick={() => insertMention('all')}>
+                  <span className="mention-avatar">@</span>
+                  <span><strong>{language === 'uk' ? 'Усі' : language === 'ru' ? 'Все' : 'Everyone'}</strong><small>{language === 'uk' ? 'Згадати всіх учасників' : language === 'ru' ? 'Упомянуть всех участников' : 'Mention everyone'}</small></span>
+                </button>
+                {mentionMembers.map((member) => (
+                  <button type="button" key={member.id} onClick={() => insertMention(member.username)}>
+                    {member.avatar ? <img src={getFileUrl(member.avatar)} alt="" /> : <span className="mention-avatar">{(member.display_name || member.username || '?')[0]}</span>}
+                    <span><strong>{member.display_name || member.username}</strong><small>@{member.username}</small></span>
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea
               ref={textareaRef}
               value={text}
