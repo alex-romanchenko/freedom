@@ -383,7 +383,7 @@ function GroupInfoPanel({
                 {item.video && <IoVideocamOutline />}
               </button>;
             }
-            if (activeTab === 'music' || activeTab === 'voice') return <AudioMessagePlayer key={item.id} src={item.file || item.audio} duration={item.audio_duration || 0} isMine={false} isMusic={activeTab === 'music'} />;
+            if (activeTab === 'music' || activeTab === 'voice') return <AudioMessagePlayer key={item.id} src={item.file || item.audio} duration={item.audio_duration || 0} isMine={false} isMusic={activeTab === 'music'} title={activeTab === 'music' ? (item.file_name || 'Music') : ''} />;
             const Icon = activeTab === 'files' ? IoDocumentOutline : activeTab === 'music' ? IoMusicalNotesOutline : IoMicOutline;
             return <a key={item.id} href={url} target="_blank" rel="noreferrer" className="group-attachment-file">
               <Icon /><span>{item.file_name || (activeTab === 'music' ? 'Music' : activeTab === 'voice' ? 'Voice message' : 'File')}</span>

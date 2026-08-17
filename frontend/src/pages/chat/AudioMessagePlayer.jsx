@@ -16,7 +16,7 @@ function formatTime(seconds = 0) {
   return `${minutes}:${String(secs).padStart(2, '0')}`;
 }
 
-function AudioMessagePlayer({ src, duration = 0, isMine, isMusic = false }) {
+function AudioMessagePlayer({ src, duration = 0, isMine, isMusic = false, title = '' }) {
   const audioRef = useRef(null);
   const waveRef = useRef(null);
 
@@ -60,6 +60,7 @@ function AudioMessagePlayer({ src, duration = 0, isMine, isMusic = false }) {
       </button>
 
       <div className="audio-info">
+        {isMusic && title && <div className="audio-track-title" title={title}>{title}</div>}
         {isMusic ? (
           <input
             className="music-progress"

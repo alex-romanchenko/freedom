@@ -1676,6 +1676,16 @@ body.dark .unread-messages-divider span,
 
 .music-progress { width: 100%; accent-color: #257fb0; cursor: pointer; }
 
+.audio-track-title {
+  margin-bottom: 4px;
+  overflow: hidden;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .scroll-unread-count {
   position: absolute;
   left: 50%;
