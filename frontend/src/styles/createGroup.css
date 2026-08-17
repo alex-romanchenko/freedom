@@ -228,7 +228,7 @@
 .contact-attachments { flex: 1; overflow: auto; padding: 12px; }
 .contact-attachments > p { color: #777; text-align: center; margin-top: 35px; }
 .contact-attachments.grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 100px; gap: 4px; align-content: start; }
-.contact-media-item { position: relative; overflow: hidden; border-radius: 8px; background: #ddd; }
+.contact-media-item { position: relative; overflow: hidden; border: 0; padding: 0; border-radius: 8px; background: #ddd; cursor: pointer; }
 .contact-media-item img { width: 100%; height: 100%; object-fit: cover; }
 .contact-media-item svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 30px; filter: drop-shadow(0 1px 2px #000); }
 .contact-file-item { display: flex; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid #e4e4e6; color: inherit; text-decoration: none; }
@@ -365,7 +365,7 @@ body.dark .contact-actions-menu button:hover, .dark .contact-actions-menu button
 
 .group-attachments > p { color: #73777d; text-align: center; margin-top: 28px; }
 .group-attachments.grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 96px; gap: 4px; align-content: start; }
-.group-attachment-media { position: relative; overflow: hidden; border-radius: 8px; background: #ddd; }
+.group-attachment-media { position: relative; overflow: hidden; border: 0; padding: 0; border-radius: 8px; background: #ddd; cursor: pointer; }
 .group-attachment-media img { width: 100%; height: 100%; object-fit: cover; }
 .group-attachment-media svg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); color: #fff; font-size: 30px; filter: drop-shadow(0 1px 2px #000); }
 .group-attachment-file { display: flex; align-items: center; gap: 10px; padding: 12px; color: inherit; text-decoration: none; border-bottom: 1px solid #e5e7eb; }
@@ -386,6 +386,21 @@ body.dark .group-info-tabs, .dark .group-info-tabs { border-color: #333; }
 body.dark .group-info-tabs button, .dark .group-info-tabs button { color: #a1a1aa; }
 body.dark .group-info-tabs button.active, .dark .group-info-tabs button.active { background: #263542; color: #7dc5ef; }
 body.dark .group-attachment-file, .dark .group-attachment-file { border-color: #333; }
+
+.chat-media-gallery {
+  position: fixed; inset: 0; z-index: 10000; background: rgb(0 0 0 / 92%);
+  display: flex; align-items: center; justify-content: center;
+}
+.chat-media-gallery img { max-width: min(90vw, 1100px); max-height: 88vh; object-fit: contain; }
+.chat-media-gallery-close, .chat-media-gallery-prev, .chat-media-gallery-next {
+  position: absolute; border: 0; color: #fff; background: rgb(0 0 0 / 50%);
+  width: 44px; height: 44px; border-radius: 50%; font-size: 30px; cursor: pointer;
+  display: grid; place-items: center;
+}
+.chat-media-gallery-close { right: 22px; top: 22px; }
+.chat-media-gallery-prev { left: 22px; top: 50%; transform: translateY(-50%); }
+.chat-media-gallery-next { right: 22px; top: 50%; transform: translateY(-50%); }
+.chat-media-gallery-counter { position: absolute; top: 30px; color: #fff; font-weight: 700; }
 
 .group-members-block {
   flex: 0 0 auto;

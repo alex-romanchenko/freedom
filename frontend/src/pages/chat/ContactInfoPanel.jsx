@@ -17,6 +17,8 @@ import {
 import api from '../../api/api';
 import { getFileUrl } from '../../api/fileUrl';
 import { getIdentityColors } from '../../utils/identityColors';
+import AudioMessagePlayer from './AudioMessagePlayer';
+import ChatMediaGallery from './ChatMediaGallery';
 
 const copy = {
   uk: { chat: 'Написати', enable: 'Увімкнути', disable: 'Вимкнути', audio: 'Аудіо', video: 'Відео', media: 'Медіа', files: 'Файли', music: 'Музика', voice: 'Голосові', empty: 'У чаті ще немає таких файлів', remove: 'Видалити користувача', block: 'Заблокувати', report: 'Поскаржитись', online: 'Онлайн', last: 'Був(ла) в мережі' },
@@ -29,6 +31,7 @@ function ContactInfoPanel({ conversation, onlineUsers, language, onClose, onStar
   const [attachments, setAttachments] = useState([]);
   const [muted, setMuted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(null);
   const labels = copy[language] || copy.en;
   const online = onlineUsers.includes(String(conversation.user_id));
 
@@ -77,6 +80,7 @@ function ContactInfoPanel({ conversation, onlineUsers, language, onClose, onStar
     : '';
   const identity = getIdentityColors(conversation.username || conversation.display_name || conversation.id);
   const tabs = [['media', labels.media], ['files', labels.files], ['music', labels.music], ['voice', labels.voice]];
+  const galleryImages = attachments.filter((item) => item.image).map((item) => item.image);
 
   return <aside className="contact-info-panel">
     <div className="contact-info-topbar">
@@ -105,11 +109,13 @@ function ContactInfoPanel({ conversation, onlineUsers, language, onClose, onStar
     <div className={`contact-attachments ${tab === 'media' ? 'grid' : ''}`}>
       {media.length === 0 ? <p>{labels.empty}</p> : media.map((item) => {
         const url = getFileUrl(item.image || item.video || item.file || item.audio);
-        if (tab === 'media') return <a key={item.id} href={url} target="_blank" rel="noreferrer" className="contact-media-item"><img src={url} alt="" />{item.video && <IoVideocamOutline />}</a>;
+        if (tab === 'media') return <button key={item.id} type="button" className="contact-media-item" onClick={() => item.video ? window.open(url, '_blank', 'noopener,noreferrer') : setGalleryIndex(galleryImages.indexOf(item.image))}><img src={url} alt="" />{item.video && <IoVideocamOutline />}</button>;
+        if (tab === 'music' || tab === 'voice') return <AudioMessagePlayer key={item.id} src={item.file || item.audio} duration={item.audio_duration || 0} isMine={false} />;
         const Icon = tab === 'files' ? IoDocumentOutline : tab === 'music' ? IoMusicalNotesOutline : IoMicOutline;
         return <a key={item.id} href={url} target="_blank" rel="noreferrer" className="contact-file-item"><Icon /><span>{item.file_name || labels[tab]}</span></a>;
       })}
     </div>
+    {galleryIndex !== null && <ChatMediaGallery images={galleryImages} index={galleryIndex} onChange={setGalleryIndex} onClose={() => setGalleryIndex(null)} />}
   </aside>;
 }
 
