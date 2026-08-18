@@ -1154,6 +1154,29 @@ useEffect(() => {
   }, [selectedConv, currentUser?.id]);
 
   useEffect(() => {
+    const handleMessageDeleted = ({ conversationId, messageId }) => {
+      if (String(conversationId) === String(selectedConv?.id)) {
+        setMessages((previous) =>
+          previous.filter((message) => String(message.id) !== String(messageId))
+        );
+        setMessageMenu((previous) =>
+          String(previous?.message?.id) === String(messageId) ? null : previous
+        );
+        setUnreadMessageIds((previous) =>
+          previous.filter((id) => String(id) !== String(messageId))
+        );
+      }
+
+      // The deleted message may have been the conversation preview, so fetch
+      // the new last message even when another chat is currently open.
+      refreshConversations();
+    };
+
+    socket.on('messageDeleted', handleMessageDeleted);
+    return () => socket.off('messageDeleted', handleMessageDeleted);
+  }, [selectedConv?.id]);
+
+  useEffect(() => {
     const handleReactionNotification = () => refreshConversations();
     socket.on('reactionNotification', handleReactionNotification);
     return () => socket.off('reactionNotification', handleReactionNotification);

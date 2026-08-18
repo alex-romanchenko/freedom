@@ -173,6 +173,10 @@ async function getConversationAttachments(conversationId, userId) {
     WHERE messages.conversation_id = $1
       AND messages.is_deleted = false
       AND (
+        messages.image IS NULL
+        OR LOWER(messages.image) NOT LIKE '%.gif'
+      )
+      AND (
         messages.image IS NOT NULL OR messages.video IS NOT NULL
         OR messages.audio IS NOT NULL OR messages.file IS NOT NULL
       )
