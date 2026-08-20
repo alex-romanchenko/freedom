@@ -54,11 +54,12 @@ async function fetchGifs(endpoint, params, res) {
     return res.status(503).json({ message: 'GIF search is not configured' });
   }
 
-  const { limit, ...rest } = params;
+  const { limit, offset, ...rest } = params;
   const query = new URLSearchParams({
     api_key: apiKey,
     rating: 'pg-13',
     limit: String(Math.min(Math.max(Number(limit) || 24, 1), 36)),
+    offset: String(Math.max(Number(offset) || 0, 0)),
     ...Object.fromEntries(
       Object.entries(rest).filter(([, value]) => value != null && value !== '')
     ),
@@ -71,7 +72,10 @@ async function fetchGifs(endpoint, params, res) {
 
   try {
     const payload = await getJson(`${GIPHY_BASE_URL}/${endpoint}?${query}`);
-    const result = { data: (payload.data || []).map(mapGif) };
+    const result = {
+      data: (payload.data || []).map(mapGif),
+      pagination: payload.pagination || null,
+    };
     cache.set(cacheKey, { createdAt: Date.now(), payload: result });
     return res.json(result);
   } catch (error) {
@@ -81,13 +85,26 @@ async function fetchGifs(endpoint, params, res) {
 }
 
 router.get('/trending', authMiddleware, (req, res) =>
-  fetchGifs('trending', { limit: req.query.limit }, res)
+  fetchGifs(
+    'trending',
+    { limit: req.query.limit, offset: req.query.offset },
+    res
+  )
 );
 
 router.get('/search', authMiddleware, (req, res) => {
   const q = String(req.query.q || '').trim();
   if (!q) return res.status(400).json({ message: 'Search query is required' });
-  return fetchGifs('search', { q, limit: req.query.limit, lang: req.query.lang || 'en' }, res);
+  return fetchGifs(
+    'search',
+    {
+      q,
+      limit: req.query.limit,
+      offset: req.query.offset,
+      lang: req.query.lang || 'en',
+    },
+    res
+  );
 });
 
 module.exports = router;

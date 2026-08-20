@@ -11,6 +11,7 @@ import { IoMic, IoStop, IoTrash, IoSend } from 'react-icons/io5';
 import EmojiPicker from 'emoji-picker-react';
 import { t } from '../../utils/i18n';
 import { getFileUrl } from '../../api/fileUrl';
+import { CompactGifPicker, GifIcon } from './GifPicker';
 
 
 function ChatInput({
@@ -33,6 +34,8 @@ function ChatInput({
   saveEditedMessage,
   sendMessage,
   sendAudioMessage,
+  sendGif,
+  openGifSearch,
   language,
   isGroup = false,
   groupMembers = [],
@@ -49,6 +52,7 @@ function ChatInput({
   const [recordedAudio, setRecordedAudio] = useState(null);
   const [recordDuration, setRecordDuration] = useState(0);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
+  const [pickerTab, setPickerTab] = useState('emoji');
   const mentionMatch = isGroup ? text.match(/(?:^|\s)@([a-zA-Z0-9_ ]*)$/) : null;
   const mentionQuery = mentionMatch?.[1]?.replaceAll('\u200B', '').toLowerCase() || '';
   const mentionMembers = groupMembers.filter((member) => {
@@ -106,6 +110,8 @@ function ChatInput({
     clearTimeout(emojiTimerRef.current);
     setShowChatEmoji(true);
   };
+
+  useEffect(() => () => clearTimeout(emojiTimerRef.current), []);
 
   useEffect(() => {
     if (!showAttachMenu) return;
@@ -417,7 +423,7 @@ const handleSendAudio = async () => {
                   e.stopPropagation();
                   blurChatInput();
                   setShowAttachMenu(false);
-                  setShowChatEmoji((value) => !value);
+                  setShowChatEmoji(true);
                   setTimeout(blurChatInput, 0);
                 }}
               >
@@ -466,16 +472,35 @@ const handleSendAudio = async () => {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <EmojiPicker
-              onEmojiClick={(emojiData) => {
-                setText((prev) => prev + emojiData.emoji);
-              }}
-              height={350}
-              width="100%"
-              previewConfig={{
-                showPreview: false,
-              }}
-            />
+            {pickerTab === 'emoji' ? (
+              <div className="compact-emoji-picker">
+                <EmojiPicker
+                  onEmojiClick={(emojiData) => {
+                    setText((prev) => prev + emojiData.emoji);
+                  }}
+                  height={308}
+                  width="100%"
+                  searchDisabled
+                  skinTonesDisabled
+                  previewConfig={{ showPreview: false }}
+                />
+                <div className="chat-picker-tabs emoji-tabs">
+                  <button type="button" className="active" aria-label="Emoji">
+                    <FiSmile />
+                  </button>
+                  <button type="button" onClick={() => setPickerTab('gif')} aria-label="GIF">
+                    <GifIcon />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <CompactGifPicker
+                language={language}
+                onSelect={sendGif}
+                onExpandSearch={openGifSearch}
+                onEmojiTab={() => setPickerTab('emoji')}
+              />
+            )}
           </div>
         )}
       </div>

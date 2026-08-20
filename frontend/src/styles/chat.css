@@ -1035,6 +1035,7 @@ body.dark .unread-messages-divider span,
   background: white;
   border-radius: 16px;
   box-shadow: 0 16px 45px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
 }
 
 .chat-emoji-picker .EmojiPickerReact {
@@ -1043,6 +1044,252 @@ body.dark .unread-messages-divider span,
 
 .chat-emoji-picker .epr-preview {
   display: none !important;
+}
+
+.chat-emoji-picker .epr-header-overlay,
+.chat-emoji-picker .epr-category-nav {
+  display: none !important;
+}
+
+.compact-emoji-picker,
+.compact-gif-picker {
+  height: 350px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+}
+
+.compact-emoji-picker .EmojiPickerReact {
+  flex: 1;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.chat-picker-tabs {
+  flex: 0 0 42px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  border-top: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.chat-picker-tabs button {
+  width: 54px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #64748b;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.chat-picker-tabs button:hover,
+.chat-picker-tabs button.active {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.gif-tab-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  min-width: 27px;
+  padding: 0 3px;
+  border: 2px solid currentColor;
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+}
+
+.gif-picker-content {
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.gif-grid-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: #f8fafc;
+}
+
+.gif-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+}
+
+.gif-grid-item {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #e5e7eb;
+  cursor: pointer;
+}
+
+.gif-grid-item img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.gif-grid-item:hover img {
+  transform: scale(1.04);
+}
+
+.gif-picker-state {
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+.gif-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid #cbd5e1;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: gif-spin 0.75s linear infinite;
+}
+
+@keyframes gif-spin {
+  to { transform: rotate(360deg); }
+}
+
+.giphy-attribution {
+  padding: 5px 8px 7px;
+  color: #94a3b8;
+  background: #ffffff;
+  font-size: 11px;
+  text-align: center;
+}
+
+.gif-search-panel {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid #e5e7eb;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.gif-search-panel .gif-picker-content.expanded {
+  height: 100%;
+}
+
+.gif-search-topbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.gif-search-topbar > button {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 21px;
+  cursor: pointer;
+}
+
+.gif-search-input {
+  min-width: 0;
+  flex: 1;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #94a3b8;
+}
+
+.gif-search-input input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+}
+
+body.dark .chat-emoji-picker,
+.dark .chat-emoji-picker,
+body.dark .compact-emoji-picker,
+.dark .compact-emoji-picker,
+body.dark .compact-gif-picker,
+.dark .compact-gif-picker,
+body.dark .gif-search-panel,
+.dark .gif-search-panel {
+  background: #181818;
+  color: #f8fafc;
+}
+
+body.dark .chat-picker-tabs,
+.dark .chat-picker-tabs,
+body.dark .giphy-attribution,
+.dark .giphy-attribution {
+  background: #181818;
+  border-color: #333333;
+}
+
+body.dark .gif-grid-scroll,
+.dark .gif-grid-scroll {
+  background: #111111;
+}
+
+body.dark .gif-search-topbar,
+.dark .gif-search-topbar {
+  border-color: #333333;
+}
+
+body.dark .gif-search-input,
+.dark .gif-search-input,
+body.dark .gif-search-topbar > button,
+.dark .gif-search-topbar > button {
+  background: #2a2a2a;
+  color: #d1d5db;
+}
+
+body.dark .gif-search-input input,
+.dark .gif-search-input input {
+  color: #ffffff;
 }
 
 /* DELETE DIALOG BUTTON */

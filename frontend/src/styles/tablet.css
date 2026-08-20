@@ -235,7 +235,8 @@
   }
 
   .group-info-panel,
-  .contact-info-panel {
+  .contact-info-panel,
+  .gif-search-panel {
     position: fixed;
     inset: 0 0 74px 0;
     width: 100%;

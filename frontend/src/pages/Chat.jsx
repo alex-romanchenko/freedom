@@ -12,6 +12,8 @@ import socket from '../socket';
 import { deleteConversationApi } from '../api/messagesApi';
 import GroupInfoPanel from './chat/GroupInfoPanel';
 import ContactInfoPanel from './chat/ContactInfoPanel';
+import { GifSearchPanel } from './chat/GifPicker';
+import { rememberGif } from './chat/gifRecents';
 import { getFileUrl } from '../api/fileUrl';
 import { t } from '../utils/i18n';
 import {
@@ -55,6 +57,11 @@ function Chat({
   const [groupInfo, setGroupInfo] = useState(null);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showContactInfo, setShowContactInfo] = useState(false);
+  const [gifSearchConversationId, setGifSearchConversationId] = useState(null);
+  const showGifSearch = Boolean(
+    selectedConv &&
+    String(gifSearchConversationId) === String(selectedConv.id)
+  );
 
 useEffect(() => {
   if (selectedConv?.type === 'group') setShowContactInfo(false);
@@ -799,6 +806,52 @@ formData.append(
     await refreshConversations();
   };
 
+  const sendGif = async (gif) => {
+    if (!selectedConv || !gif?.url) return;
+
+    try {
+      const download = await fetch(gif.url);
+      if (!download.ok) throw new Error(`GIF download failed (${download.status})`);
+
+      const blob = await download.blob();
+      const gifFile = new File([blob], `giphy_${gif.id || Date.now()}.gif`, {
+        type: 'image/gif',
+      });
+      const formData = new FormData();
+      formData.append('text', '');
+      formData.append('image', gifFile);
+
+      const messageUrl = selectedConv.type === 'group'
+        ? `/messages/group/${selectedConv.id}`
+        : `/messages/${selectedConv.user_id}`;
+
+      shouldScrollToBottomRef.current = true;
+      const response = await api.post(messageUrl, formData);
+      const sentMessage = response.data?.data;
+      if (sentMessage) appendMessageOnce(sentMessage);
+
+      rememberGif(gif);
+      setShowChatEmoji(false);
+      setGifSearchConversationId(null);
+      await refreshConversations();
+    } catch (error) {
+      console.error('GIF send error:', error);
+      alert(
+        language === 'uk'
+          ? 'Не вдалося надіслати GIF'
+          : language === 'ru'
+            ? 'Не удалось отправить GIF'
+            : 'Could not send GIF'
+      );
+    }
+  };
+
+  const openGifSearch = () => {
+    setShowGroupInfo(false);
+    setShowContactInfo(false);
+    setGifSearchConversationId(selectedConv?.id ?? null);
+  };
+
   const copyMessageText = async () => {
     if (!messageMenu?.message?.text) return;
 
@@ -1029,6 +1082,11 @@ useEffect(() => {
 }, [selectedConversationId, conversations, selectedConv?.id]);
 
   useEffect(() => {
+    const usesMouseHover = window.matchMedia(
+      '(hover: hover) and (pointer: fine)'
+    ).matches;
+    if (usesMouseHover) return undefined;
+
     const handleClickOutsideEmoji = (e) => {
       if (
         showChatEmoji &&
@@ -1414,7 +1472,7 @@ useEffect(() => {
         className={`chat-layout
           ${selectedConv ? 'chat-open' : ''}
           ${isDraggingImage ? 'dragging-image' : ''}
-          ${showGroupInfo || showContactInfo ? 'with-group-info' : ''}
+          ${showGroupInfo || showContactInfo || showGifSearch ? 'with-group-info' : ''}
         `}
         onClick={closeMessageMenu}
         onDragOver={handleDragOver}
@@ -1576,6 +1634,8 @@ useEffect(() => {
                 saveEditedMessage={saveEditedMessage}
                 sendMessage={sendMessage}
                 sendAudioMessage={sendAudioMessage}
+                sendGif={sendGif}
+                openGifSearch={openGifSearch}
                 language={language}
                 isGroup={selectedConv?.type === 'group'}
                 groupMembers={groupInfo?.members || []}
@@ -1629,7 +1689,14 @@ useEffect(() => {
         </div>
       )}
 
-      {showGroupInfo && (
+      {showGifSearch && (
+        <GifSearchPanel
+          language={language}
+          onSelect={sendGif}
+          onClose={() => setGifSearchConversationId(null)}
+        />
+      )}
+      {showGroupInfo && !showGifSearch && (
         
         <GroupInfoPanel
           groupInfo={groupInfo}
@@ -1641,7 +1708,7 @@ useEffect(() => {
           language={language}
         />
       )}
-      {showContactInfo && selectedConv && selectedConv.type !== 'group' && (
+      {showContactInfo && !showGifSearch && selectedConv && selectedConv.type !== 'group' && (
         <ContactInfoPanel
           conversation={selectedConv}
           onlineUsers={onlineUsers}
