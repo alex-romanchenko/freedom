@@ -1530,6 +1530,7 @@ useEffect(() => {
             />
             {audioCallContent}
             {!isFakeFullscreen && videoCallContent}
+            <div className="messages-shell">
             <div
               className="messages-list custom-scroll"
               ref={messagesContainerRef}
@@ -1626,6 +1627,19 @@ useEffect(() => {
               <div ref={messagesEndRef} />
             </div>
 
+            {(showScrollButton || unreadRemaining > 0) && (
+              <button
+                className="scroll-to-bottom-btn"
+                onClick={scrollToBottom}
+              >
+                {unreadRemaining > 0 && (
+                  <span className="scroll-unread-count">{unreadRemaining}</span>
+                )}
+                <IoArrowDown />
+              </button>
+            )}
+            </div>
+
            <ChatInput
                 replyTo={replyTo}
                 setReplyTo={setReplyTo}
@@ -1664,18 +1678,6 @@ useEffect(() => {
           <p>Select a chat</p>
         )}
       </div>
-      {(showScrollButton || unreadRemaining > 0) && (
-  <button
-    className="scroll-to-bottom-btn"
-    onClick={scrollToBottom}
-  >
-    {unreadRemaining > 0 && (
-      <span className="scroll-unread-count">{unreadRemaining}</span>
-    )}
-    <IoArrowDown  />
-  </button>
-)}
-
       {deleteDialogId && (
         <div className="modal-overlay">
           <div className="delete-chat-popup">

@@ -5,7 +5,7 @@
   grid-template-columns: 300px minmax(0, 1fr);
   min-height: 100vh;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   transition: grid-template-columns 0.25s ease;
 }
 
@@ -296,6 +296,20 @@
   background: #f8fafc;
   border-radius: 20px;
   margin-bottom: 16px;
+}
+
+.messages-shell {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  margin-bottom: 16px;
+}
+
+.messages-shell .messages-list {
+  width: 100%;
+  height: 100%;
+  margin-bottom: 0;
 }
 
 .chat-layout.dragging-image {
@@ -1909,8 +1923,8 @@ body.dark .gif-search-input input,
 
 .scroll-to-bottom-btn {
   position: absolute;
-  right: 26px;
-  bottom: 92px;
+  right: auto;
+  bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
   width: 42px;
