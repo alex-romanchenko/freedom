@@ -366,6 +366,16 @@ const handleGroupDeletedOrLeft = async () => {
     return el.scrollHeight - el.scrollTop <= el.clientHeight + 50;
   };
 
+  const pinMessagesToBottom = (settle = false) => {
+    const scroll = () => {
+      const el = messagesContainerRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    };
+
+    requestAnimationFrame(() => requestAnimationFrame(scroll));
+    if (settle) window.setTimeout(scroll, 120);
+  };
+
   const openMentionPrivateChat = async (username) => {
     if (!username || username.toLowerCase() === 'all') return;
 
@@ -965,10 +975,13 @@ const renderCallAvatar = (className) => {
 };
 
   const handleTextChange = (e) => {
+    const keepPinnedToBottom = isUserAtBottom();
     setText(e.target.value);
 
     e.target.style.height = 'auto';
     e.target.style.height = e.target.scrollHeight + 'px';
+
+    if (keepPinnedToBottom) pinMessagesToBottom();
 
     if (!selectedConv?.id || !currentUser?.id) return;
 
@@ -1183,11 +1196,12 @@ useEffect(() => {
 
       if (String(data.conversationId) === String(selectedConv?.id)) {
         const wasAtBottom = isUserAtBottom();
-        shouldScrollToBottomRef.current = wasAtBottom;
+        const shouldFollowMessage = isMyMessage || wasAtBottom;
+        shouldScrollToBottomRef.current = shouldFollowMessage;
 
         appendMessageOnce(data.message);
 
-        if (wasAtBottom) {
+        if (shouldFollowMessage) {
           markConversationRead(data.conversationId);
         } else if (!isMyMessage) {
           unreadCompletedRef.current = false;
@@ -1331,10 +1345,8 @@ useEffect(() => {
     if (unreadPositionPendingRef.current) return;
 
     if (shouldScrollToBottomRef.current) {
-      requestAnimationFrame(() => {
-        el.scrollTop = el.scrollHeight;
-        shouldScrollToBottomRef.current = false;
-      });
+      shouldScrollToBottomRef.current = false;
+      pinMessagesToBottom(true);
 
       return;
     }

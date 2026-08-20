@@ -2,13 +2,15 @@
 
 .chat-layout {
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 300px minmax(0, 1fr);
   min-height: 100vh;
+  max-width: 100%;
+  overflow-x: hidden;
   transition: grid-template-columns 0.25s ease;
 }
 
 .chat-layout.with-group-info {
-  grid-template-columns: 300px 1fr 340px;
+  grid-template-columns: 300px minmax(0, 1fr) minmax(280px, 340px);
 }
 .chat-layout.with-group-info .messages-list {
   align-items: flex-start;
@@ -200,6 +202,7 @@
 .chat-window {
   padding: 10px 10px;
   height: 100vh;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -288,6 +291,7 @@
   align-items: center;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px;
   background: #f8fafc;
   border-radius: 20px;
@@ -334,6 +338,7 @@
 }
 
 .message-list-item {
+  min-width: 0;
   width: 100%;
   max-width: 760px;
 }
@@ -1002,6 +1007,7 @@ body.dark .unread-messages-divider span,
 .chat-input-zone {
   position: relative;
   z-index: 400;
+  flex: 0 0 auto;
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
@@ -1189,6 +1195,7 @@ body.dark .unread-messages-divider span,
 .gif-search-panel {
   position: sticky;
   top: 0;
+  overflow-x: hidden;
   height: 100vh;
   min-width: 0;
   display: flex;
