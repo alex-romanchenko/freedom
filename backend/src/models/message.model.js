@@ -695,6 +695,41 @@ async function markConversationAsRead(conversationId, userId) {
   await markReactionNotificationsAsSeen(conversationId, userId);
 }
 
+async function getMessageReadReceipts(messageId, senderId) {
+  const result = await pool.query(
+    `
+    SELECT
+      users.id AS user_id,
+      users.username,
+      users.display_name,
+      users.avatar,
+      conversation_reads.last_read_at
+    FROM messages
+    JOIN conversations
+      ON conversations.id = messages.conversation_id
+    JOIN conversation_reads
+      ON conversation_reads.conversation_id = messages.conversation_id
+    JOIN users
+      ON users.id = conversation_reads.user_id
+    WHERE messages.id = $1
+      AND messages.sender_id = $2
+      AND conversation_reads.user_id <> messages.sender_id
+      AND conversation_reads.last_read_at >= messages.created_at
+      AND (
+        conversations.is_group = true
+        OR conversation_reads.user_id IN (
+          conversations.user_one_id,
+          conversations.user_two_id
+        )
+      )
+    ORDER BY conversation_reads.last_read_at DESC
+    `,
+    [messageId, senderId]
+  );
+
+  return result.rows;
+}
+
 async function getMessagesByConversation(
   conversationId,
   before = null,
@@ -1064,6 +1099,7 @@ module.exports = {
   getMessageById,
   getForwardableMessageById,
   markConversationAsRead,
+  getMessageReadReceipts,
   markReactionNotificationsAsSeen,
   deleteConversationById,
   updateMessageById,

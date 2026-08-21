@@ -9,6 +9,7 @@ const {
   getGroupMemberIds,
   getGroupPushRecipientIds,
   markConversationAsRead,
+  getMessageReadReceipts,
   markReactionNotificationsAsSeen,
   markMessagesAsRead,
   deleteConversationById,
@@ -24,7 +25,11 @@ const {
   recordGroupMessageMentions,
 } = require('../models/message.model');
 const { areUsersBlocked } = require('../models/safety.model');
-const { getFcmTokensByUserId, getUserById } = require('../models/user.model');
+const {
+  getFcmTokensByUserId,
+  getUserById,
+  deleteFcmToken,
+} = require('../models/user.model');
 const { messaging } = require('../utils/firebaseAdmin');
 const pool = require('../db');
 const crypto = require('crypto');
@@ -186,28 +191,66 @@ async function sendMessagePush({ userId, title, body, data = {} }) {
       senderAvatar: sender?.avatar || data.senderAvatar || '',
     };
 
-    await Promise.all(
-      tokens.map((token) =>
-        messaging.send({
-          token,
-          data: {
-            type: 'message',
-            title,
-            body,
-            ...Object.fromEntries(
-              Object.entries(resolvedData).map(([key, value]) => [
-                key,
-                String(value),
-              ])
-            ),
-          },
-          android: {
-            priority: 'high',
-            ttl: 3600 * 1000,
-          },
-        })
-      )
+    const results = await Promise.all(
+      tokens.map(async (token) => {
+        try {
+          await messaging.send({
+            token,
+            // Include a platform notification as well as data.  Android renders
+            // this through the system UI when Flutter is not allowed to start a
+            // background isolate (Doze and vendor battery managers), while the
+            // data still makes the tap open the exact conversation.
+            notification: { title, body },
+            data: {
+              type: 'message',
+              title,
+              body,
+              ...Object.fromEntries(
+                Object.entries(resolvedData).map(([key, value]) => [
+                  key,
+                  String(value),
+                ])
+              ),
+            },
+            android: {
+              priority: 'high',
+              ttl: 3600 * 1000,
+              notification: {
+                channelId: 'messages',
+                priority: 'high',
+                tag: `conversation_${data.conversationId || 'message'}`,
+              },
+            },
+          });
+          return true;
+        } catch (error) {
+          console.error('FCM MESSAGE TOKEN ERROR:', {
+            userId,
+            error: error.message,
+          });
+
+          if (
+            error.code === 'messaging/registration-token-not-registered' ||
+            error.message === 'Requested entity was not found.'
+          ) {
+            await deleteFcmToken(token).catch((deleteError) => {
+              console.error(
+                'DELETE INVALID MESSAGE FCM TOKEN ERROR:',
+                deleteError.message
+              );
+            });
+          }
+
+          return false;
+        }
+      })
     );
+
+    console.log('FCM MESSAGE PUSH:', {
+      userId,
+      tokens: tokens.length,
+      sent: results.filter(Boolean).length,
+    });
   } catch (error) {
     console.error('FCM MESSAGE PUSH ERROR:', error.message);
   }
@@ -221,9 +264,13 @@ function isUserInConversation(io, userId, conversationId) {
 
   if (!userRoom || !conversationRoom) return false;
 
-  return Array.from(userRoom).some((socketId) =>
-    conversationRoom.has(socketId)
-  );
+  // A socket can remain connected for a short time after Android has
+  // backgrounded the app.  Do not suppress FCM merely because that socket is
+  // still in the conversation room.
+  return Array.from(userRoom).some((socketId) => {
+    if (!conversationRoom.has(socketId)) return false;
+    return io.sockets.sockets.get(socketId)?.data?.isForeground === true;
+  });
 }
 
 // A user can have several logged-in devices. A message in an open chat is
@@ -548,6 +595,22 @@ async function getMessages(req, res) {
   } catch (error) {
     res.status(500).json({
       message: 'Error getting messages',
+      error: error.message,
+    });
+  }
+}
+
+async function getReadReceipts(req, res) {
+  try {
+    const receipts = await getMessageReadReceipts(
+      Number(req.params.messageId),
+      Number(req.user.id)
+    );
+    res.json(receipts);
+  } catch (error) {
+    console.error('GET MESSAGE READ RECEIPTS ERROR:', error.message);
+    res.status(500).json({
+      message: 'Error loading message read receipts',
       error: error.message,
     });
   }
@@ -972,6 +1035,7 @@ module.exports = {
   updateNotificationSettings,
   searchUserMessages,
   markAsRead,
+  getReadReceipts,
   markReactionsAsSeen,
   createConversation,
   deleteConversation,

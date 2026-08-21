@@ -14,6 +14,7 @@ const {
   updateNotificationSettings,
   searchUserMessages,
   markAsRead,
+  getReadReceipts,
   markReactionsAsSeen,
   createConversation,
   deleteConversation,
@@ -57,6 +58,7 @@ router.get('/:conversationId/attachments', authMiddleware, getAttachments);
 router.get('/:conversationId/notifications', authMiddleware, getNotificationSettings);
 router.patch('/:conversationId/notifications', authMiddleware, updateNotificationSettings);
 router.post('/forward', authMiddleware, forwardMessage);
+router.get('/message/:messageId/read-receipts', authMiddleware, getReadReceipts);
 router.get('/:conversationId', authMiddleware, getMessages);
 router.post('/conversations/:userId', authMiddleware, createConversation);
 router.post('/:conversationId/read', authMiddleware, markAsRead);

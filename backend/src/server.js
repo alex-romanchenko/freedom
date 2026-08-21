@@ -444,6 +444,10 @@ async function sendReactionPush({
     tokens,
     (token) => ({
       token,
+      notification: {
+        title: name,
+        body: `${name} reacted ${reaction} to your message`,
+      },
       data: {
         type: 'reaction',
         conversationId: String(conversationId),
@@ -454,7 +458,15 @@ async function sendReactionPush({
         reactionTarget: String(targetType),
         messageText: `${name} reacted ${reaction} to your message`,
       },
-      android: { priority: 'high' },
+      android: {
+        priority: 'high',
+        ttl: 24 * 60 * 60 * 1000,
+        notification: {
+          channelId: 'messages',
+          priority: 'high',
+          tag: `conversation_${conversationId}`,
+        },
+      },
     }),
     'REACTION PUSH'
   );
@@ -1120,7 +1132,9 @@ app.post('/api/calls/reject', async (req, res) => {
     const userId = socket.userId ? String(socket.userId) : null;
     const wasOnline = userId ? foregroundSockets.has(userId) : false;
 
-    setSocketForeground(socket, foreground === true);
+    const isForeground = foreground === true;
+    socket.data.isForeground = isForeground;
+    setSocketForeground(socket, isForeground);
 
     const isOnline = userId ? foregroundSockets.has(userId) : false;
 
@@ -1144,7 +1158,7 @@ app.post('/api/calls/reject', async (req, res) => {
     console.log('APP STATE:', {
       userId,
       socketId: socket.id,
-      foreground: foreground === true,
+      foreground: isForeground,
     });
   });
 
