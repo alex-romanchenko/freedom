@@ -830,8 +830,8 @@ body.dark .unread-messages-divider span,
 }
 
 .chat-input-box:focus-within {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  border-color: #cbd5e1;
+  box-shadow: none;
 }
 
 .chat-input-box input[type='text'],

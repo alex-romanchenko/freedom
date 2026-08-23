@@ -244,6 +244,16 @@ useEffect(() => {
     function handleNewMessage(data) {
   refreshUnreadCount();
 
+  // The server mirrors outgoing messages to the account's other devices so
+  // their chat lists stay current. They must never be treated as incoming.
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  if (
+    currentUser?.id != null &&
+    String(data?.message?.sender_id) === String(currentUser.id)
+  ) {
+    return;
+  }
+
   if (page === 'chat') return;
 
   playNotificationSound();
@@ -270,6 +280,12 @@ useEffect(() => {
     setPopupMessage(null);
   }, 10000);
 }
+
+    function handleMessagesRead() {
+      // A different device may have read the conversation. Refresh the
+      // sidebar count instead of waiting for a page reload.
+      refreshUnreadCount();
+    }
 
     function handleNewComment(data) {
       const currentUser = JSON.parse(localStorage.getItem('user'));
@@ -342,6 +358,7 @@ useEffect(() => {
     }
 
     socket.on('newMessage', handleNewMessage);
+    socket.on('messagesRead', handleMessagesRead);
     socket.on('newLike', handleNewLike);
     socket.on('newComment', handleNewComment);
     socket.on('newFriendRequest', handleNewFriendRequest);
@@ -352,6 +369,7 @@ useEffect(() => {
 
     return () => {
       socket.off('newMessage', handleNewMessage);
+      socket.off('messagesRead', handleMessagesRead);
       socket.off('newLike', handleNewLike);
       socket.off('newComment', handleNewComment);
       socket.off('newFriendRequest', handleNewFriendRequest);

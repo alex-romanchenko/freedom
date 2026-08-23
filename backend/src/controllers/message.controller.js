@@ -546,10 +546,16 @@ async function markAsRead(req, res) {
 
     const io = req.app.get('io');
 
-    io.to(`conversation_${conversationId}`).emit('messagesRead', {
+    const readEvent = {
       conversationId: Number(conversationId),
       messageIds: updatedMessages.map((m) => m.id),
-    });
+    };
+
+    // Notify the open chat as well as every other device signed in as the
+    // reader. Devices that are not currently in this conversation still need
+    // to clear their unread badges and any displayed notification.
+    io.to(`conversation_${conversationId}`).emit('messagesRead', readEvent);
+    io.to(`user_${userId}`).emit('messagesRead', readEvent);
 
     res.json({
       message: 'Marked as read',
