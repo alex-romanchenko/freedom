@@ -153,6 +153,8 @@ async function getConversationImages(conversationId, userId) {
     WHERE conversation_id = $1
       AND image IS NOT NULL
       AND image <> ''
+      -- GIFs are chat reactions/animations, not gallery photos.
+      AND LOWER(image) NOT LIKE '%.gif'
       AND is_deleted = false
     ORDER BY created_at ASC, id ASC
     `,
