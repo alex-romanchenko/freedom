@@ -167,9 +167,11 @@
   const ACTIVE_CALL_DISCONNECT_GRACE_MS = 15000;
   const pendingCallTimeouts = new Map();
   const pendingCallSessionIds = new Map();
+  const pendingCallSignalingVersions = new Map();
   const incomingCallDeliveryStates = new Map();
   const activeCallsByUser = new Map();
   const activeCallDisconnectTimers = new Map();
+  const callAnswerDeliveryStates = new Map();
   const recentCallLogEvents = new Map();
   // ICE candidates are normally delivered over Socket.IO. A device woken by FCM
   // Keep every early candidate until the receiver has answered. A socket can
@@ -213,7 +215,9 @@
   }
 
   function clearPendingCallSessionId(callerId, receiverId) {
-    pendingCallSessionIds.delete(getPendingCallTimeoutKey(callerId, receiverId));
+    const key = getPendingCallTimeoutKey(callerId, receiverId);
+    pendingCallSessionIds.delete(key);
+    pendingCallSignalingVersions.delete(key);
   }
 
   function storePendingCallIceCandidate(callerId, receiverId, candidate) {
@@ -265,7 +269,8 @@
     withVideo = false,
     callSessionId = null,
     callerId = null,
-    receiverId = null
+    receiverId = null,
+    signalingVersion = 1
   ) {
     const firstUserId = normalizeCallUserId(userA);
     const secondUserId = normalizeCallUserId(userB);
@@ -279,6 +284,10 @@
       callSessionId: callSessionId ? String(callSessionId) : null,
       callerId: normalizeCallUserId(callerId),
       receiverId: normalizeCallUserId(receiverId),
+      answer: null,
+      answerId: null,
+      signalingVersion: Number(signalingVersion) || 1,
+      connectedUsers: new Set(),
       startedAt: Date.now(),
     };
 
@@ -299,12 +308,93 @@
     return call?.users?.find((item) => item !== id) || null;
   }
 
+  function callAnswerPayload(call) {
+    if (!call?.answer) return null;
+    return {
+      answer: call.answer,
+      from: call.receiverId,
+      to: call.callerId,
+      callSessionId: call.callSessionId,
+    };
+  }
+
+  function clearCallAnswerDelivery(callSessionId) {
+    if (!callSessionId) return;
+    const key = String(callSessionId);
+    const state = callAnswerDeliveryStates.get(key);
+    state?.timers?.forEach((timer) => clearTimeout(timer));
+    callAnswerDeliveryStates.delete(key);
+  }
+
+  function sendStoredCallAnswer(call, target = null) {
+    const payload = callAnswerPayload(call);
+    if (!payload || !call?.callerId) return false;
+
+    if (target) {
+      target.emit('callAnswered', payload);
+    } else {
+      io.to(`user_${call.callerId}`).emit('callAnswered', payload);
+    }
+    return true;
+  }
+
+  function scheduleCallAnswerDelivery(call) {
+    if (!call?.callSessionId || !call.answer) return;
+    clearCallAnswerDelivery(call.callSessionId);
+
+    const state = { acknowledged: false, timers: [] };
+    callAnswerDeliveryStates.set(String(call.callSessionId), state);
+
+    [1000, 3000, 7000, 12000].forEach((delayMs, index) => {
+      const timer = setTimeout(() => {
+        const currentState = callAnswerDeliveryStates.get(
+          String(call.callSessionId)
+        );
+        const activeCall = getActiveCallForUser(call.callerId);
+        if (
+          !currentState ||
+          currentState.acknowledged ||
+          activeCall !== call
+        ) {
+          return;
+        }
+
+        sendStoredCallAnswer(call);
+        console.log('CALL ANSWER RETRY SENT:', {
+          to: call.callerId,
+          attempt: index + 2,
+          callSessionId: call.callSessionId,
+        });
+      }, delayMs);
+      state.timers.push(timer);
+    });
+  }
+
+  function replayStoredIceCandidates(socket, call, userId) {
+    if ((call?.signalingVersion || 1) < 2) return 0;
+    const otherUserId = getOtherActiveCallUser(call, userId);
+    if (!otherUserId) return 0;
+
+    const candidates = getPendingCallIceCandidates(otherUserId, userId);
+    candidates.forEach((candidate) => {
+      socket.emit('iceCandidate', {
+        candidate,
+        from: otherUserId,
+        to: String(userId),
+        callSessionId: call.callSessionId,
+      });
+    });
+    return candidates.length;
+  }
+
   function clearActiveCall(userA, userB) {
     const call =
       getActiveCallForUser(userA) ||
       getActiveCallForUser(userB);
 
     const users = call?.users || [userA, userB].filter((item) => item != null);
+
+    clearCallAnswerDelivery(call?.callSessionId);
 
     users.forEach((userId) => {
       activeCallsByUser.delete(String(userId));
@@ -332,6 +422,7 @@
     io.to(`user_${otherUserId}`).emit('callReconnecting', {
       from: id,
       to: otherUserId,
+      callSessionId: call.callSessionId,
       timeoutMs: ACTIVE_CALL_DISCONNECT_GRACE_MS,
     });
 
@@ -342,6 +433,7 @@
         io.to(`user_${otherUserId}`).emit('callReconnected', {
           from: id,
           to: otherUserId,
+          callSessionId: call.callSessionId,
         });
         return;
       }
@@ -1091,6 +1183,31 @@ app.post('/api/calls/reject', async (req, res) => {
   const otherActiveCallUserId = getOtherActiveCallUser(activeCall, id);
 
   if (otherActiveCallUserId) {
+    if (
+      activeCall?.answer &&
+      activeCall.signalingVersion >= 2 &&
+      String(activeCall.callerId) === id
+    ) {
+      sendStoredCallAnswer(activeCall, socket);
+      console.log('STORED CALL ANSWER REPLAYED:', {
+        to: id,
+        callSessionId: activeCall.callSessionId,
+      });
+    }
+
+    const replayedIceCandidates = replayStoredIceCandidates(
+      socket,
+      activeCall,
+      id
+    );
+    if (replayedIceCandidates > 0) {
+      console.log('ACTIVE CALL ICE CANDIDATES REPLAYED:', {
+        to: id,
+        count: replayedIceCandidates,
+        callSessionId: activeCall.callSessionId,
+      });
+    }
+
     const reconnectPayload = {
       from: id,
       to: otherActiveCallUserId,
@@ -1277,7 +1394,14 @@ app.post('/api/calls/reject', async (req, res) => {
     }
   });
 
-socket.on('callUser', async ({ to, offer, from, withVideo, callSessionId }) => {
+socket.on('callUser', async ({
+  to,
+  offer,
+  from,
+  withVideo,
+  callSessionId,
+  signalingVersion,
+}) => {
   console.log('CALL USER:', { from, to, withVideo });
   clearPendingCallIceCandidates(from, to);
 
@@ -1353,6 +1477,10 @@ socket.on('callUser', async ({ to, offer, from, withVideo, callSessionId }) => {
     callSessionId || `${from}:${to}:${callCreatedAtMs}`;
 
   setPendingCallSessionId(from, to, normalizedCallSessionId);
+  pendingCallSignalingVersions.set(
+    getPendingCallTimeoutKey(from, to),
+    Number(signalingVersion) || 1
+  );
   incomingPayload.callCreatedAtMs = callCreatedAtMs;
   incomingPayload.callSessionId = normalizedCallSessionId;
 
@@ -1404,10 +1532,17 @@ socket.on('callUser', async ({ to, offer, from, withVideo, callSessionId }) => {
   }
 });
 
-socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
+socket.on('answerCall', async ({
+  to,
+  from,
+  answer,
+  answerId,
+  callSessionId,
+}) => {
   const actorId = from || socket.userId;
   let resolvedCallSessionId = callSessionId || null;
   let answeredOnThisDevice = false;
+  let answeredCall = null;
 
   console.log('ANSWER CALL:', { from: actorId, to });
 
@@ -1420,6 +1555,10 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
         getPendingCallSessionId(to, actorId) ||
         getPendingCallSessionId(actorId, to);
       resolvedCallSessionId = pendingSessionId || callSessionId || null;
+      const resolvedSignalingVersion =
+        pendingCallSignalingVersions.get(getPendingCallTimeoutKey(to, actorId)) ||
+        pendingCallSignalingVersions.get(getPendingCallTimeoutKey(actorId, to)) ||
+        1;
 
       if (
         callSessionId &&
@@ -1444,6 +1583,25 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
           !activeCall.callSessionId ||
           String(resolvedCallSessionId) === String(activeCall.callSessionId))
       ) {
+        if (answerId && activeCall.answerId === String(answerId)) {
+          socket.emit('callAnswerRegistered', {
+            to: actorId,
+            from: to,
+            answerId: activeCall.answerId,
+            callSessionId: activeCall.callSessionId,
+          });
+          if (activeCall.signalingVersion >= 2) {
+            sendStoredCallAnswer(activeCall);
+          }
+          console.log('DUPLICATE CALL ANSWER ACKNOWLEDGED:', {
+            from: actorId,
+            to,
+            answerId,
+            callSessionId: activeCall.callSessionId,
+          });
+          return;
+        }
+
         console.log('ANSWER CALL IGNORED: already answered on another device', {
           from: actorId,
           to,
@@ -1457,21 +1615,24 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
         return;
       }
 
-      setActiveCall(
+      answeredCall = setActiveCall(
         actorId,
         to,
         pendingCall?.with_video,
         resolvedCallSessionId,
         pendingCall?.caller_id || to,
-        pendingCall?.receiver_id || actorId
+        pendingCall?.receiver_id || actorId,
+        resolvedSignalingVersion
       );
+      if (answeredCall) {
+        answeredCall.answer = answer;
+        answeredCall.answerId = answerId ? String(answerId) : null;
+      }
       clearIncomingCallDelivery(resolvedCallSessionId);
       await deletePendingCall(actorId, to);
       await deletePendingCall(to, actorId);
       clearPendingCallTimeout(to, actorId);
       clearPendingCallTimeout(actorId, to);
-      clearPendingCallIceCandidates(to, actorId);
-      clearPendingCallIceCandidates(actorId, to);
       clearPendingCallSessionId(to, actorId);
       clearPendingCallSessionId(actorId, to);
       answeredOnThisDevice = true;
@@ -1481,6 +1642,17 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
   }
 
   if (answeredOnThisDevice) {
+    socket.emit('callAnswerRegistered', {
+      to: actorId,
+      from: to,
+      answerId: answeredCall?.answerId,
+      callSessionId: answeredCall?.callSessionId,
+    });
+    sendStoredCallAnswer(answeredCall);
+    if (answeredCall?.signalingVersion >= 2) {
+      scheduleCallAnswerDelivery(answeredCall);
+    }
+
     const answeredElsewhere = {
       from: actorId,
       to,
@@ -1501,12 +1673,72 @@ socket.on('answerCall', async ({ to, from, answer, callSessionId }) => {
       reason: 'answered_elsewhere',
     });
   }
+});
 
-  io.to(`user_${to}`).emit('callAnswered', {
-    answer,
+socket.on('callAnswerReceived', ({ to, from, callSessionId }) => {
+  const actorId = from || socket.userId;
+  const activeCall = actorId ? getActiveCallForUser(actorId) : null;
+  const otherUserId = getOtherActiveCallUser(activeCall, actorId);
+
+  if (
+    !activeCall ||
+    String(activeCall.callerId) !== String(actorId) ||
+    String(otherUserId) !== String(to) ||
+    (callSessionId &&
+      activeCall.callSessionId &&
+      String(callSessionId) !== String(activeCall.callSessionId))
+  ) {
+    console.log('CALL ANSWER ACK IGNORED:', {
+      from: actorId,
+      to,
+      callSessionId,
+      activeCallSessionId: activeCall?.callSessionId,
+    });
+    return;
+  }
+
+  const state = callAnswerDeliveryStates.get(String(activeCall.callSessionId));
+  if (state) state.acknowledged = true;
+  clearCallAnswerDelivery(activeCall.callSessionId);
+  const replayedIceCandidates = replayStoredIceCandidates(
+    socket,
+    activeCall,
+    actorId
+  );
+
+  console.log('CALL ANSWER ACKNOWLEDGED:', {
     from: actorId,
     to,
-    callSessionId: resolvedCallSessionId,
+    callSessionId: activeCall.callSessionId,
+    replayedIceCandidates,
+  });
+});
+
+socket.on('callConnected', ({ to, from, callSessionId }) => {
+  const actorId = from || socket.userId;
+  const activeCall = actorId ? getActiveCallForUser(actorId) : null;
+  const otherUserId = getOtherActiveCallUser(activeCall, actorId);
+
+  if (
+    !activeCall ||
+    String(otherUserId) !== String(to) ||
+    (callSessionId &&
+      activeCall.callSessionId &&
+      String(callSessionId) !== String(activeCall.callSessionId))
+  ) {
+    return;
+  }
+
+  activeCall.connectedUsers.add(String(actorId));
+  if (String(activeCall.callerId) === String(actorId)) {
+    clearCallAnswerDelivery(activeCall.callSessionId);
+  }
+
+  console.log('WEBRTC CALL CONNECTED:', {
+    from: actorId,
+    to,
+    callSessionId: activeCall.callSessionId,
+    connectedUsers: Array.from(activeCall.connectedUsers),
   });
 });
 
