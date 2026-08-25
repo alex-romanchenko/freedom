@@ -40,6 +40,19 @@ async function markAllAsRead(req, res) {
   }
 }
 
+async function getUnreadCount(req, res) {
+  try {
+    const count = await Notification.getUnreadCount(req.user.id);
+    res.json({ count });
+  } catch (error) {
+    console.error('Get unread notification count error:', error);
+    res.status(500).json({
+      message: 'Error getting unread notification count',
+      error: error.message,
+    });
+  }
+}
+
 async function deleteNotification(req, res) {
   try {
     const userId = req.user.id;
@@ -64,6 +77,7 @@ async function deleteNotification(req, res) {
 
 module.exports = {
   getNotifications,
+  getUnreadCount,
   markAllAsRead,
   deleteNotification,
 };
