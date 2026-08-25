@@ -31,11 +31,11 @@
   const {
     getFcmTokensByUserId,
     getUserById,
-    deleteFcmToken,
     savePendingCall,
     getPendingCall,
     deletePendingCall,
   } = require('./models/user.model');
+  const { deleteInvalidFcmToken } = require('./utils/fcmToken');
 
   require('dotenv').config();
 
@@ -417,19 +417,16 @@ async function sendFcmToTokens(tokens, buildMessage, label) {
         await messaging.send(buildMessage(token));
         sent += 1;
       } catch (error) {
-        console.error(`${label} TOKEN ERROR:`, error.message);
-
-        if (
-          error.code === 'messaging/registration-token-not-registered' ||
-          error.message === 'Requested entity was not found.'
-        ) {
-          try {
-            await deleteFcmToken(token);
-            console.log('DELETED INVALID FCM TOKEN');
-          } catch (deleteError) {
-            console.error('DELETE INVALID FCM TOKEN ERROR:', deleteError.message);
+        try {
+          if (await deleteInvalidFcmToken(error, token)) {
+            console.log(`${label}: DELETED INVALID FCM TOKEN`);
+            return;
           }
+        } catch (deleteError) {
+          console.error('DELETE INVALID FCM TOKEN ERROR:', deleteError.message);
         }
+
+        console.error(`${label} TOKEN ERROR:`, error.message);
       }
     })
   );

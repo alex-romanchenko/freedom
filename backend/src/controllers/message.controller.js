@@ -28,8 +28,8 @@ const { areUsersBlocked } = require('../models/safety.model');
 const {
   getFcmTokensByUserId,
   getUserById,
-  deleteFcmToken,
 } = require('../models/user.model');
+const { deleteInvalidFcmToken } = require('../utils/fcmToken');
 const { messaging } = require('../utils/firebaseAdmin');
 const pool = require('../db');
 const crypto = require('crypto');
@@ -224,22 +224,24 @@ async function sendMessagePush({ userId, title, body, data = {} }) {
           });
           return true;
         } catch (error) {
+          try {
+            if (await deleteInvalidFcmToken(error, token)) {
+              console.log('FCM MESSAGE: DELETED INVALID FCM TOKEN', {
+                userId,
+              });
+              return false;
+            }
+          } catch (deleteError) {
+            console.error(
+              'DELETE INVALID MESSAGE FCM TOKEN ERROR:',
+              deleteError.message
+            );
+          }
+
           console.error('FCM MESSAGE TOKEN ERROR:', {
             userId,
             error: error.message,
           });
-
-          if (
-            error.code === 'messaging/registration-token-not-registered' ||
-            error.message === 'Requested entity was not found.'
-          ) {
-            await deleteFcmToken(token).catch((deleteError) => {
-              console.error(
-                'DELETE INVALID MESSAGE FCM TOKEN ERROR:',
-                deleteError.message
-              );
-            });
-          }
 
           return false;
         }
