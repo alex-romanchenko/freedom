@@ -1311,10 +1311,14 @@ app.post('/api/calls/reject', async (req, res) => {
     });
   });
 
-  socket.on('messageReaction', async ({ conversationId, messageId, reaction }) => {
+  socket.on('messageReaction', async ({ conversationId, messageId, reaction }, acknowledge) => {
     const userId = socket.userId;
+    let reactionAcknowledged = false;
 
     if (!userId || !conversationId || !messageId) {
+      if (typeof acknowledge === 'function') {
+        acknowledge({ ok: false, error: 'invalid_reaction_request' });
+      }
       return;
     }
 
@@ -1328,13 +1332,22 @@ app.post('/api/calls/reject', async (req, res) => {
         reaction: normalizedReaction,
       });
 
-      io.to(`conversation_${conversationId}`).emit('messageReactionUpdated', {
+      const update = {
         conversationId: Number(conversationId),
         messageId: Number(messageId),
         userId: Number(userId),
         reaction: normalizedReaction,
         reactions,
-      });
+      };
+
+      // The direct acknowledgement guarantees that the device which changed
+      // the reaction receives the authoritative state even if joining the
+      // conversation room raced with the first tap.
+      if (typeof acknowledge === 'function') {
+        acknowledge({ ok: true, ...update });
+        reactionAcknowledged = true;
+      }
+      io.to(`conversation_${conversationId}`).emit('messageReactionUpdated', update);
 
       const message = await getMessageById(Number(messageId), Number(userId));
       if (
@@ -1391,6 +1404,9 @@ app.post('/api/calls/reject', async (req, res) => {
       }
     } catch (error) {
       console.error('MESSAGE REACTION ERROR:', error.message);
+      if (typeof acknowledge === 'function' && !reactionAcknowledged) {
+        acknowledge({ ok: false, error: 'message_reaction_failed' });
+      }
     }
   });
 
