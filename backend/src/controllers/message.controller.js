@@ -290,11 +290,18 @@ function emitMessageToUserDevices(io, userId, conversationRoom, payload) {
   });
 }
 
+function normalizeMediaBatchId(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return /^[a-zA-Z0-9_-]{1,80}$/.test(normalized) ? normalized : null;
+}
+
 async function sendMessage(req, res) {
   try {
     const senderId = req.user.id;
     const { userId } = req.params;
     const { text, clientMessageId } = req.body;
+    const mediaBatchId = normalizeMediaBatchId(req.body.mediaBatchId);
     const videoAspectRatio = Number(req.body.videoAspectRatio);
     const {
       imagePath,
@@ -340,6 +347,7 @@ const message = await createMessage({
   fileSize,
   mediaSha256,
   videoAspectRatio,
+  mediaBatchId,
 });
 
     const fullMessage = await getMessageById(message.id, senderId);
@@ -414,6 +422,7 @@ async function sendGroupMessage(req, res) {
     const senderId = req.user.id;
     const { conversationId } = req.params;
     const { text, clientMessageId } = req.body;
+    const mediaBatchId = normalizeMediaBatchId(req.body.mediaBatchId);
     const videoAspectRatio = Number(req.body.videoAspectRatio);
     const {
       imagePath,
@@ -464,6 +473,7 @@ async function sendGroupMessage(req, res) {
       fileSize,
       mediaSha256,
       videoAspectRatio,
+      mediaBatchId,
     });
 
     await recordGroupMessageMentions({

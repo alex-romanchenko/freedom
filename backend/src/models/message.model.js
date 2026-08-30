@@ -60,6 +60,7 @@ async function createMessage({
   fileSize,
   mediaSha256,
   videoAspectRatio,
+  mediaBatchId,
 }) {
   const result = await pool.query(
     `INSERT INTO messages (
@@ -76,9 +77,10 @@ async function createMessage({
        file_size,
        media_sha256,
        video_aspect_ratio,
+       media_batch_id,
        status
      )
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, 'sent')
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'sent')
     RETURNING
       id,
       conversation_id,
@@ -94,7 +96,8 @@ async function createMessage({
        file_size,
        media_sha256,
        video_aspect_ratio,
-       status,
+        media_batch_id,
+        status,
       created_at`,
     [
       conversationId,
@@ -112,6 +115,7 @@ async function createMessage({
       Number.isFinite(videoAspectRatio) && videoAspectRatio > 0
         ? videoAspectRatio
         : null,
+      mediaBatchId || null,
     ]
   );
 
@@ -490,6 +494,43 @@ async function getUserConversations(userId) {
         last_message.file_name AS last_message_file_name,
         last_message.file_mime AS last_message_file_mime,
         last_message.file_size AS last_message_file_size,
+        CASE
+          WHEN last_message.video IS NOT NULL THEN
+            JSON_BUILD_ARRAY(JSON_BUILD_OBJECT(
+              'type', 'video',
+              'path', last_message.video
+            ))
+          WHEN last_message.image IS NOT NULL THEN
+            COALESCE((
+              SELECT JSON_AGG(media_preview.preview ORDER BY media_preview.created_at, media_preview.id)
+              FROM (
+                SELECT
+                  JSON_BUILD_OBJECT(
+                    'type', CASE
+                      WHEN LOWER(batch_messages.image) LIKE '%.gif' THEN 'gif'
+                      ELSE 'image'
+                    END,
+                    'path', batch_messages.image
+                  ) AS preview,
+                  batch_messages.created_at,
+                  batch_messages.id
+                FROM messages AS batch_messages
+                WHERE batch_messages.conversation_id = conversations.id
+                  AND batch_messages.is_deleted = false
+                  AND batch_messages.image IS NOT NULL
+                  AND batch_messages.image <> ''
+                  AND (
+                    (last_message.media_batch_id IS NOT NULL
+                      AND batch_messages.media_batch_id = last_message.media_batch_id)
+                    OR (last_message.media_batch_id IS NULL
+                      AND batch_messages.id = last_message.id)
+                  )
+                ORDER BY batch_messages.created_at DESC, batch_messages.id DESC
+                LIMIT 3
+              ) AS media_preview
+            ), '[]'::json)
+          ELSE '[]'::json
+        END AS last_message_media_previews,
 
         COUNT(unread_messages.id) AS unread_count,
         0::int AS mention_unread_count,
@@ -552,6 +593,7 @@ async function getUserConversations(userId) {
         users.display_name,
         users.avatar,
         users.last_seen,
+        last_message.id,
         last_message.text,
         last_message.created_at,
         last_message.sender_id,
@@ -564,6 +606,7 @@ async function getUserConversations(userId) {
         last_message.file_name,
         last_message.file_mime,
         last_message.file_size,
+        last_message.media_batch_id,
         conversation_reads.last_read_at
 
       UNION ALL
@@ -596,6 +639,43 @@ async function getUserConversations(userId) {
         last_message.file_name AS last_message_file_name,
         last_message.file_mime AS last_message_file_mime,
         last_message.file_size AS last_message_file_size,
+        CASE
+          WHEN last_message.video IS NOT NULL THEN
+            JSON_BUILD_ARRAY(JSON_BUILD_OBJECT(
+              'type', 'video',
+              'path', last_message.video
+            ))
+          WHEN last_message.image IS NOT NULL THEN
+            COALESCE((
+              SELECT JSON_AGG(media_preview.preview ORDER BY media_preview.created_at, media_preview.id)
+              FROM (
+                SELECT
+                  JSON_BUILD_OBJECT(
+                    'type', CASE
+                      WHEN LOWER(batch_messages.image) LIKE '%.gif' THEN 'gif'
+                      ELSE 'image'
+                    END,
+                    'path', batch_messages.image
+                  ) AS preview,
+                  batch_messages.created_at,
+                  batch_messages.id
+                FROM messages AS batch_messages
+                WHERE batch_messages.conversation_id = conversations.id
+                  AND batch_messages.is_deleted = false
+                  AND batch_messages.image IS NOT NULL
+                  AND batch_messages.image <> ''
+                  AND (
+                    (last_message.media_batch_id IS NOT NULL
+                      AND batch_messages.media_batch_id = last_message.media_batch_id)
+                    OR (last_message.media_batch_id IS NULL
+                      AND batch_messages.id = last_message.id)
+                  )
+                ORDER BY batch_messages.created_at DESC, batch_messages.id DESC
+                LIMIT 3
+              ) AS media_preview
+            ), '[]'::json)
+          ELSE '[]'::json
+        END AS last_message_media_previews,
 
         COUNT(unread_messages.id) AS unread_count,
         (
@@ -662,6 +742,7 @@ async function getUserConversations(userId) {
         conversations.group_name,
         conversations.group_avatar,
         conversations.admin_id,
+        last_message.id,
         last_message.text,
         last_message.created_at,
         last_message.sender_id,
@@ -674,6 +755,7 @@ async function getUserConversations(userId) {
         last_message.file_name,
         last_message.file_mime,
         last_message.file_size,
+        last_message.media_batch_id,
         conversation_reads.last_read_at
     ) AS all_conversations
 
