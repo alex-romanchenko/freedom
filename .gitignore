@@ -17,6 +17,9 @@ build/
 frontend/dist/
 frontend/build/
 
+# local working artifacts
+tmp/
+
 # backend user uploads
 backend/public/uploads/
 
