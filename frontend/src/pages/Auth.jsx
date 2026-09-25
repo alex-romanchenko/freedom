@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import GoogleAuth from '../components/GoogleAuth';
 import api from '../api/api';
 import ForgotPassword from './ForgotPassword';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiUsers } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiUser } from 'react-icons/fi';
 import { getStoredLanguage, t, translateServerMessage } from '../utils/i18n';
 
 function Auth({ onLoginSuccess }) {
@@ -29,7 +29,7 @@ function Auth({ onLoginSuccess }) {
     username: '',
     email: '',
     password: '',
-    displayName: '',
+    confirmPassword: '',
   });
 
   const changeLanguage = (nextLanguage) => {
@@ -53,19 +53,6 @@ function Auth({ onLoginSuccess }) {
       }
     }
 
-    if (name === 'displayName') {
-      if (value.length > 0 && value.length < 2) {
-        error = t('min_2', language);
-      } else if (value.length > 12) {
-        error = t('max_12', language);
-      } else if (
-        value &&
-        !/^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]+$/.test(value)
-      ) {
-        error = t('only_letters', language);
-      }
-    }
-
     if (name === 'email') {
       if (value.includes(' ')) {
         error = t('email_spaces', language);
@@ -85,6 +72,10 @@ function Auth({ onLoginSuccess }) {
       }
     }
 
+    if (name === 'confirmPassword' && value !== form.password) {
+      error = t('passwords_not_match', language);
+    }
+
     setErrors((prev) => ({
       ...prev,
       [name]: error,
@@ -100,12 +91,19 @@ function Auth({ onLoginSuccess }) {
     }));
 
     validateField(name, value);
+    if (name === 'password' && form.confirmPassword) {
+      setErrors((prev) => ({
+        ...prev,
+        confirmPassword: form.confirmPassword === value
+          ? ''
+          : t('passwords_not_match', language),
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const usernameRegex = /^[A-Za-z]{2,10}$/;
-    const displayNameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!isLogin) {
@@ -119,11 +117,6 @@ function Auth({ onLoginSuccess }) {
         return;
       }
 
-      if (!displayNameRegex.test(form.displayName)) {
-        setAuthError(t('display_name_invalid', language));
-        return;
-      }
-
       if (!emailRegex.test(form.email)) {
         setAuthError(t('enter_valid_email', language));
         return;
@@ -131,6 +124,11 @@ function Auth({ onLoginSuccess }) {
 
       if (form.password.length < 6) {
         setAuthError(t('password_invalid', language));
+        return;
+      }
+
+      if (form.password !== form.confirmPassword) {
+        setAuthError(t('passwords_not_match', language));
         return;
       }
     }
@@ -146,7 +144,9 @@ function Auth({ onLoginSuccess }) {
         finishLogin(res.data);
       } else {
         await api.post('/auth/register', {
-          ...form,
+          username: form.username,
+          email: form.email,
+          password: form.password,
           language,
           acceptTerms: acceptedTerms,
         });
@@ -192,9 +192,9 @@ function Auth({ onLoginSuccess }) {
   const canSubmit = isLogin
     ? form.email.trim().length > 0 && form.password.length >= 6
     : form.username.trim().length > 0 &&
-      form.displayName.trim().length > 0 &&
       form.email.trim().length > 0 &&
       form.password.length >= 6 &&
+      form.confirmPassword === form.password &&
       acceptedTerms;
 
   return (
@@ -241,18 +241,6 @@ function Auth({ onLoginSuccess }) {
                 </div>
                 {errors.username && <p className="input-error">{errors.username}</p>}
 
-                <div className="input-with-icon">
-                  <FiUsers className="input-icon" />
-                  <input
-                    name="displayName"
-                    placeholder={t('display_name', language)}
-                    value={form.displayName}
-                    onChange={handleChange}
-                  />
-                </div>
-                {errors.displayName && (
-                  <p className="input-error">{errors.displayName}</p>
-                )}
               </>
             )}
 
@@ -287,6 +275,25 @@ function Auth({ onLoginSuccess }) {
               </button>
             </div>
             {errors.password && <p className="input-error">{errors.password}</p>}
+
+            {!isLogin && (
+              <>
+                <div className="input-with-icon">
+                  <FiLock className="input-icon" />
+                  <input
+                    name="confirmPassword"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    placeholder={t('confirm_password', language)}
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                  />
+                </div>
+                {errors.confirmPassword && (
+                  <p className="input-error">{errors.confirmPassword}</p>
+                )}
+              </>
+            )}
 
             {!isLogin && (
               <label className="auth-legal-consent">

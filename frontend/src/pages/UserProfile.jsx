@@ -61,6 +61,8 @@ function UserProfile({
   const firstName = user.firstName || user.first_name;
   const lastName = user.lastName || user.last_name;
   const birthDate = user.birthDate || user.birth_date;
+  const profileTitle = [firstName, lastName].filter(Boolean).join(' ').trim() ||
+    user.displayName || user.display_name || user.username;
 
   return (
     <div className="profile-page">
@@ -97,14 +99,14 @@ function UserProfile({
                 color: identityColors.foreground,
               }}
             >
-              {user.displayName?.[0] || '?'}
+              {profileTitle?.[0] || '?'}
             </div>
           )}
         </div>
 
         <div className="profile-title-row">
           <div>
-            <h2>{user.displayName}</h2>
+            <h2>{profileTitle}</h2>
             <p className="username">@{user.username}</p>
           </div>
 

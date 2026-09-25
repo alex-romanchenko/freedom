@@ -14,7 +14,7 @@ const text = {
     expired: 'Google-сесія закінчилась. Скасуй цей крок і знову обери Google-акаунт.',
     conflict: 'Username або email уже зайнятий. Зміни username або повернись до входу.',
     emailFirst: 'Спочатку зареєструйся через email і підтвердь пошту, потім прив’яжи Google.',
-    hint: 'Username: 2–10 латинських літер. Ім’я: 2–10 літер або пробілів.',
+    hint: 'Username: 2–10 латинських літер.',
   },
   en: {
     complete: 'Complete registration', cancel: 'Cancel', loading: 'Please wait…',
@@ -26,7 +26,7 @@ const text = {
     expired: 'Google session expired. Cancel this step and select your Google account again.',
     conflict: 'Username or email is already in use. Change the username or return to sign-in.',
     emailFirst: 'Register using email and verify your mailbox first, then link Google.',
-    hint: 'Username: 2–10 Latin letters. Display name: 2–10 letters or spaces.',
+    hint: 'Username: 2–10 Latin letters.',
   },
   ru: {
     complete: 'Завершить регистрацию', cancel: 'Отмена', loading: 'Подожди…',
@@ -38,7 +38,7 @@ const text = {
     expired: 'Google-сессия истекла. Отмени этот шаг и снова выбери Google-аккаунт.',
     conflict: 'Username или email уже занят. Измени username или вернись ко входу.',
     emailFirst: 'Сначала зарегистрируйся через email и подтверди почту, затем привяжи Google.',
-    hint: 'Username: 2–10 латинских букв. Имя: 2–10 букв или пробелов.',
+    hint: 'Username: 2–10 латинских букв.',
   },
 };
 
@@ -53,10 +53,10 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
   const [busy, setBusy] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [retry, setRetry] = useState(0);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [idToken, setIdToken] = useState('');
   const [email, setEmail] = useState('');
-  const [profile, setProfile] = useState({ username: '', displayName: '', acceptTerms: false });
+  const [profile, setProfile] = useState({ username: '', acceptTerms: false });
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [confirmLink, setConfirmLink] = useState(false);
@@ -69,24 +69,24 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
 
   const showError = useCallback((err, googleRequest = true) => {
     const code = err.response?.data?.code;
-    setError(code === 'ACCOUNT_CONFLICT' ? words.conflict :
-      code === 'EMAIL_REGISTRATION_REQUIRED' ? words.emailFirst :
-      googleRequest && err.response?.status === 401 ? words.expired :
-      translateServerMessage(err.response?.data?.message || words.failed, language));
-  }, [language, words]);
+    setError(code === 'ACCOUNT_CONFLICT' ? { key: 'conflict' } :
+      code === 'EMAIL_REGISTRATION_REQUIRED' ? { key: 'emailFirst' } :
+      googleRequest && err.response?.status === 401 ? { key: 'expired' } :
+      { message: err.response?.data?.message });
+  }, []);
 
   const receiveCredential = useCallback(async ({ credential }) => {
     if (!credential || pending.current || !mounted.current) return;
-    pending.current = true; setBusy(true); setError('');
+    pending.current = true; setBusy(true); setError(null);
     try {
       const { data } = await api.post('/auth/google', { idToken: credential });
       if (!mounted.current) return;
       if (data.status === 'registration_required') {
         setIdToken(credential); setEmail(data.profile.email);
-        setProfile({ username: '', displayName: data.profile.suggestedDisplayName || '', acceptTerms: false });
+        setProfile({ username: '', acceptTerms: false });
         setMode('register');
       } else if (data.token && data.user) onSession(data);
-      else setError(words.failed);
+      else setError({ key: 'failed' });
     } catch (err) {
       if (!mounted.current) return;
       if (err.response?.data?.code === 'GOOGLE_LINK_REQUIRED') {
@@ -96,7 +96,7 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
       pending.current = false;
       if (mounted.current) setBusy(false);
     }
-  }, [onSession, showError, words]);
+  }, [onSession, showError]);
 
   useEffect(() => {
     if (!clientId || mode !== 'button') return;
@@ -113,17 +113,16 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
 
   const cancel = () => {
     setMode('button'); setIdToken(''); setPassword(''); setConfirmLink(false);
-    setProfile({ username: '', displayName: '', acceptTerms: false }); setError('');
+    setProfile({ username: '', acceptTerms: false }); setError(null);
   };
 
   const submit = async event => {
     event.preventDefault();
     if (pending.current) return;
     if (mode === 'register' && (!/^[A-Za-z]{2,10}$/.test(profile.username) ||
-      !/^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/.test(profile.displayName) ||
-      !profile.displayName.trim() || !profile.acceptTerms)) { setError(words.hint); return; }
+      !profile.acceptTerms)) { setError({ key: 'hint' }); return; }
     if (mode === 'link' && (!login.trim() || !password || !confirmLink)) return;
-    pending.current = true; setBusy(true); setError('');
+    pending.current = true; setBusy(true); setError(null);
     let googleRequest = mode !== 'link';
     try {
       if (mode === 'register') {
@@ -143,8 +142,13 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
   };
 
   if (!clientId) return null;
+  const errorMessage = error
+    ? error.key
+      ? words[error.key]
+      : translateServerMessage(error.message || words.failed, language)
+    : '';
   return <section className="google-auth" aria-busy={busy}>
-    {error && <p role="alert" className="error-message">{error}</p>}
+    {errorMessage && <p role="alert" className="error-message">{errorMessage}</p>}
     {mode === 'button' ? <>
       <div ref={button} className="google-auth-button" inert={busy} />
       {loadFailed && <p role="status">{words.unavailable} <button type="button" className="link-btn"
@@ -157,8 +161,6 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
           <p>{words.hint}</p>
           <label>{t('username', language)}<input autoComplete="username" required value={profile.username}
             onChange={e => setProfile({ ...profile, username: e.target.value })} /></label>
-          <label>{t('display_name', language)}<input required value={profile.displayName}
-            onChange={e => setProfile({ ...profile, displayName: e.target.value })} /></label>
           <label className="auth-legal-consent"><input type="checkbox" required checked={profile.acceptTerms}
             onChange={e => setProfile({ ...profile, acceptTerms: e.target.checked })} />
             <span>{t('agree_to', language)} <a href="/terms.html" target="_blank" rel="noreferrer">{t('terms_of_use', language)}</a>

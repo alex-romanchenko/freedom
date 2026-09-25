@@ -10,7 +10,7 @@ const { generateKeyPairSync } = require('node:crypto');
 
 const identity = { sub: 'google-123', email: 'person@gmail.com', name: 'Long Google Name', authoritativeEmail: true };
 const user = { id: 7, username: 'Person', email: identity.email, password: 'hash', is_verified: true };
-const profile = { username: 'Person', displayName: 'Person', acceptTerms: true };
+const profile = { username: 'Person', acceptTerms: true };
 function response() {
   return { statusCode: 200, status(n) { this.statusCode = n; return this; },
     json(body) { this.body = body; return this; }, set() {}, sendStatus(n) { this.statusCode = n; } };
@@ -52,7 +52,7 @@ test('same email never auto-links or issues session', async () => {
   await h.googleLogin({ body: { profile } }, res);
   assert.equal(res.body.code, 'GOOGLE_LINK_REQUIRED'); assert.equal(h.queries.length, 2);
 });
-test('new user must complete profile; Google name is only a suggestion', async () => {
+test('new user must choose a Freedom username', async () => {
   const h = setup([[], []]); const res = response(); await h.googleLogin({ body: {} }, res);
   assert.equal(res.body.status, 'registration_required'); assert.equal(h.queries.length, 2);
 });
@@ -62,7 +62,7 @@ test('non-authoritative email requires Freedom email verification', async () => 
   assert.equal(res.body.code, 'EMAIL_REGISTRATION_REQUIRED');
 });
 for (const invalid of [{ ...profile, acceptTerms: false }, { ...profile, username: 'x1' },
-  { ...profile, displayName: '  ' }, { ...profile, language: 'xx' }, { ...profile, displayName: identity.name }]) {
+  { ...profile, language: 'xx' }]) {
   test(`invalid profile rejected: ${JSON.stringify(invalid)}`, async () => {
     const h = setup([[], []]); const res = response();
     await h.googleLogin({ body: { profile: invalid } }, res);
@@ -73,6 +73,7 @@ test('new Google user gets verified email, no password, accepted terms', async (
   const h = setup([[], [], [user]]); const res = response();
   await h.googleLogin({ body: { profile, email: 'attacker@example.com' } }, res);
   assert.equal(res.statusCode, 201); assert.equal(h.queries[2].args[1], identity.email);
+  assert.equal(h.queries[2].args[2], profile.username);
   assert.match(h.queries[2].sql, /NULL/); assert.match(h.queries[2].sql, /NOW\(\), true/);
 });
 test('unique index race returns conflict, not internal details', async () => {

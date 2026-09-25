@@ -94,10 +94,9 @@ async function resetPassword(req, res) {
 
 async function register(req, res) {
   try {
-    const { username, email, password, displayName, language = 'en', acceptTerms } = req.body;
+    const { username, email, password, language = 'en', acceptTerms } = req.body;
 
     const usernameRegex = /^[A-Za-z]{2,10}$/;
-    const displayNameRegex = /^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!['en', 'uk', 'ru'].includes(language)) {
@@ -119,13 +118,6 @@ async function register(req, res) {
       return res.status(400).json({
         message:
           'Username must contain only letters and be 2-10 characters long',
-      });
-    }
-
-    if (displayName && !displayNameRegex.test(displayName)) {
-      return res.status(400).json({
-        message:
-          'Display name must contain only letters and be 2-10 characters long',
       });
     }
 
@@ -164,7 +156,9 @@ async function register(req, res) {
       username,
       email,
       password: hashedPassword,
-      displayName: displayName || username,
+      // Keep the legacy column populated while display name is no longer a
+      // registration field. Existing clients can continue reading it safely.
+      displayName: username,
       language,
       termsAccepted: true,
     });

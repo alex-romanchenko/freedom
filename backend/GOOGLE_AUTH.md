@@ -70,12 +70,13 @@ To complete signup, repeat with a still-valid idToken and:
 ```json
 {
   "idToken": "<Google ID token>",
-  "profile": { "username": "Oleksandr", "displayName": "Олександр", "language": "uk", "acceptTerms": true }
+  "profile": { "username": "Oleksandr", "language": "uk", "acceptTerms": true }
 }
 ```
 
-201 returns the session. Existing username/display-name rules apply (2–10 letters;
-username Latin only, display name also Ukrainian/Cyrillic and spaces). A unique-index
+201 returns the session. Existing username rules apply (2–10 Latin letters). The
+legacy display_name column is initialized from username and is not requested during
+registration. A unique-index
 conflict returns 409 ACCOUNT_CONFLICT. Google-only users have NULL password and may
 set one through the existing email password-reset flow.
 

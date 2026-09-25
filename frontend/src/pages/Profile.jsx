@@ -158,6 +158,8 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
   const firstName = user.firstName || user.first_name;
   const lastName = user.lastName || user.last_name;
   const birthDate = user.birthDate || user.birth_date;
+  const profileTitle = [firstName, lastName].filter(Boolean).join(' ').trim() ||
+    user.displayName || user.display_name || user.username;
 
   return (
     <div className="profile-page content-inset-page">
@@ -199,7 +201,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
                 color: identityColors.foreground,
               }}
             >
-              {user.displayName?.[0] || '?'}
+              {profileTitle?.[0] || '?'}
             </div>
           )}
 
@@ -215,7 +217,7 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
 
         <div className="profile-title-row">
           <div>
-            <h2>{user.displayName}</h2>
+            <h2>{profileTitle}</h2>
             <p className="username">@{user.username}</p>
           </div>
 
@@ -353,7 +355,6 @@ function Profile({ onOpenFriends, onOpenUser, onOpenPhotos, onPostClick }) {
           <div className="profile-edit-modal">
             <h2>{t('edit_profile', language)}</h2>
 
-            <input name="displayName" value={form.displayName} onChange={handleChange} placeholder={t('display_name', language)} />
             <input name="username" value={form.username} onChange={handleChange} placeholder={t('username', language)} />
             <input name="firstName" value={form.firstName} onChange={handleChange} placeholder={t('first_name', language)} />
             <input name="lastName" value={form.lastName} onChange={handleChange} placeholder={t('last_name', language)} />

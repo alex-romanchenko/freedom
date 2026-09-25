@@ -8,6 +8,33 @@ const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5177';
 (async () => {
   const browser = await chromium.launch({ headless: true, channel: process.env.TEST_BROWSER_CHANNEL || undefined });
   try {
+    {
+      const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+      let registration;
+      await page.route('https://accounts.google.com/gsi/client', route => route.abort());
+      await page.route(`${base}/api/auth/register`, async route => {
+        registration = route.request().postDataJSON();
+        await route.fulfill({ status: 201, json: { message: 'created' } });
+      });
+      await page.goto(base);
+      await page.getByRole('button', { name: 'Create new account' }).click();
+      assert.equal(await page.getByLabel('Display name', { exact: true }).count(), 0);
+      await page.locator('input[name="username"]').fill('Tester');
+      await page.locator('input[name="email"]').fill('tester@example.com');
+      await page.locator('input[name="password"]').fill('password123');
+      await page.locator('input[name="confirmPassword"]').fill('different');
+      assert.equal(await page.getByRole('button', { name: 'Create account' }).isDisabled(), true);
+      await page.locator('input[name="confirmPassword"]').fill('password123');
+      await page.getByRole('checkbox').check();
+      await page.getByRole('button', { name: 'Create account' }).click();
+      await page.waitForFunction(() => document.body.textContent.includes('Registered!'));
+      assert.deepEqual(registration, {
+        username: 'Tester', email: 'tester@example.com', password: 'password123',
+        language: 'en', acceptTerms: true,
+      });
+      console.log('PASS email registration');
+      await page.close();
+    }
     for (const scenario of ['register', 'link', 'cancel', 'failed-script', 'expired']) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
       const calls = [];
@@ -27,7 +54,7 @@ const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5177';
           if (scenario === 'link') { status = 409; data = { code: 'GOOGLE_LINK_REQUIRED' }; }
           else if (scenario === 'expired') { status = 401; data = { message: 'Invalid or expired Google ID token' }; }
           else if (!body.profile) data = { status: 'registration_required', profile: {
-            email: 'test@gmail.com', suggestedDisplayName: 'A very long Google name' } };
+            email: 'test@gmail.com' } };
           else data = { token: 'final-token', user: { id: 1, username: 'Tester', language: 'en' } };
         } else if (path === '/api/auth/login') {
           data = { token: 'password-token', user: { id: 1, username: 'Tester', language: 'en' } };
@@ -61,8 +88,14 @@ const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5177';
             assert.equal(await page.locator('input[name="password"]').isVisible(), true);
             assert.equal(calls.filter(c => c.path === '/api/auth/google').length, 1);
           } else {
+            await page.getByLabel('Username', { exact: true }).fill('x1');
+            await page.getByRole('checkbox').check();
+            await page.getByRole('button', { name: 'Complete registration', exact: true }).click();
+            await page.getByRole('alert').filter({ hasText: 'Username: 2–10 Latin letters.' }).waitFor();
+            await page.getByRole('button', { name: 'UK', exact: true }).click();
+            await page.getByRole('alert').filter({ hasText: 'Username: 2–10 латинських літер.' }).waitFor();
+            await page.getByRole('button', { name: 'EN', exact: true }).click();
             await page.getByLabel('Username', { exact: true }).fill('Tester');
-            await page.getByLabel('Display name', { exact: true }).fill('Tester');
             await page.getByRole('checkbox').check();
             await page.getByRole('button', { name: 'Complete registration', exact: true }).click();
             await page.waitForFunction(() => localStorage.getItem('token') === 'final-token');

@@ -47,20 +47,19 @@ function createGoogleAuth({ db = pool, verify = verifyGoogleToken,
       });
       if (!body.profile) return res.json({
         status: 'registration_required',
-        profile: { email: identity.email, suggestedDisplayName: identity.name },
+        profile: { email: identity.email },
       });
-      const { username, displayName, language = 'en', acceptTerms } = body.profile;
+      const { username, language = 'en', acceptTerms } = body.profile;
       if (typeof username !== 'string' || !/^[A-Za-z]{2,10}$/.test(username) ||
-          typeof displayName !== 'string' || !/^[A-Za-zА-Яа-яІіЇїЄєҐґ\s]{2,10}$/.test(displayName) ||
-          !displayName.trim() || !['en', 'uk', 'ru'].includes(language) || acceptTerms !== true) {
+          !['en', 'uk', 'ru'].includes(language) || acceptTerms !== true) {
         return res.status(400).json({ code: 'INVALID_PROFILE',
-          message: 'Choose a username (2-10 Latin letters), display name (2-10 letters/spaces), supported language and accept terms' });
+          message: 'Choose a username (2-10 Latin letters), supported language and accept terms' });
       }
       // Unique indexes arbitrate concurrent registration/link attempts atomically.
       const result = await db.query(`INSERT INTO users
         (username, email, password, display_name, language, terms_accepted_at, is_verified, google_sub)
         VALUES ($1, $2, NULL, $3, $4, NOW(), true, $5) RETURNING *`,
-      [username, identity.email, displayName.trim(), language, identity.sub]);
+      [username, identity.email, username, language, identity.sub]);
       return res.status(201).json(makeSession(result.rows[0]));
     } catch (error) { return fail(res, error); }
   }
