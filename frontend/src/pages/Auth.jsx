@@ -223,14 +223,13 @@ function Auth({ onLoginSuccess }) {
             </button>
           )}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             {!isLogin && (
               <>
                 <div className="input-with-icon">
                   <FiUser className="input-icon" />
                   <input
                     name="username"
-                    minLength={3}
                     maxLength={15}
                     placeholder={t('username', language)}
                     value={form.username}

@@ -93,7 +93,7 @@ const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5177';
             assert.equal(await page.locator('input[name="password"]').isVisible(), true);
             assert.equal(calls.filter(c => c.path === '/api/auth/google').length, 1);
           } else {
-            await page.getByLabel('Username', { exact: true }).fill('a_1');
+            await page.getByLabel('Username', { exact: true }).fill('sd');
             await page.getByRole('checkbox').check();
             await page.getByRole('button', { name: 'Complete registration', exact: true }).click();
             await page.getByRole('alert').filter({ hasText: 'Username must be 3–15 Latin characters' }).waitFor();

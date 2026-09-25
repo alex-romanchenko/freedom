@@ -13,6 +13,7 @@ const text = {
     failed: 'Не вдалося виконати вхід. Перевір дані та спробуй ще раз.',
     expired: 'Google-сесія закінчилась. Скасуй цей крок і знову обери Google-акаунт.',
     conflict: 'Юзернейм зайнятий. Змініть юзернейм для завершення реєстрації.',
+    required: 'Заповніть усі поля та підтвердьте прив’язування.',
     emailFirst: 'Спочатку зареєструйся через email і підтвердь пошту, потім прив’яжи Google.',
     hint: 'Юзернейм має містити 3–15 латинських символів.',
     usernameInstruction: 'Створіть власний унікальний юзернейм латинськими літерами',
@@ -26,6 +27,7 @@ const text = {
     failed: 'Sign-in failed. Check your details and try again.',
     expired: 'Google session expired. Cancel this step and select your Google account again.',
     conflict: 'Username is taken. Choose another username to complete registration.',
+    required: 'Complete all fields and confirm account linking.',
     emailFirst: 'Register using email and verify your mailbox first, then link Google.',
     hint: 'Username must be 3–15 Latin characters.',
     usernameInstruction: 'Create your own unique username using Latin letters',
@@ -39,6 +41,7 @@ const text = {
     failed: 'Не удалось войти. Проверь данные и попробуй снова.',
     expired: 'Google-сессия истекла. Отмени этот шаг и снова выбери Google-аккаунт.',
     conflict: 'Юзернейм занят. Измените юзернейм для завершения регистрации.',
+    required: 'Заполните все поля и подтвердите привязку аккаунта.',
     emailFirst: 'Сначала зарегистрируйся через email и подтверди почту, затем привяжи Google.',
     hint: 'Юзернейм должен содержать 3–15 латинских символов.',
     usernameInstruction: 'Создайте собственный уникальный юзернейм латинскими буквами',
@@ -123,7 +126,10 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
     if (pending.current) return;
     if (mode === 'register' && (!/^[A-Za-z0-9]{3,15}$/.test(profile.username) ||
       !profile.acceptTerms)) { setError({ key: 'hint' }); return; }
-    if (mode === 'link' && (!login.trim() || !password || !confirmLink)) return;
+    if (mode === 'link' && (!login.trim() || !password || !confirmLink)) {
+      setError({ key: 'required' });
+      return;
+    }
     pending.current = true; setBusy(true); setError(null);
     let googleRequest = mode !== 'link';
     try {
@@ -155,13 +161,13 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
       <div ref={button} className="google-auth-button" inert={busy} />
       {loadFailed && <p role="status">{words.unavailable} <button type="button" className="link-btn"
         onClick={() => setRetry(value => value + 1)}>{words.retry}</button></p>}
-    </> : <form onSubmit={submit}>
+    </> : <form onSubmit={submit} noValidate>
       <h3>{mode === 'register' ? words.complete : words.link}</h3>
       <fieldset disabled={busy}>
         {mode === 'register' ? <>
           <p className="google-auth-instruction">{words.usernameInstruction}</p>
           <input className="google-auth-username" aria-label={t('username', language)}
-            autoComplete="username" minLength={3} maxLength={15} required value={profile.username}
+            autoComplete="username" maxLength={15} required value={profile.username}
             onChange={e => setProfile({ ...profile, username: e.target.value })} />
           <label className="auth-legal-consent"><input type="checkbox" required checked={profile.acceptTerms}
             onChange={e => setProfile({ ...profile, acceptTerms: e.target.checked })} />
