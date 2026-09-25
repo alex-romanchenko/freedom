@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import GoogleAuth from '../components/GoogleAuth';
 import api from '../api/api';
 import ForgotPassword from './ForgotPassword';
 import { FiMail, FiLock, FiEye, FiEyeOff, FiUser, FiUsers } from 'react-icons/fi';
@@ -13,6 +14,16 @@ function Auth({ onLoginSuccess }) {
   const [errors, setErrors] = useState({});
   const [language, setLanguage] = useState(getStoredLanguage());
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [googleActive, setGoogleActive] = useState(false);
+  const finishLogin = useCallback((data) => {
+    const user = { ...data.user, language: data.user?.language || language };
+    localStorage.setItem('token', data.token);
+    sessionStorage.removeItem('token');
+    localStorage.setItem('language', user.language);
+    localStorage.setItem('user', JSON.stringify(user));
+    window.dispatchEvent(new Event('languageChanged'));
+    onLoginSuccess();
+  }, [language, onLoginSuccess]);
 
   const [form, setForm] = useState({
     username: '',
@@ -132,18 +143,7 @@ function Auth({ onLoginSuccess }) {
           rememberMe,
         });
 
-        const user = {
-          ...res.data.user,
-          language: res.data.user?.language || language,
-        };
-
-        localStorage.setItem('token', res.data.token);
-        sessionStorage.removeItem('token');
-        localStorage.setItem('language', user.language);
-        localStorage.setItem('user', JSON.stringify(user));
-        window.dispatchEvent(new Event('languageChanged'));
-
-        onLoginSuccess();
+        finishLogin(res.data);
       } else {
         await api.post('/auth/register', {
           ...form,
@@ -213,6 +213,8 @@ function Auth({ onLoginSuccess }) {
             {isLogin ? t('login_title', language) : t('register_title', language)}
           </h2>
 
+          <GoogleAuth language={language} onSession={finishLogin} onActiveChange={setGoogleActive} />
+          <div hidden={googleActive}>
           {authError && (
             <div className={isSuccessMessage ? 'success-message' : 'error-message'}>
               {authError}
@@ -369,6 +371,7 @@ function Auth({ onLoginSuccess }) {
             </>
           )}
 
+          </div>
           <div className="language-switcher auth-language-switcher">
             {['en', 'uk', 'ru'].map((item) => (
               <button

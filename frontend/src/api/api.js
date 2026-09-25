@@ -8,7 +8,7 @@ api.interceptors.request.use((config) => {
   const token =
     localStorage.getItem('token') || sessionStorage.getItem('token');
 
-  if (token) {
+  if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
@@ -26,6 +26,7 @@ api.interceptors.response.use(
       Boolean(localStorage.getItem('token')) ||
       Boolean(sessionStorage.getItem('token'));
     const isAuthRequest =
+      requestUrl.includes('/auth/google') ||
       requestUrl.includes('/auth/login') ||
       requestUrl.includes('/auth/register') ||
       requestUrl.includes('/auth/forgot-password') ||

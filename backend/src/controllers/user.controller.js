@@ -340,6 +340,13 @@ async function deleteMyAccount(req, res) {
       return res.status(404).json({ message: 'Account not found' });
     }
 
+    if (!user.password) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({
+        code: 'PASSWORD_SETUP_REQUIRED',
+        message: 'Set a password using email password reset before deleting your account',
+      });
+    }
     const passwordMatches = await bcrypt.compare(password, user.password);
     if (!passwordMatches) {
       await client.query('ROLLBACK');

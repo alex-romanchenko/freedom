@@ -1,5 +1,17 @@
 /* AUTH LOGIN / REGISTER */
 
+.google-auth { margin-bottom: 20px; }
+.google-auth-button { display: flex; justify-content: center; min-height: 44px; }
+.google-auth fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.google-auth label:not(.auth-legal-consent) { display: block; margin: 12px 0; }
+.google-auth label > input:not([type="checkbox"]) {
+  box-sizing: border-box; display: block; width: 100%; min-width: 0;
+  height: 48px; margin-top: 6px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 12px;
+}
+.google-auth p { line-height: 1.5; }
+.google-auth-email { overflow-wrap: anywhere; }
+.auth-card [hidden] { display: none; }
+
 .auth-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;

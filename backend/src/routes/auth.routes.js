@@ -3,6 +3,11 @@ const { register, login, verifyEmail, forgotPassword, resetPassword, resendVerif
 const authMiddleware = require('../middleware/auth.middleware');
 
 const router = express.Router();
+const { googleLogin, linkGoogle } = require('../controllers/googleAuth.controller');
+const googleAuthGuard = require('../middleware/googleAuthGuard');
+
+router.post('/google', googleAuthGuard, googleLogin);
+router.post('/google/link', googleAuthGuard, authMiddleware, linkGoogle);
 
 router.post('/register', register);
 router.post('/login', login);
