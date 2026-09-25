@@ -35,7 +35,7 @@ const DICTIONARY = {
     password_spaces: 'Password cannot contain spaces',
     min_6: 'Minimum 6 characters',
     username_invalid:
-      'Username must contain only letters and be 2-10 characters long',
+      'Username must be 3-15 Latin characters',
     display_name_invalid:
       'Display name must contain only letters and be 2-10 characters long',
     enter_valid_email: 'Enter a valid email address',
@@ -194,7 +194,7 @@ const DICTIONARY = {
     password_spaces: 'Пароль не може містити пробіли',
     min_6: 'Мінімум 6 символів',
     username_invalid:
-      'Username має містити тільки літери і бути 2-10 символів',
+      'Юзернейм має містити 3–15 латинських символів',
     display_name_invalid:
       "Ім'я має містити тільки літери і бути 2-10 символів",
     enter_valid_email: 'Введіть коректний email',
@@ -353,7 +353,7 @@ const DICTIONARY = {
     password_spaces: 'Пароль не может содержать пробелы',
     min_6: 'Минимум 6 символов',
     username_invalid:
-      'Username должен содержать только буквы и быть 2-10 символов',
+      'Юзернейм должен содержать 3–15 латинских символов',
     display_name_invalid:
       'Имя должно содержать только буквы и быть 2-10 символов',
     enter_valid_email: 'Введите корректный email',
@@ -482,7 +482,7 @@ export function getStoredLanguage() {
   try {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     return user.language || localStorage.getItem('language') || 'en';
-  } catch (_) {
+  } catch {
     return localStorage.getItem('language') || 'en';
   }
 }
@@ -502,6 +502,8 @@ export function translateServerMessage(message, language = getStoredLanguage()) 
     'Unsupported language': 'unsupported_language',
     'Username, email and password are required':
       'username_email_password_required',
+    'Username must be 3-15 Latin characters':
+      'username_invalid',
     'Username must contain only letters and be 2-10 characters long':
       'username_invalid',
     'Display name must contain only letters and be 2-10 characters long':

@@ -13,7 +13,7 @@ async function createUser({ username, email, password, displayName, language = '
 
 async function findUserByEmail(email) {
   const result = await pool.query(
-    'SELECT * FROM users WHERE email = $1',
+    'SELECT * FROM users WHERE lower(email) = lower($1)',
     [email]
   );
 
@@ -39,7 +39,7 @@ async function findUserByUsername(username) {
        language,
        is_verified
      FROM users
-     WHERE username = $1`,
+     WHERE lower(username) = lower($1)`,
     [username]
   );
 
@@ -140,7 +140,7 @@ async function getUserByUsername(username) {
        country,
        gender
      FROM users
-     WHERE username = $1`,
+     WHERE lower(username) = lower($1)`,
     [username]
   );
 

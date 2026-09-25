@@ -17,6 +17,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const pool = require('../db');
+const { isValidUsername } = require('../utils/username');
 
 const uploadsDirectory = path.resolve(__dirname, '../../public/uploads');
 
@@ -89,6 +90,17 @@ async function updateMyProfile(req, res) {
       gender,
     } = req.body;
 
+    if (!isValidUsername(username)) {
+      return res.status(400).json({
+        message: 'Username must be 3-15 Latin characters',
+      });
+    }
+
+    const existingUsername = await findUserByUsername(username);
+    if (existingUsername && Number(existingUsername.id) !== Number(userId)) {
+      return res.status(409).json({ message: 'Username already exists' });
+    }
+
     const updatedUser = await updateUserProfile(userId, {
       username,
       displayName,
@@ -105,6 +117,9 @@ async function updateMyProfile(req, res) {
       user: updatedUser,
     });
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ message: 'Username already exists' });
+    }
     res.status(500).json({
       message: 'Error updating profile',
       error: error.message,

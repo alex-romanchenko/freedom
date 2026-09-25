@@ -2,6 +2,7 @@ const pool = require('../db');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { verifyGoogleToken } = require('../services/googleToken');
+const { isValidUsername } = require('../utils/username');
 
 function session(user) {
   return {
@@ -21,7 +22,7 @@ function createGoogleAuth({ db = pool, verify = verifyGoogleToken,
   compare = bcrypt.compare, makeSession = session } = {}) {
   const fail = (res, error) => {
     if (error.code === '23505') return res.status(409).json({
-      code: 'ACCOUNT_CONFLICT', message: 'Username, email or Google account is already in use',
+      code: 'ACCOUNT_CONFLICT', message: 'Username is already in use',
     });
     const status = error.status || 500;
     return res.status(status).json({ message: status === 500 ? 'Google authentication failed' : error.message });
@@ -50,10 +51,10 @@ function createGoogleAuth({ db = pool, verify = verifyGoogleToken,
         profile: { email: identity.email },
       });
       const { username, language = 'en', acceptTerms } = body.profile;
-      if (typeof username !== 'string' || !/^[A-Za-z]{2,10}$/.test(username) ||
+      if (!isValidUsername(username) ||
           !['en', 'uk', 'ru'].includes(language) || acceptTerms !== true) {
         return res.status(400).json({ code: 'INVALID_PROFILE',
-          message: 'Choose a username (2-10 Latin letters), supported language and accept terms' });
+          message: 'Choose a username (3-15 Latin characters), supported language and accept terms' });
       }
       // Unique indexes arbitrate concurrent registration/link attempts atomically.
       const result = await db.query(`INSERT INTO users

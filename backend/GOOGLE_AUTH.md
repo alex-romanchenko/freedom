@@ -74,7 +74,8 @@ To complete signup, repeat with a still-valid idToken and:
 }
 ```
 
-201 returns the session. Existing username rules apply (2–10 Latin letters). The
+201 returns the session. Username rules apply (3–15 Latin characters, starting
+with a letter). Username uniqueness and lookup are case-insensitive. The
 legacy display_name column is initialized from username and is not requested during
 registration. A unique-index
 conflict returns 409 ACCOUNT_CONFLICT. Google-only users have NULL password and may

@@ -12,9 +12,10 @@ const text = {
     confirm: 'Підтверджую прив’язування обраного Google-акаунта до мого акаунта Freedom.',
     failed: 'Не вдалося виконати вхід. Перевір дані та спробуй ще раз.',
     expired: 'Google-сесія закінчилась. Скасуй цей крок і знову обери Google-акаунт.',
-    conflict: 'Username або email уже зайнятий. Зміни username або повернись до входу.',
+    conflict: 'Юзернейм зайнятий. Змініть юзернейм для завершення реєстрації.',
     emailFirst: 'Спочатку зареєструйся через email і підтвердь пошту, потім прив’яжи Google.',
-    hint: 'Username: 2–10 латинських літер.',
+    hint: 'Юзернейм має містити 3–15 латинських символів.',
+    usernameInstruction: 'Створіть власний унікальний юзернейм латинськими літерами',
   },
   en: {
     complete: 'Complete registration', cancel: 'Cancel', loading: 'Please wait…',
@@ -24,9 +25,10 @@ const text = {
     confirm: 'I confirm linking the selected Google account to my Freedom account.',
     failed: 'Sign-in failed. Check your details and try again.',
     expired: 'Google session expired. Cancel this step and select your Google account again.',
-    conflict: 'Username or email is already in use. Change the username or return to sign-in.',
+    conflict: 'Username is taken. Choose another username to complete registration.',
     emailFirst: 'Register using email and verify your mailbox first, then link Google.',
-    hint: 'Username: 2–10 Latin letters.',
+    hint: 'Username must be 3–15 Latin characters.',
+    usernameInstruction: 'Create your own unique username using Latin letters',
   },
   ru: {
     complete: 'Завершить регистрацию', cancel: 'Отмена', loading: 'Подожди…',
@@ -36,9 +38,10 @@ const text = {
     confirm: 'Подтверждаю привязку выбранного Google-аккаунта к моему аккаунту Freedom.',
     failed: 'Не удалось войти. Проверь данные и попробуй снова.',
     expired: 'Google-сессия истекла. Отмени этот шаг и снова выбери Google-аккаунт.',
-    conflict: 'Username или email уже занят. Измени username или вернись ко входу.',
+    conflict: 'Юзернейм занят. Измените юзернейм для завершения регистрации.',
     emailFirst: 'Сначала зарегистрируйся через email и подтверди почту, затем привяжи Google.',
-    hint: 'Username: 2–10 латинских букв.',
+    hint: 'Юзернейм должен содержать 3–15 латинских символов.',
+    usernameInstruction: 'Создайте собственный уникальный юзернейм латинскими буквами',
   },
 };
 
@@ -55,7 +58,6 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
   const [retry, setRetry] = useState(0);
   const [error, setError] = useState(null);
   const [idToken, setIdToken] = useState('');
-  const [email, setEmail] = useState('');
   const [profile, setProfile] = useState({ username: '', acceptTerms: false });
   const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
@@ -82,7 +84,7 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
       const { data } = await api.post('/auth/google', { idToken: credential });
       if (!mounted.current) return;
       if (data.status === 'registration_required') {
-        setIdToken(credential); setEmail(data.profile.email);
+        setIdToken(credential);
         setProfile({ username: '', acceptTerms: false });
         setMode('register');
       } else if (data.token && data.user) onSession(data);
@@ -119,7 +121,7 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
   const submit = async event => {
     event.preventDefault();
     if (pending.current) return;
-    if (mode === 'register' && (!/^[A-Za-z]{2,10}$/.test(profile.username) ||
+    if (mode === 'register' && (!/^[A-Za-z0-9]{3,15}$/.test(profile.username) ||
       !profile.acceptTerms)) { setError({ key: 'hint' }); return; }
     if (mode === 'link' && (!login.trim() || !password || !confirmLink)) return;
     pending.current = true; setBusy(true); setError(null);
@@ -157,10 +159,10 @@ export default function GoogleAuth({ language, onSession, onActiveChange }) {
       <h3>{mode === 'register' ? words.complete : words.link}</h3>
       <fieldset disabled={busy}>
         {mode === 'register' ? <>
-          <p className="google-auth-email">{email}</p>
-          <p>{words.hint}</p>
-          <label>{t('username', language)}<input autoComplete="username" required value={profile.username}
-            onChange={e => setProfile({ ...profile, username: e.target.value })} /></label>
+          <p className="google-auth-instruction">{words.usernameInstruction}</p>
+          <input className="google-auth-username" aria-label={t('username', language)}
+            autoComplete="username" minLength={3} maxLength={15} required value={profile.username}
+            onChange={e => setProfile({ ...profile, username: e.target.value })} />
           <label className="auth-legal-consent"><input type="checkbox" required checked={profile.acceptTerms}
             onChange={e => setProfile({ ...profile, acceptTerms: e.target.checked })} />
             <span>{t('agree_to', language)} <a href="/terms.html" target="_blank" rel="noreferrer">{t('terms_of_use', language)}</a>

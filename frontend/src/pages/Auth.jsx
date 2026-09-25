@@ -44,12 +44,8 @@ function Auth({ onLoginSuccess }) {
     let error = '';
 
     if (name === 'username') {
-      if (value.length < 2) {
-        error = t('min_2', language);
-      } else if (value.length > 12) {
-        error = t('max_12', language);
-      } else if (!/^[A-Za-z]+$/.test(value)) {
-        error = t('only_english_letters', language);
+      if (value && !/^[A-Za-z0-9]{3,15}$/.test(value)) {
+        error = t('username_invalid', language);
       }
     }
 
@@ -103,7 +99,7 @@ function Auth({ onLoginSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const usernameRegex = /^[A-Za-z]{2,10}$/;
+    const usernameRegex = /^[A-Za-z0-9]{3,15}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!isLogin) {
@@ -234,6 +230,8 @@ function Auth({ onLoginSuccess }) {
                   <FiUser className="input-icon" />
                   <input
                     name="username"
+                    minLength={3}
+                    maxLength={15}
                     placeholder={t('username', language)}
                     value={form.username}
                     onChange={handleChange}

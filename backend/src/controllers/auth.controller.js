@@ -12,6 +12,7 @@ const {
   deleteEmailToken,
 } = require('../models/emailToken.model');
 const pool = require('../db');
+const { isValidUsername } = require('../utils/username');
 const { createPasswordToken, findPasswordToken, deletePasswordToken } = require('../models/passwordToken.model');
 
 
@@ -96,7 +97,6 @@ async function register(req, res) {
   try {
     const { username, email, password, language = 'en', acceptTerms } = req.body;
 
-    const usernameRegex = /^[A-Za-z]{2,10}$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     if (!['en', 'uk', 'ru'].includes(language)) {
@@ -114,10 +114,10 @@ async function register(req, res) {
       });
     }
 
-    if (!usernameRegex.test(username)) {
+    if (!isValidUsername(username)) {
       return res.status(400).json({
         message:
-          'Username must contain only letters and be 2-10 characters long',
+          'Username must be 3-15 Latin characters',
       });
     }
 
@@ -182,6 +182,9 @@ async function register(req, res) {
       user,
     });
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ message: 'Username or email already exists' });
+    }
     res.status(500).json({
       message: 'Registration error',
       error: error.message,

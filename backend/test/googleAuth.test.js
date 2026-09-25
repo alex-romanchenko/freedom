@@ -62,6 +62,7 @@ test('non-authoritative email requires Freedom email verification', async () => 
   assert.equal(res.body.code, 'EMAIL_REGISTRATION_REQUIRED');
 });
 for (const invalid of [{ ...profile, acceptTerms: false }, { ...profile, username: 'x1' },
+  { ...profile, username: 'ThisUsernameIsTooLong' },
   { ...profile, language: 'xx' }]) {
   test(`invalid profile rejected: ${JSON.stringify(invalid)}`, async () => {
     const h = setup([[], []]); const res = response();

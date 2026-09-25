@@ -139,7 +139,7 @@ async function getPostsByUser(username, currentUserId) {
       ON my_likes.post_id = posts.id AND my_likes.user_id = $2
     LEFT JOIN likes AS all_likes 
       ON all_likes.post_id = posts.id
-    WHERE users.username = $1
+    WHERE lower(users.username) = lower($1)
     GROUP BY posts.id, users.id, my_likes.user_id
     ORDER BY posts.created_at DESC
   `, [username, currentUserId]);

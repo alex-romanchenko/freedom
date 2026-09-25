@@ -68,7 +68,7 @@ async function getUserFriendsByUsername(username) {
     FROM users
     JOIN follows ON follows.follower_id = users.id
     JOIN users AS friend ON follows.following_id = friend.id
-    WHERE users.username = $1
+    WHERE lower(users.username) = lower($1)
     ORDER BY friend.display_name
   `, [username]);
 

@@ -35,7 +35,7 @@ const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5177';
       console.log('PASS email registration');
       await page.close();
     }
-    for (const scenario of ['register', 'link', 'cancel', 'failed-script', 'expired']) {
+    for (const scenario of ['register', 'username-conflict', 'link', 'cancel', 'failed-script', 'expired']) {
       const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
       const calls = [];
       await page.addInitScript(() => localStorage.setItem('language', 'en'));
@@ -55,6 +55,9 @@ const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5177';
           else if (scenario === 'expired') { status = 401; data = { message: 'Invalid or expired Google ID token' }; }
           else if (!body.profile) data = { status: 'registration_required', profile: {
             email: 'test@gmail.com' } };
+          else if (scenario === 'username-conflict') {
+            status = 409; data = { code: 'ACCOUNT_CONFLICT' };
+          }
           else data = { token: 'final-token', user: { id: 1, username: 'Tester', language: 'en' } };
         } else if (path === '/api/auth/login') {
           data = { token: 'password-token', user: { id: 1, username: 'Tester', language: 'en' } };
@@ -82,24 +85,33 @@ const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5177';
           assert.equal(link.body.confirmLink, true);
         } else {
           await page.getByRole('heading', { name: 'Complete registration' }).waitFor();
+          await page.getByText('Create your own unique username using Latin letters', { exact: true }).waitFor();
+          assert.equal(await page.getByText('test@gmail.com', { exact: true }).count(), 0);
           assert.equal(await page.evaluate(() => localStorage.getItem('token')), null);
           if (scenario === 'cancel') {
             await page.getByRole('button', { name: 'Cancel', exact: true }).click();
             assert.equal(await page.locator('input[name="password"]').isVisible(), true);
             assert.equal(calls.filter(c => c.path === '/api/auth/google').length, 1);
           } else {
-            await page.getByLabel('Username', { exact: true }).fill('x1');
+            await page.getByLabel('Username', { exact: true }).fill('a_1');
             await page.getByRole('checkbox').check();
             await page.getByRole('button', { name: 'Complete registration', exact: true }).click();
-            await page.getByRole('alert').filter({ hasText: 'Username: 2–10 Latin letters.' }).waitFor();
+            await page.getByRole('alert').filter({ hasText: 'Username must be 3–15 Latin characters' }).waitFor();
             await page.getByRole('button', { name: 'UK', exact: true }).click();
-            await page.getByRole('alert').filter({ hasText: 'Username: 2–10 латинських літер.' }).waitFor();
+            await page.getByRole('alert').filter({ hasText: 'Юзернейм має містити 3–15 латинських символів' }).waitFor();
+            await page.getByText('Створіть власний унікальний юзернейм латинськими літерами', { exact: true }).waitFor();
             await page.getByRole('button', { name: 'EN', exact: true }).click();
             await page.getByLabel('Username', { exact: true }).fill('Tester');
             await page.getByRole('checkbox').check();
             await page.getByRole('button', { name: 'Complete registration', exact: true }).click();
-            await page.waitForFunction(() => localStorage.getItem('token') === 'final-token');
-            assert.equal(calls.find(c => c.body?.profile)?.body.profile.acceptTerms, true);
+            if (scenario === 'username-conflict') {
+              await page.getByRole('alert').filter({ hasText: 'Username is taken.' }).waitFor();
+              await page.getByRole('button', { name: 'UK', exact: true }).click();
+              await page.getByRole('alert').filter({ hasText: 'Юзернейм зайнятий.' }).waitFor();
+            } else {
+              await page.waitForFunction(() => localStorage.getItem('token') === 'final-token');
+              assert.equal(calls.find(c => c.body?.profile)?.body.profile.acceptTerms, true);
+            }
           }
         }
       }
